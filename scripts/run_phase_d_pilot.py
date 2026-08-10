@@ -759,6 +759,7 @@ def main() -> int:
         "splits": {
             dataset: {"ids": list(ids), "sha256": split_sha256(ids)}
             for dataset, ids in splits.items()
+            if ids
         },
         "view_counts": list(views),
         "candidate_budgets": list(CANDIDATE_BUDGETS),
