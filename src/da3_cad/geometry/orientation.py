@@ -202,13 +202,22 @@ def _planar_axes(
                 "axis": axis,
             }
         )
-    winner = min(
-        scored,
-        key=lambda item: (
-            round(cast(float, item["objective"]), 10),
-            cast(int, item["priority"]),
-        ),
-    )
+    ordered_eigenvalues = np.sort(eigenvalues)[::-1]
+    in_plane_variance_ratio = float(ordered_eigenvalues[1] / max(ordered_eigenvalues[0], 1e-18))
+    if in_plane_variance_ratio < 0.85:
+        winner = next(
+            item for item in scored if str(item["source"]).startswith("in-plane-pca-major")
+        )
+        selection_rule = "distinct in-plane eigenvalues fix the PCA major axis"
+    else:
+        winner = min(
+            scored,
+            key=lambda item: (
+                round(cast(float, item["objective"]), 10),
+                cast(int, item["priority"]),
+            ),
+        )
+        selection_rule = "near-tied in-plane eigenvalues use symmetry voting"
     x_axis = canonical_vector_sign(np.asarray(winner["axis"], dtype=np.float64))
     y_axis = np.cross(z_axis, x_axis)
     y_axis = y_axis / np.linalg.norm(y_axis)
@@ -222,7 +231,9 @@ def _planar_axes(
         "symmetry_candidates": [
             {key: value for key, value in item.items() if key != "axis"} for item in scored
         ],
+        "in_plane_variance_ratio": in_plane_variance_ratio,
         "selected_in_plane_source": str(winner["source"]),
+        "selection_rule": selection_rule,
         "tie_break": "objective rounded to 1e-10, then fixed candidate priority",
     }
 

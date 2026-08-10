@@ -68,6 +68,24 @@ class CanonicalizerConfig(BaseModel):
     normalization_enabled: bool = True
 
 
+class GeometricFitterConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    robust_bounds_quantile: float = Field(default=0.005, ge=0.0, lt=0.25)
+    minimum_extent: float = Field(default=1e-4, gt=0.0)
+    hole_detection_enabled: bool = True
+    top_surface_quantile: float = Field(default=0.65, ge=0.5, lt=1.0)
+    hole_grid_resolution: int = Field(default=80, ge=24, le=256)
+    hole_search_margin_fraction: float = Field(default=0.18, ge=0.05, lt=0.5)
+    hole_min_radius_fraction: float = Field(default=0.04, gt=0.0, lt=0.5)
+    hole_spacing_multiplier: float = Field(default=4.0, ge=1.0, le=20.0)
+    hole_angular_bins: int = Field(default=24, ge=8, le=128)
+    hole_min_angular_coverage: float = Field(default=0.5, gt=0.0, le=1.0)
+    cylinder_max_aspect: float = Field(default=1.2, ge=1.0, le=3.0)
+    cylinder_residual_margin: float = Field(default=0.02, ge=0.0, le=1.0)
+    annular_center_tolerance_fraction: float = Field(default=0.05, ge=0.0, le=0.5)
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -81,6 +99,7 @@ class AppConfig(BaseModel):
     da3: Da3Config = Field(default_factory=Da3Config)
     geometry: GeometryConfig = Field(default_factory=GeometryConfig)
     canonicalizer: CanonicalizerConfig = Field(default_factory=CanonicalizerConfig)
+    geometric_fitter: GeometricFitterConfig = Field(default_factory=GeometricFitterConfig)
 
 
 def load_config(
