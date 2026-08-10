@@ -19,7 +19,7 @@ from da3_cad.evaluation.cadrille_reference import (
     upstream_skip_rows,
 )
 from da3_cad.evaluation.evaluator import EvaluationConfig, Evaluator
-from da3_cad.evaluation.mesh import load_mesh, normalize_prediction_mesh
+from da3_cad.evaluation.mesh import load_mesh, normalize_evaluation_mesh
 from da3_cad.evaluation.types import (
     ChamferMetrics,
     MeshIouMetrics,
@@ -264,8 +264,10 @@ class PairedEvaluatorHarness:
         )
         reference: dict[str, object] | None = None
         if normative.valid_prediction and prediction is not None:
-            gt_mesh = load_mesh(ground_truth, self.evaluator.config.tessellation)
-            pred_mesh = normalize_prediction_mesh(
+            gt_mesh = normalize_evaluation_mesh(
+                load_mesh(ground_truth, self.evaluator.config.tessellation)
+            )
+            pred_mesh = normalize_evaluation_mesh(
                 load_mesh(prediction, self.evaluator.config.tessellation)
             )
             repeats = run_reference_repeats(

@@ -12,13 +12,16 @@ from da3_cad.evaluation.chamfer import (
     chamfer_metrics,
     directional_squared_means,
 )
+from da3_cad.evaluation.evaluator import Evaluator
 from da3_cad.evaluation.mesh import (
     TessellationConfig,
     load_mesh,
+    normalize_evaluation_mesh,
     normalize_prediction_mesh,
     tessellate_step,
     validate_mesh,
-    verify_ground_truth_normalized,
+    verify_centered_evaluation_frame,
+    verify_official_test_mesh_frame,
 )
 from da3_cad.evaluation.mesh_iou import mesh_iou
 from da3_cad.evaluation.surface_sampling import sample_surface_area_weighted
@@ -122,7 +125,7 @@ def test_prediction_normalization_is_isotropic_without_alignment() -> None:
     normalized = normalize_prediction_mesh(prediction)
     np.testing.assert_allclose(
         normalized.bounds,
-        [[0.0, 0.29, 0.4375], [1.0, 0.71, 0.5625]],
+        [[-0.5, -0.21, -0.0625], [0.5, 0.21, 0.0625]],
         atol=1e-12,
     )
     validation = validate_mesh(normalized)
@@ -167,16 +170,43 @@ def test_file_mesh_loading_welds_vertices_but_does_not_repair(tmp_path: Path) ->
     assert loaded.is_watertight
 
 
-def test_ground_truth_frame_tolerance_covers_tessellation_not_alignment() -> None:
-    ground_truth = _box()
-    ground_truth.vertices = (
-        np.asarray(ground_truth.vertices, dtype=np.float64) - 0.5
-    ) * 0.9999 + 0.5
-    verify_ground_truth_normalized(ground_truth)
-    with pytest.raises(ValueError, match="largest bbox extent"):
-        verify_ground_truth_normalized(ground_truth, tolerance=1e-5)
+def test_storage_and_evaluation_frames_are_distinct_and_verified() -> None:
+    stored = _box()
+    verify_official_test_mesh_frame(stored)
 
-    shifted = ground_truth.copy()
+    centered = normalize_evaluation_mesh(stored)
+    verify_centered_evaluation_frame(centered)
+    centered.vertices = np.asarray(centered.vertices, dtype=np.float64) * 0.9999
+    verify_centered_evaluation_frame(centered)
+    with pytest.raises(ValueError, match="largest bbox extent"):
+        verify_centered_evaluation_frame(centered, tolerance=1e-5)
+
+    shifted = centered.copy()
     shifted.apply_translation([0.000525, 0.0, 0.0])
-    with pytest.raises(ValueError, match="centred"):
-        verify_ground_truth_normalized(shifted)
+    with pytest.raises(ValueError, match="origin"):
+        verify_centered_evaluation_frame(shifted)
+
+
+def test_evaluator_normalizes_different_input_frames_identically() -> None:
+    ground_truth = _box(
+        extents=(1.0, 0.5, 0.25),
+        center=(0.0, 0.0, 0.0),
+    )
+    prediction = _box(
+        extents=(200.0, 100.0, 50.0),
+        center=(20.0, -3.0, 7.0),
+    )
+    gt_normalized = normalize_evaluation_mesh(ground_truth)
+    pred_normalized = normalize_evaluation_mesh(prediction)
+    np.testing.assert_allclose(gt_normalized.bounds, pred_normalized.bounds, atol=1e-12)
+
+    result = Evaluator().evaluate(
+        "different-native-coordinate-frames",
+        prediction,
+        ground_truth,
+    )
+    assert result.valid_prediction
+    assert result.iou is not None
+    assert result.iou.percent == pytest.approx(100.0, abs=1e-8)
+    assert result.chamfer is not None
+    assert result.chamfer.scaled_bidirectional < 1.0

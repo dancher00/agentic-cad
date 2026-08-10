@@ -452,9 +452,11 @@ Implement the evaluator before long runs, as specified in section 6. Then add:
 - Require a non-empty valid solid and a finite, non-degenerate, watertight mesh
   for a valid prediction. Program timeout, policy violation, exception, empty
   result or invalid solid contributes to IR.
-- Apply the published prediction normalization once: bbox-center at the origin,
-  scale by inverse largest bbox extent, then translate to `[0,1]^3`. Ground-truth
-  test meshes are verified to already follow their official normalized frame.
+- Apply the published normalization independently and identically to both GT and
+  prediction: subtract each bbox centre and scale by its inverse largest bbox
+  extent, leaving both in the unit bounding box centred at the origin inside
+  `[-0.5,0.5]^3`. The released test meshes are stored in `[0,1]^3`, but that
+  storage frame is not the evaluator frame.
   No ICP, pose oracle, per-axis scaling or metric-driven alignment is allowed.
 - A metric-engine failure on an otherwise valid prediction is an evaluation
   error that fails the run/report; it is not silently converted to a favorable

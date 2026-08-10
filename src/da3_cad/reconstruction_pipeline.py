@@ -124,7 +124,7 @@ def _write_report(
         f"- Backend: **{program.backend}**",
         "- Fallback used: **no**",
         f"- Native units: **{parameters['units']}**",
-        "- Normalized evaluation space: **isotropic bbox-centered [0,1]^3**",
+        "- Normalized evaluation space: **isotropic bbox-centered [-0.5,0.5]^3**",
         f"- Metric scale: **{scale.status}**",
         f"- Primary engineering parameters: **{semantics['primary_count']}**",
         f"- Implementation operands: **{semantics['implementation_count']}**",

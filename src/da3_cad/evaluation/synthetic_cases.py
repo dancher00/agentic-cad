@@ -146,6 +146,14 @@ def build_synthetic_audit(upstream_evaluate: Path) -> dict[str, object]:
 
     evaluator = Evaluator(EvaluationConfig())
     identity_result = evaluator.evaluate("synthetic-identical-box", unit, unit)
+    cross_frame_result = evaluator.evaluate(
+        "synthetic-different-native-frames",
+        _box(
+            extents=(200.0, 100.0, 50.0),
+            center=(20.0, -3.0, 7.0),
+        ),
+        _box(extents=(1.0, 0.5, 0.25), center=(0.0, 0.0, 0.0)),
+    )
     return {
         "schema_version": "1.0",
         "status": "validated-synthetic-evaluator-audit",
@@ -153,6 +161,7 @@ def build_synthetic_audit(upstream_evaluate: Path) -> dict[str, object]:
             "config": evaluator.config.as_dict(),
             "config_sha256": evaluator.config.digest,
             "identity_box": identity_result.as_dict(),
+            "different_native_frames_same_shape": cross_frame_result.as_dict(),
             "point_chamfer": {
                 "analytic_directional_squared": [0.14, 0.14],
                 "kdtree_directional_squared": list(kd),

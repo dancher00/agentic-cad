@@ -13,9 +13,9 @@ from da3_cad.evaluation.mesh import (
     MeshInput,
     TessellationConfig,
     load_mesh,
-    normalize_prediction_mesh,
+    normalize_evaluation_mesh,
     validate_mesh,
-    verify_ground_truth_normalized,
+    verify_centered_evaluation_frame,
 )
 from da3_cad.evaluation.mesh_iou import (
     ENGINE,
@@ -26,7 +26,7 @@ from da3_cad.evaluation.mesh_iou import (
 from da3_cad.evaluation.surface_sampling import sample_surface_area_weighted
 from da3_cad.evaluation.types import MeshValidation, PerItemMetrics
 
-EVALUATOR_VERSION = "da3-cad-evaluator-v1"
+EVALUATOR_VERSION = "da3-cad-evaluator-v2-centered"
 
 
 class EvaluationError(RuntimeError):
@@ -54,10 +54,13 @@ class EvaluationConfig:
             "sample_count": self.sample_count,
             "global_seed": self.global_seed,
             "distance": "bidirectional squared nearest-neighbour means x1000",
-            "prediction_normalization": (
-                "bbox centre to origin, divide by largest extent, translate by +0.5"
+            "mesh_normalization": (
+                "identical for GT and prediction: subtract bbox centre, divide by "
+                "largest bbox extent"
             ),
-            "ground_truth_frame_tolerance": self.ground_truth_tolerance,
+            "evaluation_frame": "unit bounding box centred at origin in [-0.5,0.5]^3",
+            "normalized_frame_tolerance": self.ground_truth_tolerance,
+            "input_frames": "may differ; both meshes are normalized independently",
             "alignment": "none: no ICP, pose oracle, per-axis scaling or metric alignment",
             "tessellation": self.tessellation.as_dict(),
             "mesh_iou": {
@@ -99,22 +102,33 @@ class Evaluator:
     def __init__(self, config: EvaluationConfig | None = None) -> None:
         self.config = config if config is not None else EvaluationConfig()
 
-    def _load_ground_truth(self, value: MeshInput) -> tuple[trimesh.Trimesh, MeshValidation]:
+    def _load_ground_truth(
+        self,
+        value: MeshInput,
+    ) -> tuple[trimesh.Trimesh, MeshValidation, MeshValidation]:
         try:
-            mesh = load_mesh(value, self.config.tessellation)
+            native_mesh = load_mesh(value, self.config.tessellation)
         except Exception as error:
             raise EvaluationError(f"could not load ground truth: {error}") from error
-        validation = validate_mesh(mesh)
-        if not validation.valid:
-            raise EvaluationError(f"invalid ground-truth mesh: {validation.reason}")
+        native_validation = validate_mesh(native_mesh)
+        if not native_validation.valid:
+            raise EvaluationError(
+                f"invalid ground-truth mesh: {native_validation.reason}"
+            )
         try:
-            verify_ground_truth_normalized(
+            mesh = normalize_evaluation_mesh(native_mesh)
+            validation = validate_mesh(mesh)
+            if not validation.valid:
+                raise EvaluationError(
+                    f"normalized ground-truth mesh is invalid: {validation.reason}"
+                )
+            verify_centered_evaluation_frame(
                 mesh,
                 tolerance=self.config.ground_truth_tolerance,
             )
         except ValueError as error:
             raise EvaluationError(str(error)) from error
-        return mesh, validation
+        return mesh, validation, native_validation
 
     def evaluate(
         self,
@@ -124,10 +138,11 @@ class Evaluator:
         *,
         invalid_reason: str | None = None,
     ) -> PerItemMetrics:
-        gt_mesh, gt_validation = self._load_ground_truth(ground_truth)
+        gt_mesh, gt_validation, native_gt_validation = self._load_ground_truth(ground_truth)
         evaluator_record = {
             **self.config.as_dict(),
             "config_sha256": self.config.digest,
+            "native_ground_truth_validation": native_gt_validation.as_dict(),
         }
         if prediction is None:
             return PerItemMetrics(
@@ -180,7 +195,7 @@ class Evaluator:
                     "native_prediction_validation": native_validation.as_dict(),
                 },
             )
-        prediction_mesh = normalize_prediction_mesh(native_prediction)
+        prediction_mesh = normalize_evaluation_mesh(native_prediction)
         prediction_validation = validate_mesh(prediction_mesh)
         if not prediction_validation.valid:
             return PerItemMetrics(

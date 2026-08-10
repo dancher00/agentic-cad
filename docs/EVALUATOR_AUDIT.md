@@ -1,6 +1,6 @@
 # Normative evaluator and cadrille audit
 
-The project reports only metrics from `da3-cad-evaluator-v1`. The executable,
+The project reports new metrics only from `da3-cad-evaluator-v2-centered`. The executable,
 machine-readable validation is
 `benchmarks/evaluator/synthetic_audit.json`; regenerate it with:
 
@@ -16,12 +16,19 @@ python scripts/run_evaluator_synthetic_audit.py
   filling, remeshing, ICP, pose oracle or other repair/alignment.
 - A prediction is valid only if its mesh is finite, non-degenerate,
   watertight, consistently wound and has positive volume.
-- A valid prediction is bbox-centred, divided isotropically by its largest
-  bbox extent and translated by `+0.5`. GT remains in its published frame.
-- GT frame verification uses absolute tolerance `5e-4`. This is a format
-  tolerance, not an alignment: among the ten pinned normalization-audit STL
-  files, the largest observed largest-extent error was `9.8712022e-5` and the
-  largest centre error was `2.8226981e-5`.
+- Following the paper's metric specification, GT and prediction receive the
+  same operation independently: subtract the bbox centre and divide
+  isotropically by the largest bbox extent. Both therefore occupy a unit
+  bounding box centred at the origin inside `[-0.5,0.5]^3`.
+- This is normalization, not alignment: there is no rotation, ICP, per-axis
+  scale or GT-dependent pose choice. Absolute tolerance `5e-4` verifies the
+  resulting centred frame.
+- The released DeepCAD/Fusion360 test meshes are stored centred at `0.5` in
+  `[0,1]^3`, and released `evaluate.py` translates normalized predictions by
+  `+0.5`. That implementation is jointly translated relative to the paper
+  wording, so its distances and volumes are unchanged. Evaluator v2 makes the
+  paper frame explicit and robust to GT/prediction arriving in different
+  native coordinate systems.
 - Exactly 8,192 independent area-weighted surface points are drawn for each
   role from SHA-256-derived, per-item seeds. Chamfer is the sum of the two
   float64 squared nearest-neighbour means, multiplied by `1,000`.
@@ -44,6 +51,7 @@ The committed audit and tests verify:
 |---|---:|
 | Point translation `(0.1, 0.2, 0.3)` | directional squared means `0.14`, CD `280` |
 | Identical unit boxes | IoU `100%` |
+| Same anisotropic box from different native origins/scales | IoU `100%`, CD below `1` |
 | Disjoint unit boxes | IoU `0%` |
 | Half-overlap unit boxes | IoU `33.333...%` |
 | Half-scale cube nested in unit cube | IoU `12.5%` |

@@ -108,7 +108,7 @@ def canonical_input_pool(canonical: CanonicalCloud) -> FloatArray:
         raise ValueError("canonical trace must contain exactly one orientation stage")
     pool = np.asarray(orientation_stages[0].points, dtype=np.float32)
     unit_pool, _, _ = normalize_bbox_for_decoder(pool)
-    return np.asarray(unit_pool, dtype=np.float32)
+    return np.asarray(unit_pool - 0.5, dtype=np.float32)
 
 
 def build_candidate_inputs(

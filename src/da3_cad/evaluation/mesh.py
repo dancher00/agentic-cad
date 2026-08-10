@@ -144,30 +144,58 @@ def validate_mesh(mesh: trimesh.Trimesh) -> MeshValidation:
     )
 
 
-def normalize_prediction_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+def normalize_evaluation_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Fit any mesh isotropically into the unit bbox centred at the origin."""
+
     bounds = np.asarray(mesh.bounds, dtype=np.float64)
     center = (bounds[0] + bounds[1]) / 2.0
     extent = float(np.max(bounds[1] - bounds[0]))
     if not np.isfinite(extent) or extent <= 1e-12:
-        raise ValueError("prediction bbox is non-finite or degenerate")
+        raise ValueError("evaluation mesh bbox is non-finite or degenerate")
     normalized = mesh.copy()
     normalized.vertices = (
         np.asarray(normalized.vertices, dtype=np.float64) - center
-    ) / extent + 0.5
+    ) / extent
     return normalized
 
 
-def verify_ground_truth_normalized(
+def normalize_prediction_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Backward-compatible name for the common published mesh normalization."""
+
+    return normalize_evaluation_mesh(mesh)
+
+
+def verify_centered_evaluation_frame(
     mesh: trimesh.Trimesh,
     *,
     tolerance: float = 5e-4,
 ) -> None:
+    """Verify a normalized mesh fits the published centred unit container."""
+
+    bounds = np.asarray(mesh.bounds, dtype=np.float64)
+    extents = bounds[1] - bounds[0]
+    center = (bounds[0] + bounds[1]) / 2.0
+    if np.any(bounds < -0.5 - tolerance) or np.any(bounds > 0.5 + tolerance):
+        raise ValueError("evaluation mesh is outside the published [-0.5,0.5]^3 frame")
+    if abs(float(extents.max()) - 1.0) > tolerance:
+        raise ValueError("evaluation mesh largest bbox extent is not one")
+    if not np.allclose(center, 0.0, atol=tolerance, rtol=0.0):
+        raise ValueError("evaluation mesh bbox is not centred at the origin")
+
+
+def verify_official_test_mesh_frame(
+    mesh: trimesh.Trimesh,
+    *,
+    tolerance: float = 5e-4,
+) -> None:
+    """Verify the released Cadrille test-mesh storage frame before pc preprocessing."""
+
     bounds = np.asarray(mesh.bounds, dtype=np.float64)
     extents = bounds[1] - bounds[0]
     center = (bounds[0] + bounds[1]) / 2.0
     if np.any(bounds < -tolerance) or np.any(bounds > 1.0 + tolerance):
-        raise ValueError("ground-truth mesh is outside the official [0,1]^3 frame")
+        raise ValueError("released test mesh is outside its stored [0,1]^3 frame")
     if abs(float(extents.max()) - 1.0) > tolerance:
-        raise ValueError("ground-truth largest bbox extent is not one")
+        raise ValueError("released test mesh largest bbox extent is not one")
     if not np.allclose(center, 0.5, atol=tolerance, rtol=0.0):
-        raise ValueError("ground-truth bbox is not centred at 0.5 on every axis")
+        raise ValueError("released test mesh bbox is not centred at 0.5 on every axis")

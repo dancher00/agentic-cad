@@ -49,7 +49,7 @@ def test_input_cd_selector_has_no_gt_argument_and_uses_one_candidate_for_all_met
 ) -> None:
     assert "ground_truth" not in inspect.signature(select_by_input_chamfer).parameters
     target = _box()
-    input_points = sample_surface_area_weighted(target, 4096, seed=1).points
+    input_points = sample_surface_area_weighted(target, 4096, seed=1).points - 0.5
     target_path = tmp_path / "target.stl"
     wrong_path = tmp_path / "wrong.stl"
     target.export(target_path)

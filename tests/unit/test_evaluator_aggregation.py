@@ -58,8 +58,8 @@ def test_aggregate_rejects_missing_duplicate_and_provenance_mismatch() -> None:
 
 def test_invalid_ground_truth_is_run_error_not_model_invalidity() -> None:
     ground_truth = _unit_box()
-    ground_truth.apply_translation((1.0, 0.0, 0.0))
-    with pytest.raises(EvaluationError, match="outside"):
+    ground_truth.faces = ground_truth.faces[:-1]
+    with pytest.raises(EvaluationError, match="invalid ground-truth mesh"):
         Evaluator().evaluate("bad-gt", None, ground_truth)
 
 

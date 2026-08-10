@@ -12,6 +12,16 @@ def test_committed_synthetic_evaluator_audit() -> None:
     payload = json.loads(REPORT.read_text(encoding="utf-8"))
     assert payload["status"] == "validated-synthetic-evaluator-audit"
     normative = payload["normative_evaluator"]
+    assert normative["config"]["version"] == "da3-cad-evaluator-v2-centered"
+    assert normative["config"]["evaluation_frame"] == (
+        "unit bounding box centred at origin in [-0.5,0.5]^3"
+    )
+    cross_frame = normative["different_native_frames_same_shape"]
+    assert cross_frame["iou"]["percent"] == pytest.approx(100.0)
+    assert cross_frame["chamfer"]["bidirectional_squared_x1000"] < 1.0
+    assert cross_frame["ground_truth_validation"]["bbox"] == cross_frame[
+        "prediction_validation"
+    ]["bbox"]
     assert normative["config"]["sample_count"] == 8192
     assert normative["config"]["mesh_iou"]["engine"] == "manifold"
     assert normative["config"]["mesh_iou"]["package"] == "manifold3d==3.5.2"

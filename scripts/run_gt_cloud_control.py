@@ -46,7 +46,7 @@ from da3_cad.benchmark.splits import GLOBAL_SEED, item_seed, read_split, split_s
 from da3_cad.config import AppConfig, load_config
 from da3_cad.evaluation.aggregate import aggregate_metrics
 from da3_cad.evaluation.evaluator import EvaluationConfig, Evaluator
-from da3_cad.evaluation.mesh import verify_ground_truth_normalized
+from da3_cad.evaluation.mesh import verify_official_test_mesh_frame
 from da3_cad.evaluation.types import PerItemMetrics
 from da3_cad.models import FloatArray
 
@@ -109,7 +109,7 @@ def _load_sampling_mesh(path: Path) -> trimesh.Trimesh:
     loaded = trimesh.load_mesh(path)
     if not isinstance(loaded, trimesh.Trimesh):
         raise ValueError(f"GT-cloud input is not one triangle mesh: {path}")
-    verify_ground_truth_normalized(loaded)
+    verify_official_test_mesh_frame(loaded)
     return loaded
 
 
