@@ -1,0 +1,3823 @@
+{
+  "diagnosis": {
+    "a_gt_part_is_thin": true,
+    "b_four_views_insufficient_for_base": true,
+    "c_legacy_global_gate_dropped_views": true,
+    "canonicalizer_requirement": "route low third-to-first extent ratios through planar-dominance and symmetry orientation, and record that branch in provenance",
+    "classification": [
+      "a",
+      "b",
+      "c"
+    ],
+    "corrected_per_view_gate_keeps_every_view": true,
+    "large_4_is_closer_to_gt_thickness_than_base_4": true,
+    "large_base_difference_is_upstream_prediction": "same rendered bytes, segmentation algorithm and fusion implementation; balanced and mask-only comparisons preserve the model-dependent gap",
+    "recommended_minimum_views_for_this_fixture": 8
+  },
+  "input": {
+    "gt_bbox_extents": [
+      40.0,
+      28.0,
+      6.0
+    ],
+    "gt_smallest_to_largest": 0.15,
+    "manifest": {
+      "camera_schedule": [
+        {
+          "azimuth_deg": 0.0,
+          "elevation_deg": 32.0
+        },
+        {
+          "azimuth_deg": 90.0,
+          "elevation_deg": 24.0
+        },
+        {
+          "azimuth_deg": 180.0,
+          "elevation_deg": 38.0
+        },
+        {
+          "azimuth_deg": 270.0,
+          "elevation_deg": 20.0
+        },
+        {
+          "azimuth_deg": 45.0,
+          "elevation_deg": 65.0
+        },
+        {
+          "azimuth_deg": 135.0,
+          "elevation_deg": 68.0
+        },
+        {
+          "azimuth_deg": 225.0,
+          "elevation_deg": 62.0
+        },
+        {
+          "azimuth_deg": 315.0,
+          "elevation_deg": 70.0
+        },
+        {
+          "azimuth_deg": 22.5,
+          "elevation_deg": 8.0
+        },
+        {
+          "azimuth_deg": 67.5,
+          "elevation_deg": 78.0
+        },
+        {
+          "azimuth_deg": 112.5,
+          "elevation_deg": 10.0
+        },
+        {
+          "azimuth_deg": 157.5,
+          "elevation_deg": 76.0
+        },
+        {
+          "azimuth_deg": 202.5,
+          "elevation_deg": 6.0
+        },
+        {
+          "azimuth_deg": 247.5,
+          "elevation_deg": 80.0
+        },
+        {
+          "azimuth_deg": 292.5,
+          "elevation_deg": 12.0
+        },
+        {
+          "azimuth_deg": 337.5,
+          "elevation_deg": 74.0
+        }
+      ],
+      "image_size": [
+        128,
+        128
+      ],
+      "nested_view_counts": [
+        4,
+        8,
+        16
+      ],
+      "parameters": {
+        "hole_diameter": 8.0,
+        "plate_height": 28.0,
+        "plate_thickness": 6.0,
+        "plate_width": 40.0
+      },
+      "purpose": "DA3 flatness gate before canonical orientation",
+      "renderer": "orthographic CPU triangle painter v1",
+      "schema_version": "1.0",
+      "seed": 0
+    },
+    "parameters": {
+      "hole_diameter": 8.0,
+      "plate_height": 28.0,
+      "plate_thickness": 6.0,
+      "plate_width": 40.0
+    },
+    "shape": "plate-with-through-hole"
+  },
+  "interpretation_contract": {
+    "balanced_comparison_isolates_view_count_dominance": true,
+    "legacy_global_comparison_reproduces_the_removed_gate": true,
+    "mask_only_comparison_isolates_confidence_gate": true,
+    "no_cad_quality_metric": true,
+    "pca_extents_are_used_for_shape_thickness": true,
+    "world_bbox_is_rotation_dependent": true
+  },
+  "repository_commit": "e63aaf7bfff670ac6a30e12200ec91987b7dffd1",
+  "runs": [
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 18292,
+        "shape": {
+          "pca_eigenvalues": [
+            0.009146487951157375,
+            0.007262980743027647,
+            0.003734688211360374
+          ],
+          "pca_extents": [
+            0.4262352080294203,
+            0.22689481829383584,
+            0.2740430746160123
+          ],
+          "pca_smallest_to_largest": 0.53232303202455,
+          "pca_variance_fractions": [
+            0.45405166342005004,
+            0.36055024675806874,
+            0.18539808982188122
+          ],
+          "point_count": 73168,
+          "robust_pca_1_99_extents": [
+            0.38518841861349545,
+            0.21335204060720464,
+            0.24696994511176015
+          ],
+          "robust_pca_smallest_to_largest": 0.5538900711895123,
+          "world_bbox_extents": [
+            0.4261949956417084,
+            0.2665953263640404,
+            0.1923280954360962
+          ],
+          "world_bbox_smallest_to_largest": 0.4512678407838033
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 2.8904714584350586,
+        "median": 1.0402913093566895,
+        "min": 1.0,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.4045050144195557,
+          1.0000001192092896,
+          2.11287784576416,
+          1.0000001192092896
+        ],
+        "largest_view_fraction": 0.30495362653331626,
+        "per_view": [
+          {
+            "fraction": 0.1998333119630722,
+            "shape": {
+              "pca_eigenvalues": [
+                0.011911760535450438,
+                0.0023419260732463983,
+                3.937620266588566e-06
+              ],
+              "pca_extents": [
+                0.43422483931538336,
+                0.20268584932733308,
+                0.01028567224544122
+              ],
+              "pca_smallest_to_largest": 0.023687434052962128,
+              "pca_variance_fractions": [
+                0.8354660176309375,
+                0.16425780590352002,
+                0.0002761764655425235
+              ],
+              "point_count": 18702,
+              "robust_pca_1_99_extents": [
+                0.40138513367890966,
+                0.18718355395529335,
+                0.00802705327553908
+              ],
+              "robust_pca_smallest_to_largest": 0.019998382107396056,
+              "world_bbox_extents": [
+                0.4261949956417084,
+                0.19552955776453018,
+                0.010800182819366455
+              ],
+              "world_bbox_smallest_to_largest": 0.025340942361617737
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.30495362653331626,
+            "shape": {
+              "pca_eigenvalues": [
+                0.00655337741438756,
+                0.00469120853051025,
+                1.3642986852550304e-05
+              ],
+              "pca_extents": [
+                0.333869560676151,
+                0.3063066459382371,
+                0.02275953298725189
+              ],
+              "pca_smallest_to_largest": 0.0681689368181975,
+              "pca_variance_fractions": [
+                0.5820966560651277,
+                0.4166915203935979,
+                0.0012118235412742824
+              ],
+              "point_count": 28540,
+              "robust_pca_1_99_extents": [
+                0.3007616912732155,
+                0.2655184226610975,
+                0.015478876918910454
+              ],
+              "robust_pca_smallest_to_largest": 0.051465586768659505,
+              "world_bbox_extents": [
+                0.2860414758324623,
+                0.26119378209114075,
+                0.02375328540802002
+              ],
+              "world_bbox_smallest_to_largest": 0.08304140278570156
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.195452408428431,
+            "shape": {
+              "pca_eigenvalues": [
+                0.011696388635707676,
+                0.0027459555217812636,
+                1.9498258492468216e-06
+              ],
+              "pca_extents": [
+                0.42268504421650666,
+                0.21614350623598189,
+                0.008704378925193245
+              ],
+              "pca_smallest_to_largest": 0.02059306106116854,
+              "pca_variance_fractions": [
+                0.8097584173514968,
+                0.1901065932989722,
+                0.0001349893495311013
+              ],
+              "point_count": 18292,
+              "robust_pca_1_99_extents": [
+                0.4013078270440218,
+                0.19284176310485318,
+                0.006952416610274676
+              ],
+              "robust_pca_smallest_to_largest": 0.017324398234355953,
+              "world_bbox_extents": [
+                0.4112853556871414,
+                0.18972745537757874,
+                0.014678597450256348
+              ],
+              "world_bbox_smallest_to_largest": 0.03568956989906087
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.29976065307518057,
+            "shape": {
+              "pca_eigenvalues": [
+                0.006412455531981914,
+                0.004818536380241046,
+                1.7064851543526676e-05
+              ],
+              "pca_extents": [
+                0.28875344071141995,
+                0.262504631368721,
+                0.02719055296514746
+              ],
+              "pca_smallest_to_largest": 0.09416529513260999,
+              "pca_variance_fractions": [
+                0.5700945209165766,
+                0.4283883413322611,
+                0.001517137751162308
+              ],
+              "point_count": 28054,
+              "robust_pca_1_99_extents": [
+                0.2801410656861022,
+                0.2530657996702998,
+                0.016632804594681194
+              ],
+              "robust_pca_smallest_to_largest": 0.0593729610971004,
+              "world_bbox_extents": [
+                0.2885248214006424,
+                0.2614039108157158,
+                0.030020833015441895
+              ],
+              "world_bbox_smallest_to_largest": 0.10404939467497425
+            },
+            "view_index": 3
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.00856568299517213,
+            0.006949798706129056,
+            0.00396730909556782
+          ],
+          "pca_extents": [
+            0.42366076475881226,
+            0.2293566301416255,
+            0.2704363677323793
+          ],
+          "pca_smallest_to_largest": 0.5413685883142777,
+          "pca_variance_fractions": [
+            0.4396537993185598,
+            0.3567147426972283,
+            0.2036314579842118
+          ],
+          "point_count": 93588,
+          "robust_pca_1_99_extents": [
+            0.37983993319500486,
+            0.2152814368191077,
+            0.2490203767006383
+          ],
+          "robust_pca_smallest_to_largest": 0.5667688360417465,
+          "world_bbox_extents": [
+            0.4261949956417084,
+            0.26659751683473587,
+            0.1923280954360962
+          ],
+          "world_bbox_smallest_to_largest": 0.4512678407838033
+        },
+        "view_counts": [
+          18702,
+          28540,
+          18292,
+          28054
+        ],
+        "view_fractions": [
+          0.1998333119630722,
+          0.30495362653331626,
+          0.195452408428431,
+          0.29976065307518057
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 0.9919337034225464,
+        "median": 0.9630030393600464,
+        "min": 0.8745056390762329,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "da01912fa0c17973b41e50e59daf388c10cef3ae702dd93b3a5bb06eb06050ba",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.000000238418579,
+        "shape": {
+          "pca_eigenvalues": [
+            0.013125291509784073,
+            0.006122495989800234,
+            0.003071275892660344
+          ],
+          "pca_extents": [
+            0.4235770426964118,
+            0.2629748469143842,
+            0.25898591095854506
+          ],
+          "pca_smallest_to_largest": 0.611425749870412,
+          "pca_variance_fractions": [
+            0.588075372120893,
+            0.2743168869679208,
+            0.13760774091118627
+          ],
+          "point_count": 91266,
+          "robust_pca_1_99_extents": [
+            0.4006318945086632,
+            0.23961915151665025,
+            0.21618532702732196
+          ],
+          "robust_pca_smallest_to_largest": 0.539610874696965,
+          "world_bbox_extents": [
+            0.426279753446579,
+            0.259950689971447,
+            0.19168376922607422
+          ],
+          "world_bbox_smallest_to_largest": 0.449666604327939
+        },
+        "view_counts": [
+          31168,
+          14953,
+          30486,
+          14659
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 0,
+        "baseline_reserved_bytes": 0,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15730081792,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.2790135709801689,
+        "load_seconds": 0.34510465094354004,
+        "model_parameter_bytes": 541466396,
+        "model_parameters": 135366599,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 932805632,
+        "peak_reserved_bytes": 1235222528,
+        "post_unload_allocated_bytes": 36078592,
+        "post_unload_reserved_bytes": 79691776,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.04522692097816616,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.36351661302614957
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.01114616027737694,
+            0.007472933392372957,
+            0.004197155654075821
+          ],
+          "pca_extents": [
+            0.42477318773492867,
+            0.3412190716485518,
+            0.2613390240512679
+          ],
+          "pca_smallest_to_largest": 0.6152436914505803,
+          "pca_variance_fractions": [
+            0.4885185167457665,
+            0.32752681154169344,
+            0.1839546717125399
+          ],
+          "point_count": 127834,
+          "robust_pca_1_99_extents": [
+            0.3956697655153333,
+            0.3017516704772559,
+            0.23943744114895993
+          ],
+          "robust_pca_smallest_to_largest": 0.605144648434557,
+          "world_bbox_extents": [
+            0.426279753446579,
+            0.2666143402457237,
+            0.19327282905578613
+          ],
+          "world_bbox_smallest_to_largest": 0.45339434372176185
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060
+        ]
+      },
+      "model": "base",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          4,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          355482.25,
+          403362.25,
+          378175.46875,
+          423237.3125
+        ],
+        "intrinsic_shape": [
+          4,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 4.614427151494738e-08,
+        "rotation_determinants": [
+          1.0000000169431584,
+          1.0000000450464896,
+          1.0000000371153477,
+          0.9999999884652282
+        ]
+      },
+      "views": 4
+    },
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 18296,
+        "shape": {
+          "pca_eigenvalues": [
+            0.006036612704982208,
+            0.0037331229498432086,
+            5.575830224678603e-05
+          ],
+          "pca_extents": [
+            0.3646587321405664,
+            0.28454581919736965,
+            0.041045034464292064
+          ],
+          "pca_smallest_to_largest": 0.11255738817319828,
+          "pca_variance_fractions": [
+            0.6143826184572806,
+            0.3799425215824572,
+            0.0056748599602620756
+          ],
+          "point_count": 73184,
+          "robust_pca_1_99_extents": [
+            0.311726717531092,
+            0.24524774550769082,
+            0.030812953481725493
+          ],
+          "robust_pca_smallest_to_largest": 0.09884604606806657,
+          "world_bbox_extents": [
+            0.3528739660978317,
+            0.26234472543001175,
+            0.06748372316360474
+          ],
+          "world_bbox_smallest_to_largest": 0.19124030007046586
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 1.3614968061447144,
+        "median": 1.000044822692871,
+        "min": 1.0,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.0323680877685546,
+          1.0000005960464478,
+          1.0006214380264282,
+          1.0000004768371582
+        ],
+        "largest_view_fraction": 0.2782882646363875,
+        "per_view": [
+          {
+            "fraction": 0.23379464676393005,
+            "shape": {
+              "pca_eigenvalues": [
+                0.006937893034823231,
+                0.0015512449207273258,
+                6.867156306229489e-06
+              ],
+              "pca_extents": [
+                0.33859561901187724,
+                0.1856751969951777,
+                0.015720689115172635
+              ],
+              "pca_smallest_to_largest": 0.0464290978160033,
+              "pca_variance_fractions": [
+                0.8166065042899872,
+                0.18258521508684736,
+                0.0008082806231655722
+              ],
+              "point_count": 18701,
+              "robust_pca_1_99_extents": [
+                0.3219109877437355,
+                0.14763239863721922,
+                0.010754008474828127
+              ],
+              "robust_pca_smallest_to_largest": 0.03340677666892532,
+              "world_bbox_extents": [
+                0.3387291878461838,
+                0.1824677735567093,
+                0.02875995635986328
+              ],
+              "world_bbox_smallest_to_largest": 0.08490545660601034
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.2782882646363875,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0056557188698969614,
+                0.004037010756575177,
+                2.3588474273947265e-05
+              ],
+              "pca_extents": [
+                0.33585116331624154,
+                0.2948178950764434,
+                0.027646152529354824
+              ],
+              "pca_smallest_to_largest": 0.08231667937777208,
+              "pca_variance_fractions": [
+                0.5820845727007101,
+                0.41548770992431666,
+                0.002427717374973137
+              ],
+              "point_count": 22260,
+              "robust_pca_1_99_extents": [
+                0.29762371066264015,
+                0.254211153067672,
+                0.01992518784361931
+              ],
+              "robust_pca_smallest_to_largest": 0.06694758223145983,
+              "world_bbox_extents": [
+                0.27154333889484406,
+                0.262392520904541,
+                0.0641515851020813
+              ],
+              "world_bbox_smallest_to_largest": 0.23624805293759824
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.228731450574454,
+            "shape": {
+              "pca_eigenvalues": [
+                0.006605207645391667,
+                0.002124975985598031,
+                6.795031840260616e-06
+              ],
+              "pca_extents": [
+                0.3561897530359912,
+                0.18756559130746825,
+                0.021176726665846888
+              ],
+              "pca_smallest_to_largest": 0.05945349770830461,
+              "pca_variance_fractions": [
+                0.7560059261094958,
+                0.24321634143830434,
+                0.0007777324521998621
+              ],
+              "point_count": 18296,
+              "robust_pca_1_99_extents": [
+                0.32423778976135353,
+                0.16687367230642042,
+                0.013934679734676186
+              ],
+              "robust_pca_smallest_to_largest": 0.042976729347101804,
+              "world_bbox_extents": [
+                0.3528739660978317,
+                0.17581531405448914,
+                0.018285274505615234
+              ],
+              "world_bbox_smallest_to_largest": 0.051818145463714306
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.2591856380252285,
+            "shape": {
+              "pca_eigenvalues": [
+                0.005114004323559128,
+                0.004240973319606594,
+                1.5857419056763595e-05
+              ],
+              "pca_extents": [
+                0.32411164829660644,
+                0.30702598022567607,
+                0.027285028199838496
+              ],
+              "pca_smallest_to_largest": 0.08418404072558654,
+              "pca_variance_fractions": [
+                0.5457362433125823,
+                0.45257154687351414,
+                0.0016922098139034666
+              ],
+              "point_count": 20732,
+              "robust_pca_1_99_extents": [
+                0.2783567703718901,
+                0.2688611432707428,
+                0.0157269613176848
+              ],
+              "robust_pca_smallest_to_largest": 0.056499295119257456,
+              "world_bbox_extents": [
+                0.27358468621969223,
+                0.25680437684059143,
+                0.06307464838027954
+              ],
+              "world_bbox_smallest_to_largest": 0.23054889969108044
+            },
+            "view_index": 3
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.005961812491715648,
+            0.0038085787140128857,
+            5.580207394944629e-05
+          ],
+          "pca_extents": [
+            0.36813080672353315,
+            0.29008439888951654,
+            0.04132902677659434
+          ],
+          "pca_smallest_to_largest": 0.11226723224941212,
+          "pca_variance_fractions": [
+            0.6067265646041746,
+            0.3875945247168697,
+            0.005678910678955729
+          ],
+          "point_count": 79989,
+          "robust_pca_1_99_extents": [
+            0.3105068240385742,
+            0.24777552453345356,
+            0.03048137680767973
+          ],
+          "robust_pca_smallest_to_largest": 0.09816652790823377,
+          "world_bbox_extents": [
+            0.3528739660978317,
+            0.262392520904541,
+            0.06748372316360474
+          ],
+          "world_bbox_smallest_to_largest": 0.19124030007046586
+        },
+        "view_counts": [
+          18701,
+          22260,
+          18296,
+          20732
+        ],
+        "view_fractions": [
+          0.23379464676393005,
+          0.2782882646363875,
+          0.228731450574454,
+          0.2591856380252285
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 0.9921762347221375,
+        "median": 0.9300215244293213,
+        "min": 0.8755991458892822,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "da01912fa0c17973b41e50e59daf388c10cef3ae702dd93b3a5bb06eb06050ba",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.0000017881393433,
+        "shape": {
+          "pca_eigenvalues": [
+            0.008637288370635739,
+            0.003929991522448459,
+            2.8223267595366087e-05
+          ],
+          "pca_extents": [
+            0.3546552435694681,
+            0.24426347497370138,
+            0.04033326369203517
+          ],
+          "pca_smallest_to_largest": 0.11372527101558248,
+          "pca_variance_fractions": [
+            0.6857438135222327,
+            0.3120154449023555,
+            0.002240741575411852
+          ],
+          "point_count": 77193,
+          "robust_pca_1_99_extents": [
+            0.33863188035668346,
+            0.2304256167510491,
+            0.02391721446188782
+          ],
+          "robust_pca_smallest_to_largest": 0.07062895093248646,
+          "world_bbox_extents": [
+            0.3545587658882141,
+            0.24417587369680405,
+            0.046288490295410156
+          ],
+          "world_bbox_smallest_to_largest": 0.13055237875575207
+        },
+        "view_counts": [
+          31168,
+          8515,
+          30486,
+          7024
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 79691776,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15585378304,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.0629434649599716,
+        "load_seconds": 0.9548559350660071,
+        "model_parameter_bytes": 1643767068,
+        "model_parameters": 410941767,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 2351683584,
+        "peak_reserved_bytes": 2891972608,
+        "post_unload_allocated_bytes": 36373504,
+        "post_unload_reserved_bytes": 73400320,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.0940663490910083,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.3601029289420694
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.008050195941810695,
+            0.00530228949343306,
+            6.127514095596923e-05
+          ],
+          "pca_extents": [
+            0.3551760755934608,
+            0.3120411534121286,
+            0.04902266504202235
+          ],
+          "pca_smallest_to_largest": 0.1380235562322456,
+          "pca_variance_fractions": [
+            0.600144597488515,
+            0.39528732180004816,
+            0.004568080711436792
+          ],
+          "point_count": 127834,
+          "robust_pca_1_99_extents": [
+            0.33264001196208587,
+            0.28869726028680254,
+            0.033186193905669056
+          ],
+          "robust_pca_smallest_to_largest": 0.09976609160731872,
+          "world_bbox_extents": [
+            0.3545587658882141,
+            0.3058414161205292,
+            0.07025343179702759
+          ],
+          "world_bbox_smallest_to_largest": 0.19814326581669456
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060
+        ]
+      },
+      "model": "large",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          4,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          436665.03125,
+          370840.96875,
+          401411.21875,
+          367006.0625
+        ],
+        "intrinsic_shape": [
+          4,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 5.621330512184386e-08,
+        "rotation_determinants": [
+          0.999999996614122,
+          0.9999999723914184,
+          0.9999999613822427,
+          0.9999999970902768
+        ]
+      },
+      "views": 4
+    },
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 8302,
+        "shape": {
+          "pca_eigenvalues": [
+            0.028207408252251452,
+            0.013856393547729207,
+            0.000488006943321979
+          ],
+          "pca_extents": [
+            0.7212452913854086,
+            0.6054807866064081,
+            0.1164426998138346
+          ],
+          "pca_smallest_to_largest": 0.16144673830752487,
+          "pca_variance_fractions": [
+            0.6628956344115713,
+            0.32563582975565303,
+            0.011468535832775566
+          ],
+          "point_count": 66416,
+          "robust_pca_1_99_extents": [
+            0.6693164948715227,
+            0.5153035248598687,
+            0.09106241917875627
+          ],
+          "robust_pca_smallest_to_largest": 0.13605285373436968,
+          "world_bbox_extents": [
+            0.617033377289772,
+            0.31614556163549423,
+            0.6804601550102234
+          ],
+          "world_bbox_smallest_to_largest": 0.46460554568510243
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 3.1836650371551514,
+        "median": 1.0265095233917236,
+        "min": 1.0000159740447998,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.0857096910476685,
+          1.1333616495132446,
+          1.1235265731811523,
+          1.1384097814559937,
+          1.1924048900604247,
+          1.0521653652191163,
+          2.570035457611084,
+          1.0239784717559814
+        ],
+        "largest_view_fraction": 0.17601417183348095,
+        "per_view": [
+          {
+            "fraction": 0.16565101860053144,
+            "shape": {
+              "pca_eigenvalues": [
+                0.008302604073171748,
+                0.0018790480522939792,
+                1.57292860586572e-05
+              ],
+              "pca_extents": [
+                0.37387928608168863,
+                0.17845149180432102,
+                0.03001491122432197
+              ],
+              "pca_smallest_to_largest": 0.08027968475836886,
+              "pca_variance_fractions": [
+                0.8141898138465932,
+                0.18426770329198508,
+                0.0015424828614217603
+              ],
+              "point_count": 18702,
+              "robust_pca_1_99_extents": [
+                0.3468643673270587,
+                0.16887598641549478,
+                0.020448111901948347
+              ],
+              "robust_pca_smallest_to_largest": 0.058951318809486716,
+              "world_bbox_extents": [
+                0.35717303305864334,
+                0.15492184087634087,
+                0.2203083038330078
+              ],
+              "world_bbox_smallest_to_largest": 0.4337445062682116
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.17601417183348095,
+            "shape": {
+              "pca_eigenvalues": [
+                0.005509384777326085,
+                0.0031840269017120366,
+                6.3741648793037275e-06
+              ],
+              "pca_extents": [
+                0.28243510423007734,
+                0.2520811254313663,
+                0.016221767692435437
+              ],
+              "pca_smallest_to_largest": 0.05743538055106938,
+              "pca_variance_fractions": [
+                0.6332782066328733,
+                0.365989112701917,
+                0.0007326806652097433
+              ],
+              "point_count": 19872,
+              "robust_pca_1_99_extents": [
+                0.26258547766455587,
+                0.20800225342799827,
+                0.012438491337470749
+              ],
+              "robust_pca_smallest_to_largest": 0.04736930407613975,
+              "world_bbox_extents": [
+                0.3311568908393383,
+                0.17342971405014396,
+                0.20736443996429443
+              ],
+              "world_bbox_smallest_to_largest": 0.5237086071516593
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.16201948627103632,
+            "shape": {
+              "pca_eigenvalues": [
+                0.007879506539189451,
+                0.001928105230397451,
+                1.2185665950546948e-05
+              ],
+              "pca_extents": [
+                0.38075562161757015,
+                0.17647957577036216,
+                0.02488564877965152
+              ],
+              "pca_smallest_to_largest": 0.06535858531498347,
+              "pca_variance_fractions": [
+                0.8024102931771113,
+                0.19634877837904438,
+                0.00124092844384422
+              ],
+              "point_count": 18292,
+              "robust_pca_1_99_extents": [
+                0.35335596908824174,
+                0.16388707259037277,
+                0.01757237703298839
+              ],
+              "robust_pca_smallest_to_largest": 0.04972995667323829,
+              "world_bbox_extents": [
+                0.36649610847234726,
+                0.1420617438852787,
+                0.21763944625854492
+              ],
+              "world_bbox_smallest_to_largest": 0.38762142516991416
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.17569530558015944,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0056038802747555095,
+                0.0028058934660380066,
+                4.335442496293705e-06
+              ],
+              "pca_extents": [
+                0.2805514701413876,
+                0.22648334436397888,
+                0.013644447236197638
+              ],
+              "pca_smallest_to_largest": 0.04863438152479237,
+              "pca_variance_fractions": [
+                0.6660099307820562,
+                0.33347481057298783,
+                0.0005152586449559955
+              ],
+              "point_count": 19836,
+              "robust_pca_1_99_extents": [
+                0.2619673578474658,
+                0.19373357837142985,
+                0.009113509658203043
+              ],
+              "robust_pca_smallest_to_largest": 0.03478872227855775,
+              "world_bbox_extents": [
+                0.31747104972600937,
+                0.18224451504647732,
+                0.21272969245910645
+              ],
+              "world_bbox_smallest_to_largest": 0.5740508156688992
+            },
+            "view_index": 3
+          },
+          {
+            "fraction": 0.08300265721877768,
+            "shape": {
+              "pca_eigenvalues": [
+                0.00466379811683776,
+                0.0009307330442329342,
+                8.383730302615681e-05
+              ],
+              "pca_extents": [
+                0.2939467631625005,
+                0.13807442803854753,
+                0.03974800120043057
+              ],
+              "pca_smallest_to_largest": 0.13522176863861898,
+              "pca_variance_fractions": [
+                0.8213271375970035,
+                0.1639085329030278,
+                0.014764329499968648
+              ],
+              "point_count": 9371,
+              "robust_pca_1_99_extents": [
+                0.26508256514111894,
+                0.12022255009871041,
+                0.03389373685229064
+              ],
+              "robust_pca_smallest_to_largest": 0.12786105655136928,
+              "world_bbox_extents": [
+                0.2818578667938709,
+                0.12049630284309387,
+                0.1239708662033081
+              ],
+              "world_bbox_smallest_to_largest": 0.4275073256380513
+            },
+            "view_index": 4
+          },
+          {
+            "fraction": 0.07606731620903455,
+            "shape": {
+              "pca_eigenvalues": [
+                0.009402262021797676,
+                0.0006142667992740308,
+                5.998412814980278e-05
+              ],
+              "pca_extents": [
+                0.3436460394520521,
+                0.11198793988279858,
+                0.04778591414945498
+              ],
+              "pca_smallest_to_largest": 0.13905562312212363,
+              "pca_variance_fractions": [
+                0.9330868792784189,
+                0.060960255037581006,
+                0.005952865684000042
+              ],
+              "point_count": 8588,
+              "robust_pca_1_99_extents": [
+                0.3232141188827316,
+                0.1007450015464237,
+                0.030127117202383563
+              ],
+              "robust_pca_smallest_to_largest": 0.09321101846208107,
+              "world_bbox_extents": [
+                0.23789891600608826,
+                0.13535823300480843,
+                0.24422383308410645
+              ],
+              "world_bbox_smallest_to_largest": 0.5542384266739168
+            },
+            "view_index": 5
+          },
+          {
+            "fraction": 0.08801594331266607,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004112948929998946,
+                0.0012502019403716881,
+                6.196139906951605e-05
+              ],
+              "pca_extents": [
+                0.28502530160707085,
+                0.17077402594022023,
+                0.03807473350538705
+              ],
+              "pca_smallest_to_largest": 0.13358369692342606,
+              "pca_variance_fractions": [
+                0.7581315788001906,
+                0.23044720151030237,
+                0.011421219689507038
+              ],
+              "point_count": 9937,
+              "robust_pca_1_99_extents": [
+                0.2523468098896378,
+                0.14923627455565364,
+                0.03236487022591264
+              ],
+              "robust_pca_smallest_to_largest": 0.12825551565350557,
+              "world_bbox_extents": [
+                0.28402744233608246,
+                0.10419211909174919,
+                0.13600307703018188
+              ],
+              "world_bbox_smallest_to_largest": 0.36683821195158073
+            },
+            "view_index": 6
+          },
+          {
+            "fraction": 0.07353410097431355,
+            "shape": {
+              "pca_eigenvalues": [
+                0.010215408484174841,
+                0.0006576724219783356,
+                9.853577845803641e-05
+              ],
+              "pca_extents": [
+                0.3439316947353682,
+                0.11456248941297817,
+                0.054243168080047824
+              ],
+              "pca_smallest_to_largest": 0.1577149443053924,
+              "pca_variance_fractions": [
+                0.9310759551509825,
+                0.05994307319365129,
+                0.00898097165536622
+              ],
+              "point_count": 8302,
+              "robust_pca_1_99_extents": [
+                0.3272273515864725,
+                0.10176161393656517,
+                0.04324574916190537
+              ],
+              "robust_pca_smallest_to_largest": 0.13215811255458984,
+              "world_bbox_extents": [
+                0.2550865262746811,
+                0.13773691467940807,
+                0.2346731424331665
+              ],
+              "world_bbox_smallest_to_largest": 0.5399615443862795
+            },
+            "view_index": 7
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.022716008784079863,
+            0.01126288668149284,
+            0.000468857371390608
+          ],
+          "pca_extents": [
+            0.7217795602198758,
+            0.6147930106134507,
+            0.11587081911708139
+          ],
+          "pca_smallest_to_largest": 0.16053491329372593,
+          "pca_variance_fractions": [
+            0.6594336905397501,
+            0.32695562856592136,
+            0.013610680894328531
+          ],
+          "point_count": 112900,
+          "robust_pca_1_99_extents": [
+            0.6585034766756117,
+            0.49286933091230933,
+            0.09104625304399419
+          ],
+          "robust_pca_smallest_to_largest": 0.13826237259009172,
+          "world_bbox_extents": [
+            0.617033377289772,
+            0.31710565090179443,
+            0.6809337735176086
+          ],
+          "world_bbox_smallest_to_largest": 0.4656923525230229
+        },
+        "view_counts": [
+          18702,
+          19872,
+          18292,
+          19836,
+          9371,
+          8588,
+          9937,
+          8302
+        ],
+        "view_fractions": [
+          0.16565101860053144,
+          0.17601417183348095,
+          0.16201948627103632,
+          0.17569530558015944,
+          0.08300265721877768,
+          0.07606731620903455,
+          0.08801594331266607,
+          0.07353410097431355
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 1.1754363775253296,
+        "median": 0.9518872499465942,
+        "min": 0.8532989621162415,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "fd31f6d2693080fa42f3b551e6f6cbab3158462ccba30ccc8ed600e6a0ca8bff",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.1079551935195924,
+        "shape": {
+          "pca_eigenvalues": [
+            0.02990440054272258,
+            0.010803876683688908,
+            0.0005703768425655435
+          ],
+          "pca_extents": [
+            0.7405861187653937,
+            0.6135839423419147,
+            0.13219800502272472
+          ],
+          "pca_smallest_to_largest": 0.17850456776466128,
+          "pca_variance_fractions": [
+            0.7244519284168529,
+            0.2617303525845471,
+            0.013817718998600058
+          ],
+          "point_count": 112897,
+          "robust_pca_1_99_extents": [
+            0.6860447819026197,
+            0.4767785739750998,
+            0.09689961614876666
+          ],
+          "robust_pca_smallest_to_largest": 0.1412438644020195,
+          "world_bbox_extents": [
+            0.6264539361000061,
+            0.34845296293497086,
+            0.6911994814872742
+          ],
+          "world_bbox_smallest_to_largest": 0.5041279287206559
+        },
+        "view_counts": [
+          12695,
+          23816,
+          21214,
+          23541,
+          13270,
+          1800,
+          16561,
+          0
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 73400320,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15589572608,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.058959341957233846,
+        "load_seconds": 0.274778277031146,
+        "model_parameter_bytes": 541466396,
+        "model_parameters": 135366599,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 1288875008,
+        "peak_reserved_bytes": 1879048192,
+        "post_unload_allocated_bytes": 38910976,
+        "post_unload_reserved_bytes": 79691776,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.034831447061151266,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.29379092797171324
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.021791437610144328,
+            0.014024455274941255,
+            0.0008144359482432884
+          ],
+          "pca_extents": [
+            0.7522495655500279,
+            0.6956733883010593,
+            0.16904366189205622
+          ],
+          "pca_smallest_to_largest": 0.22471752678043133,
+          "pca_variance_fractions": [
+            0.5949015011385027,
+            0.38286457483779973,
+            0.022233924023697456
+          ],
+          "point_count": 188162,
+          "robust_pca_1_99_extents": [
+            0.6790688509310399,
+            0.5407943935753872,
+            0.12513980622123902
+          ],
+          "robust_pca_smallest_to_largest": 0.18428147020683636,
+          "world_bbox_extents": [
+            0.6689120233058929,
+            0.3633892759680748,
+            0.6964849829673767
+          ],
+          "world_bbox_smallest_to_largest": 0.5217474674326121
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060,
+          15618,
+          14313,
+          16561,
+          13836
+        ]
+      },
+      "model": "base",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          8,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          391976.21875,
+          400240.875,
+          390863.5,
+          403566.125,
+          415835.625,
+          424899.5,
+          511544.9375,
+          443750.625
+        ],
+        "intrinsic_shape": [
+          8,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 1.309081456568606e-07,
+        "rotation_determinants": [
+          1.0000001048460043,
+          1.000000037151528,
+          1.0000000922621415,
+          0.9999999710191235,
+          1.0000000202608061,
+          0.9999999658985407,
+          1.0000000616344196,
+          1.0000000460292546
+        ]
+      },
+      "views": 8
+    },
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 8302,
+        "shape": {
+          "pca_eigenvalues": [
+            0.08243845498123623,
+            0.00505837369152994,
+            0.0010790542481051034
+          ],
+          "pca_extents": [
+            0.9446273134879534,
+            0.33070369770838937,
+            0.1349335423771347
+          ],
+          "pca_smallest_to_largest": 0.14284315142117207,
+          "pca_variance_fractions": [
+            0.9307099434152085,
+            0.057107798700113524,
+            0.012182257884678046
+          ],
+          "point_count": 66416,
+          "robust_pca_1_99_extents": [
+            0.8903237764697537,
+            0.29082033906717486,
+            0.12126899470243765
+          ],
+          "robust_pca_smallest_to_largest": 0.13620774588687787,
+          "world_bbox_extents": [
+            0.4595998153090477,
+            0.6782980412244797,
+            0.6173083186149597
+          ],
+          "world_bbox_smallest_to_largest": 0.6775779780807966
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 1.950233817100525,
+        "median": 1.001582384109497,
+        "min": 1.0,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.4779701471328734,
+          1.0394186973571777,
+          1.573052167892456,
+          1.0209765434265137,
+          1.0005835056304933,
+          1.0011643409729003,
+          1.00163733959198,
+          1.0010994672775269
+        ],
+        "largest_view_fraction": 0.17601417183348095,
+        "per_view": [
+          {
+            "fraction": 0.16564216120460584,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004597913521624966,
+                0.0016074451876237888,
+                3.831852142513158e-06
+              ],
+              "pca_extents": [
+                0.26255489841381574,
+                0.19932319332022555,
+                0.015001383346631331
+              ],
+              "pca_smallest_to_largest": 0.05713617775657524,
+              "pca_variance_fractions": [
+                0.74050127406538,
+                0.2588816000621529,
+                0.0006171258724671144
+              ],
+              "point_count": 18701,
+              "robust_pca_1_99_extents": [
+                0.23717186816783015,
+                0.15890374066261997,
+                0.01000360906227232
+              ],
+              "robust_pca_smallest_to_largest": 0.04217873367339442,
+              "world_bbox_extents": [
+                0.2196166217327118,
+                0.10377522930502892,
+                0.14483630657196045
+              ],
+              "world_bbox_smallest_to_largest": 0.4725290302995843
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.17601417183348095,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0027844687958144205,
+                0.001333975230420274,
+                3.214699509552096e-06
+              ],
+              "pca_extents": [
+                0.21190307953232346,
+                0.16175856418476942,
+                0.01102126213896813
+              ],
+              "pca_smallest_to_largest": 0.05201086347254788,
+              "pca_variance_fractions": [
+                0.6755699540144798,
+                0.32365009312589277,
+                0.0007799528596273139
+              ],
+              "point_count": 19872,
+              "robust_pca_1_99_extents": [
+                0.18950315908025078,
+                0.13764339258822544,
+                0.0077442344672862505
+              ],
+              "robust_pca_smallest_to_largest": 0.04086599138965658,
+              "world_bbox_extents": [
+                0.15878329053521156,
+                0.13112568855285645,
+                0.14974743127822876
+              ],
+              "world_bbox_smallest_to_largest": 0.8258154123829433
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.16201948627103632,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004185746949213504,
+                0.0012654623348291412,
+                3.6039610782637514e-06
+              ],
+              "pca_extents": [
+                0.26126948973884456,
+                0.16424352562672564,
+                0.017398744495434444
+              ],
+              "pca_smallest_to_largest": 0.06659309708464464,
+              "pca_variance_fractions": [
+                0.7673492677237798,
+                0.23199003851525837,
+                0.0006606937609619058
+              ],
+              "point_count": 18292,
+              "robust_pca_1_99_extents": [
+                0.23891351877784267,
+                0.14653341954810445,
+                0.008005104911627065
+              ],
+              "robust_pca_smallest_to_largest": 0.033506286930003036,
+              "world_bbox_extents": [
+                0.21705212444067,
+                0.1081552729010582,
+                0.14805620908737183
+              ],
+              "world_bbox_smallest_to_largest": 0.4982917038004935
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.17569530558015944,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002742655247776784,
+                0.001393348425046706,
+                3.0960336642081116e-06
+              ],
+              "pca_extents": [
+                0.20066182660344942,
+                0.155847933068183,
+                0.011152832002166864
+              ],
+              "pca_smallest_to_largest": 0.055580237611447834,
+              "pca_variance_fractions": [
+                0.6626212080559205,
+                0.3366307950646241,
+                0.0007479968794555333
+              ],
+              "point_count": 19836,
+              "robust_pca_1_99_extents": [
+                0.1826590912062687,
+                0.13773784286140878,
+                0.008237628461107382
+              ],
+              "robust_pca_smallest_to_largest": 0.045098376471199006,
+              "world_bbox_extents": [
+                0.15159455686807632,
+                0.13511036336421967,
+                0.1438503861427307
+              ],
+              "world_bbox_smallest_to_largest": 0.8912613101392429
+            },
+            "view_index": 3
+          },
+          {
+            "fraction": 0.08300265721877768,
+            "shape": {
+              "pca_eigenvalues": [
+                0.003085847327927714,
+                0.0014663944407427199,
+                2.103528157095804e-06
+              ],
+              "pca_extents": [
+                0.2287903093867154,
+                0.14985729154578448,
+                0.009070947814378288
+              ],
+              "pca_smallest_to_largest": 0.039647430167359124,
+              "pca_variance_fractions": [
+                0.6775611260914398,
+                0.3219770011211452,
+                0.0004618727874149291
+              ],
+              "point_count": 9371,
+              "robust_pca_1_99_extents": [
+                0.21283222082263292,
+                0.13483399078828773,
+                0.006507890735957407
+              ],
+              "robust_pca_smallest_to_largest": 0.030577563447880665,
+              "world_bbox_extents": [
+                0.19064556062221527,
+                0.14626526087522507,
+                0.14986836910247803
+              ],
+              "world_bbox_smallest_to_largest": 0.7672104212542639
+            },
+            "view_index": 4
+          },
+          {
+            "fraction": 0.07606731620903455,
+            "shape": {
+              "pca_eigenvalues": [
+                0.003465002186140104,
+                0.0010010789795136918,
+                2.4390382076528926e-06
+              ],
+              "pca_extents": [
+                0.23093018282399433,
+                0.13891546826183976,
+                0.012450594078683135
+              ],
+              "pca_smallest_to_largest": 0.05391497086447325,
+              "pca_variance_fractions": [
+                0.7754249792013561,
+                0.22402919397088422,
+                0.0005458268277594918
+              ],
+              "point_count": 8588,
+              "robust_pca_1_99_extents": [
+                0.2115111181908891,
+                0.1230306677751998,
+                0.0074674254484331844
+              ],
+              "robust_pca_smallest_to_largest": 0.035305120186135186,
+              "world_bbox_extents": [
+                0.20763669908046722,
+                0.12079200148582458,
+                0.14029669761657715
+              ],
+              "world_bbox_smallest_to_largest": 0.5817468781807836
+            },
+            "view_index": 5
+          },
+          {
+            "fraction": 0.08802480070859167,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0031720621189724445,
+                0.0013278210100251403,
+                2.5167735846636246e-06
+              ],
+              "pca_extents": [
+                0.2256892826760007,
+                0.14426072141482377,
+                0.012514701378193603
+              ],
+              "pca_smallest_to_largest": 0.055451021997175186,
+              "pca_variance_fractions": [
+                0.7045269606445178,
+                0.29491405444984997,
+                0.0005589849056322578
+              ],
+              "point_count": 9938,
+              "robust_pca_1_99_extents": [
+                0.20879673263735996,
+                0.13099660581980763,
+                0.007607524162846685
+              ],
+              "robust_pca_smallest_to_largest": 0.036435072842157454,
+              "world_bbox_extents": [
+                0.19491204619407654,
+                0.14179684221744537,
+                0.15782082080841064
+              ],
+              "world_bbox_smallest_to_largest": 0.7274914249079113
+            },
+            "view_index": 6
+          },
+          {
+            "fraction": 0.07353410097431355,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0029542108258084243,
+                0.0012284249200036764,
+                1.8115285765530126e-06
+              ],
+              "pca_extents": [
+                0.21998750333198175,
+                0.15529475667373935,
+                0.010169183895206813
+              ],
+              "pca_smallest_to_largest": 0.046226188947926565,
+              "pca_variance_fractions": [
+                0.705997861148826,
+                0.29356921940978425,
+                0.0004329194413897057
+              ],
+              "point_count": 8302,
+              "robust_pca_1_99_extents": [
+                0.20265014290798322,
+                0.13138839078399384,
+                0.006234661842823239
+              ],
+              "robust_pca_smallest_to_largest": 0.030765642468133833,
+              "world_bbox_extents": [
+                0.1901395618915558,
+                0.13766008615493774,
+                0.13816463947296143
+              ],
+              "world_bbox_smallest_to_largest": 0.7239949686717528
+            },
+            "view_index": 7
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.06510867347651743,
+            0.00433817823833969,
+            0.0011649517516793431
+          ],
+          "pca_extents": [
+            0.943751228781901,
+            0.3393181491715503,
+            0.1360060210037491
+          ],
+          "pca_smallest_to_largest": 0.14411215249943776,
+          "pca_variance_fractions": [
+            0.92206501293191,
+            0.061437012303411705,
+            0.016497974764678312
+          ],
+          "point_count": 112900,
+          "robust_pca_1_99_extents": [
+            0.8846480316677646,
+            0.28383199628277855,
+            0.11696178276687276
+          ],
+          "robust_pca_smallest_to_largest": 0.13221278811458265,
+          "world_bbox_extents": [
+            0.4595998153090477,
+            0.6783052310347557,
+            0.6173083186149597
+          ],
+          "world_bbox_smallest_to_largest": 0.6775707959791604
+        },
+        "view_counts": [
+          18701,
+          19872,
+          18292,
+          19836,
+          9371,
+          8588,
+          9938,
+          8302
+        ],
+        "view_fractions": [
+          0.16564216120460584,
+          0.17601417183348095,
+          0.16201948627103632,
+          0.17569530558015944,
+          0.08300265721877768,
+          0.07606731620903455,
+          0.08802480070859167,
+          0.07353410097431355
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 1.3593848943710327,
+        "median": 1.0029444694519043,
+        "min": 0.7554449439048767,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "fd31f6d2693080fa42f3b551e6f6cbab3158462ccba30ccc8ed600e6a0ca8bff",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.0180796146392823,
+        "shape": {
+          "pca_eigenvalues": [
+            0.003939521695252082,
+            0.00317713108936551,
+            0.0005866089829703568
+          ],
+          "pca_extents": [
+            0.2815250742904577,
+            0.27206225886962254,
+            0.1086838227267013
+          ],
+          "pca_smallest_to_largest": 0.38605379290147707,
+          "pca_variance_fractions": [
+            0.5114095579391985,
+            0.4124397151779947,
+            0.0761507268828067
+          ],
+          "point_count": 112897,
+          "robust_pca_1_99_extents": [
+            0.2549467117515253,
+            0.23291621268240179,
+            0.09420874931995336
+          ],
+          "robust_pca_smallest_to_largest": 0.3695232963497508,
+          "world_bbox_extents": [
+            0.2378578633069992,
+            0.14404188096523285,
+            0.22782927751541138
+          ],
+          "world_bbox_smallest_to_largest": 0.6055796472842286
+        },
+        "view_counts": [
+          31168,
+          29402,
+          30486,
+          21841,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 79691776,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15583281152,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.11232366098556668,
+        "load_seconds": 0.820967755978927,
+        "model_parameter_bytes": 1643767068,
+        "model_parameters": 410941767,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 3023673344,
+        "peak_reserved_bytes": 4110417920,
+        "post_unload_allocated_bytes": 38573056,
+        "post_unload_reserved_bytes": 58720256,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.09302091994322836,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.35924974002409726
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.0675094354337496,
+            0.005521367577101816,
+            0.0011194914504978296
+          ],
+          "pca_extents": [
+            0.9956829102956664,
+            0.3830833116481604,
+            0.12847704096527893
+          ],
+          "pca_smallest_to_largest": 0.12903409271846183,
+          "pca_variance_fractions": [
+            0.9104405575751128,
+            0.07446184289908414,
+            0.01509759952580314
+          ],
+          "point_count": 188162,
+          "robust_pca_1_99_extents": [
+            0.9269991631916125,
+            0.32468461945229266,
+            0.11178226235365063
+          ],
+          "robust_pca_smallest_to_largest": 0.12058507363565443,
+          "world_bbox_extents": [
+            0.49205681681632996,
+            0.7225142642855644,
+            0.6401954293251038
+          ],
+          "world_bbox_smallest_to_largest": 0.6810340516984601
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060,
+          15618,
+          14313,
+          16561,
+          13836
+        ]
+      },
+      "model": "large",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          8,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          1208422.125,
+          1205205.0,
+          1096614.5,
+          1170321.125,
+          1155090.0,
+          1124305.125,
+          1143314.125,
+          1098841.875
+        ],
+        "intrinsic_shape": [
+          8,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 1.0790943782978957e-07,
+        "rotation_determinants": [
+          0.9999999924258139,
+          0.9999999493597385,
+          0.9999999844674425,
+          1.0000000050994848,
+          1.0000000389364658,
+          1.000000030419515,
+          1.0000000274027654,
+          1.000000059706077
+        ]
+      },
+      "views": 8
+    },
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 7276,
+        "shape": {
+          "pca_eigenvalues": [
+            0.10762931652493313,
+            0.0053779417726084995,
+            0.0011035035468703424
+          ],
+          "pca_extents": [
+            1.038743660427865,
+            0.39482709281725215,
+            0.17973738700064001
+          ],
+          "pca_smallest_to_largest": 0.17303343822729572,
+          "pca_variance_fractions": [
+            0.9432004027077114,
+            0.04712913738969887,
+            0.009670459902589645
+          ],
+          "point_count": 116416,
+          "robust_pca_1_99_extents": [
+            0.9913325084386257,
+            0.3121595299300818,
+            0.15562180977459739
+          ],
+          "robust_pca_smallest_to_largest": 0.15698245386878892,
+          "world_bbox_extents": [
+            0.5409165322780609,
+            0.9825228378176689,
+            0.34727007150650024
+          ],
+          "world_bbox_smallest_to_largest": 0.35344732777696986
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 5.9507646560668945,
+        "median": 1.0092568397521973,
+        "min": 1.0000358819961548,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.0479899644851685,
+          1.0669689178466797,
+          1.0613094568252563,
+          1.167182731628418,
+          1.0203987598419189,
+          1.0129242181777953,
+          1.0112460851669312,
+          1.0114210844039917,
+          3.67545108795166,
+          1.0065385341644286,
+          1.5288355827331543,
+          1.0123125314712524,
+          4.937556362152099,
+          1.0106548070907593,
+          1.5839760780334473,
+          1.0122451066970826
+        ],
+        "largest_view_fraction": 0.09964698331193839,
+        "per_view": [
+          {
+            "fraction": 0.09377507220795891,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004742019329134187,
+                0.0020883070533653605,
+                2.5254661269946748e-05
+              ],
+              "pca_extents": [
+                0.27718438205479295,
+                0.1675852187060846,
+                0.02398664890583433
+              ],
+              "pca_smallest_to_largest": 0.08653679809814366,
+              "pca_variance_fractions": [
+                0.6917020306315015,
+                0.30461415889223,
+                0.0036838104762686387
+              ],
+              "point_count": 18701,
+              "robust_pca_1_99_extents": [
+                0.25222255908521174,
+                0.1610811587882845,
+                0.020540714815656523
+              ],
+              "robust_pca_smallest_to_largest": 0.08143884865079407,
+              "world_bbox_extents": [
+                0.2808828204870224,
+                0.21946870908141136,
+                0.03056657314300537
+              ],
+              "world_bbox_smallest_to_largest": 0.10882322062277082
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.09964698331193839,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004003131494138071,
+                0.0026881452496548305,
+                7.363186082802735e-06
+              ],
+              "pca_extents": [
+                0.2550891004129734,
+                0.22331731612481642,
+                0.02101158991711895
+              ],
+              "pca_smallest_to_largest": 0.0823696107873778,
+              "pca_variance_fractions": [
+                0.5976036234287264,
+                0.40129717043989704,
+                0.0010992061313764869
+              ],
+              "point_count": 19872,
+              "robust_pca_1_99_extents": [
+                0.23394629861386812,
+                0.20133462013394463,
+                0.015691177533936798
+              ],
+              "robust_pca_smallest_to_largest": 0.06707170674170537,
+              "world_bbox_extents": [
+                0.2197117805480957,
+                0.2531759589910507,
+                0.047882914543151855
+              ],
+              "world_bbox_smallest_to_largest": 0.18912899445102693
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.09172416559691912,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004942034753984276,
+                0.001870674664820044,
+                4.659433471387268e-05
+              ],
+              "pca_extents": [
+                0.27564769706514414,
+                0.16383471602793562,
+                0.03581865755832714
+              ],
+              "pca_smallest_to_largest": 0.12994361258843412,
+              "pca_variance_fractions": [
+                0.7204863542381348,
+                0.2727207792570142,
+                0.0067928665048510315
+              ],
+              "point_count": 18292,
+              "robust_pca_1_99_extents": [
+                0.2565195907214565,
+                0.15446912781162914,
+                0.03077462908593479
+              ],
+              "robust_pca_smallest_to_largest": 0.11996989781319127,
+              "world_bbox_extents": [
+                0.2883445918560028,
+                0.21423980593681335,
+                0.04037761688232422
+              ],
+              "world_bbox_smallest_to_largest": 0.140032509791231
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.09946646341463415,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0037701268443989452,
+                0.002915455533564754,
+                6.396977141780378e-06
+              ],
+              "pca_extents": [
+                0.24922506742509187,
+                0.22436491526673683,
+                0.018448260569737383
+              ],
+              "pca_smallest_to_largest": 0.07402249204038142,
+              "pca_variance_fractions": [
+                0.5633799275729415,
+                0.4356641553803479,
+                0.0009559170467105466
+              ],
+              "point_count": 19836,
+              "robust_pca_1_99_extents": [
+                0.22395014727866125,
+                0.20187987384665557,
+                0.01411761649700344
+              ],
+              "robust_pca_smallest_to_largest": 0.06303910342794677,
+              "world_bbox_extents": [
+                0.23164848238229752,
+                0.2494281455874443,
+                0.04890143871307373
+              ],
+              "world_bbox_smallest_to_largest": 0.19605421271886858
+            },
+            "view_index": 3
+          },
+          {
+            "fraction": 0.04699033215661104,
+            "shape": {
+              "pca_eigenvalues": [
+                0.00508856425877788,
+                0.0017327178655416118,
+                2.4937657119513188e-06
+              ],
+              "pca_extents": [
+                0.290260946238697,
+                0.18284751112519576,
+                0.009150515426573694
+              ],
+              "pca_smallest_to_largest": 0.03152513469396857,
+              "pca_variance_fractions": [
+                0.7457109290783628,
+                0.2539236184577609,
+                0.00036545246387624666
+              ],
+              "point_count": 9371,
+              "robust_pca_1_99_extents": [
+                0.2686825073911919,
+                0.1631897569521919,
+                0.00672928181278551
+              ],
+              "robust_pca_smallest_to_largest": 0.025045477943928526,
+              "world_bbox_extents": [
+                0.28394698165357113,
+                0.2066875696182251,
+                0.04404270648956299
+              ],
+              "world_bbox_smallest_to_largest": 0.15510890882896297
+            },
+            "view_index": 4
+          },
+          {
+            "fraction": 0.0430640243902439,
+            "shape": {
+              "pca_eigenvalues": [
+                0.005042861766281874,
+                0.0015346421368310403,
+                3.817651344345914e-06
+              ],
+              "pca_extents": [
+                0.2828334647550571,
+                0.18104267930419843,
+                0.011319214323550677
+              ],
+              "pca_smallest_to_largest": 0.04002077453371185,
+              "pca_variance_fractions": [
+                0.7662384711876825,
+                0.2331814551428033,
+                0.0005800736695140469
+              ],
+              "point_count": 8588,
+              "robust_pca_1_99_extents": [
+                0.2619599718658468,
+                0.16062695908983476,
+                0.007014601395057753
+              ],
+              "robust_pca_smallest_to_largest": 0.026777378792245496,
+              "world_bbox_extents": [
+                0.24797499179840088,
+                0.21576160192489624,
+                0.057837843894958496
+              ],
+              "world_bbox_smallest_to_largest": 0.23324063235368347
+            },
+            "view_index": 5
+          },
+          {
+            "fraction": 0.049828506097560975,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004531994216211203,
+                0.0018954403909028888,
+                5.1492664112863626e-06
+              ],
+              "pca_extents": [
+                0.2910926611479186,
+                0.20633495198626967,
+                0.014794769906848752
+              ],
+              "pca_smallest_to_largest": 0.050824949857910695,
+              "pca_variance_fractions": [
+                0.7045371355146346,
+                0.2946623671249688,
+                0.0008004973603965317
+              ],
+              "point_count": 9937,
+              "robust_pca_1_99_extents": [
+                0.2601479614624582,
+                0.18349482337922673,
+                0.009785481384653774
+              ],
+              "robust_pca_smallest_to_largest": 0.03761506078941891,
+              "world_bbox_extents": [
+                0.2803143449127674,
+                0.19779706001281738,
+                0.043247342109680176
+              ],
+              "world_bbox_smallest_to_largest": 0.1542815874197896
+            },
+            "view_index": 6
+          },
+          {
+            "fraction": 0.04162989409499358,
+            "shape": {
+              "pca_eigenvalues": [
+                0.005524664393780477,
+                0.0013120171982876293,
+                5.94484415594175e-06
+              ],
+              "pca_extents": [
+                0.2963780914150853,
+                0.16715295954206374,
+                0.015398468462624645
+              ],
+              "pca_smallest_to_largest": 0.05195548830584338,
+              "pca_variance_fractions": [
+                0.8073894498366244,
+                0.19174175450262293,
+                0.0008687956607524932
+              ],
+              "point_count": 8302,
+              "robust_pca_1_99_extents": [
+                0.2770808816247877,
+                0.14513384920197048,
+                0.011106030769503322
+              ],
+              "robust_pca_smallest_to_largest": 0.04008227021791667,
+              "world_bbox_extents": [
+                0.2677016407251358,
+                0.19081592559814453,
+                0.04053187370300293
+              ],
+              "world_bbox_smallest_to_largest": 0.15140689311134728
+            },
+            "view_index": 7
+          },
+          {
+            "fraction": 0.07082898748395379,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004731417427958107,
+                0.0014960582026198707,
+                6.8914592815333224e-06
+              ],
+              "pca_extents": [
+                0.27992074227419145,
+                0.15934450605940953,
+                0.018760042069436204
+              ],
+              "pca_smallest_to_largest": 0.06701912090194494,
+              "pca_variance_fractions": [
+                0.7589250616400144,
+                0.2399695399799731,
+                0.0011053983800123996
+              ],
+              "point_count": 14125,
+              "robust_pca_1_99_extents": [
+                0.25844316818905494,
+                0.14500746131583486,
+                0.013682735452581515
+              ],
+              "robust_pca_smallest_to_largest": 0.05294291796706499,
+              "world_bbox_extents": [
+                0.27627989649772644,
+                0.1555255651473999,
+                0.026902318000793457
+              ],
+              "world_bbox_smallest_to_largest": 0.09737341855785313
+            },
+            "view_index": 8
+          },
+          {
+            "fraction": 0.04142931643132221,
+            "shape": {
+              "pca_eigenvalues": [
+                0.007258860785293265,
+                0.0013367432416686543,
+                5.445196660584613e-06
+              ],
+              "pca_extents": [
+                0.33261424432291053,
+                0.16398298832931574,
+                0.01535953752856432
+              ],
+              "pca_smallest_to_largest": 0.046178231361771994,
+              "pca_variance_fractions": [
+                0.8439506153920197,
+                0.1554162994437158,
+                0.0006330851642645593
+              ],
+              "point_count": 8262,
+              "robust_pca_1_99_extents": [
+                0.3057717639189135,
+                0.14781226283447538,
+                0.011202773357018107
+              ],
+              "robust_pca_smallest_to_largest": 0.03663769739049198,
+              "world_bbox_extents": [
+                0.23729299136903137,
+                0.28051257133483887,
+                0.03272199630737305
+              ],
+              "world_bbox_smallest_to_largest": 0.11665073031010025
+            },
+            "view_index": 9
+          },
+          {
+            "fraction": 0.06937479942233633,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002803102132573595,
+                0.0027334064264607945,
+                4.553723899184967e-06
+              ],
+              "pca_extents": [
+                0.21016694352424325,
+                0.20842482884568042,
+                0.012215226131076937
+              ],
+              "pca_smallest_to_largest": 0.05812153865038191,
+              "pca_variance_fractions": [
+                0.5058781131565921,
+                0.4933000726015414,
+                0.0008218142418666542
+              ],
+              "point_count": 13835,
+              "robust_pca_1_99_extents": [
+                0.19275557642025454,
+                0.19271936919617882,
+                0.009196752744138236
+              ],
+              "robust_pca_smallest_to_largest": 0.047711993162195494,
+              "world_bbox_extents": [
+                0.21128637343645096,
+                0.22122806683182716,
+                0.014817476272583008
+              ],
+              "world_bbox_smallest_to_largest": 0.06697828392564192
+            },
+            "view_index": 10
+          },
+          {
+            "fraction": 0.03648507702182285,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004845549467955718,
+                0.0015649154206493438,
+                5.028840353711837e-06
+              ],
+              "pca_extents": [
+                0.28298859785781294,
+                0.1679652802336871,
+                0.013714464686375358
+              ],
+              "pca_smallest_to_largest": 0.04846295854388509,
+              "pca_variance_fractions": [
+                0.755288629787523,
+                0.24392751154685138,
+                0.0007838586656257261
+              ],
+              "point_count": 7276,
+              "robust_pca_1_99_extents": [
+                0.26660256184934705,
+                0.15425276211723304,
+                0.01082225620833863
+              ],
+              "robust_pca_smallest_to_largest": 0.04059321910962775,
+              "world_bbox_extents": [
+                0.26879807421937585,
+                0.17602992057800293,
+                0.0466303825378418
+              ],
+              "world_bbox_smallest_to_largest": 0.1734773683675466
+            },
+            "view_index": 11
+          },
+          {
+            "fraction": 0.07038270218228498,
+            "shape": {
+              "pca_eigenvalues": [
+                0.005100859209314213,
+                0.0015169529448410938,
+                9.471055358653593e-06
+              ],
+              "pca_extents": [
+                0.34444577710972846,
+                0.15775198378823602,
+                0.01972540522759466
+              ],
+              "pca_smallest_to_largest": 0.05726708393150319,
+              "pca_variance_fractions": [
+                0.7696757552161869,
+                0.22889514404083328,
+                0.0014291007429797454
+              ],
+              "point_count": 14036,
+              "robust_pca_1_99_extents": [
+                0.2725349278097454,
+                0.14414917024366447,
+                0.01507457816495005
+              ],
+              "robust_pca_smallest_to_largest": 0.05531246319911516,
+              "world_bbox_extents": [
+                0.3435801863670349,
+                0.15552633255720139,
+                0.030885159969329834
+              ],
+              "world_bbox_smallest_to_largest": 0.0898921451085549
+            },
+            "view_index": 12
+          },
+          {
+            "fraction": 0.03807966944801027,
+            "shape": {
+              "pca_eigenvalues": [
+                0.007003411381936178,
+                0.0009275760739944058,
+                8.067926179051063e-06
+              ],
+              "pca_extents": [
+                0.31531071235239394,
+                0.131947217384616,
+                0.020660431437047707
+              ],
+              "pca_smallest_to_largest": 0.0655240390753278,
+              "pca_variance_fractions": [
+                0.8821466843168905,
+                0.11683708317297596,
+                0.0010162325101336154
+              ],
+              "point_count": 7594,
+              "robust_pca_1_99_extents": [
+                0.29293566579135494,
+                0.11922957479641691,
+                0.014787449703106182
+              ],
+              "robust_pca_smallest_to_largest": 0.0504801955854656,
+              "world_bbox_extents": [
+                0.2524349633604288,
+                0.23575255274772644,
+                0.027738213539123535
+              ],
+              "world_bbox_smallest_to_largest": 0.10988261360419664
+            },
+            "view_index": 13
+          },
+          {
+            "fraction": 0.06978096919127086,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0030834840745672856,
+                0.0026089968355109674,
+                5.1267671021508516e-06
+              ],
+              "pca_extents": [
+                0.2157499647134517,
+                0.2027031702288425,
+                0.014296506514394822
+              ],
+              "pca_smallest_to_largest": 0.06626423570164995,
+              "pca_variance_fractions": [
+                0.5411892585930417,
+                0.4579109309263798,
+                0.0008998104805783949
+              ],
+              "point_count": 13916,
+              "robust_pca_1_99_extents": [
+                0.20290502964134588,
+                0.18847569857286461,
+                0.009527129748887891
+              ],
+              "robust_pca_smallest_to_largest": 0.04695364016223751,
+              "world_bbox_extents": [
+                0.21574756503105164,
+                0.21308673918247223,
+                0.013132810592651367
+              ],
+              "world_bbox_smallest_to_largest": 0.06087118800511708
+            },
+            "view_index": 14
+          },
+          {
+            "fraction": 0.03751303754813864,
+            "shape": {
+              "pca_eigenvalues": [
+                0.004618575097119435,
+                0.0014620500492586639,
+                4.203761483344867e-06
+              ],
+              "pca_extents": [
+                0.2881054666626973,
+                0.15844373948723875,
+                0.013076107523495483
+              ],
+              "pca_smallest_to_largest": 0.045386530408339947,
+              "pca_variance_fractions": [
+                0.7590312179776089,
+                0.24027792258377761,
+                0.0006908594386135846
+              ],
+              "point_count": 7481,
+              "robust_pca_1_99_extents": [
+                0.2659341887369069,
+                0.1473976732881827,
+                0.009016336588450911
+              ],
+              "robust_pca_smallest_to_largest": 0.03390439052336713,
+              "world_bbox_extents": [
+                0.26847563311457634,
+                0.17490935325622559,
+                0.039313435554504395
+              ],
+              "world_bbox_smallest_to_largest": 0.1464320433792468
+            },
+            "view_index": 15
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.09458167742585982,
+            0.005011028530763564,
+            0.0012360687597130627
+          ],
+          "pca_extents": [
+            1.0391710012387798,
+            0.393350970069079,
+            0.16316223550489045
+          ],
+          "pca_smallest_to_largest": 0.15701192133959402,
+          "pca_variance_fractions": [
+            0.9380425150652509,
+            0.04969839755428138,
+            0.01225908738046772
+          ],
+          "point_count": 199424,
+          "robust_pca_1_99_extents": [
+            0.9848396387461289,
+            0.3002288255236848,
+            0.1484290217555289
+          ],
+          "robust_pca_smallest_to_largest": 0.15071389890896827,
+          "world_bbox_extents": [
+            0.5410101264715195,
+            0.9825228378176689,
+            0.34727007150650024
+          ],
+          "world_bbox_smallest_to_largest": 0.35344732777696986
+        },
+        "view_counts": [
+          18701,
+          19872,
+          18292,
+          19836,
+          9371,
+          8588,
+          9937,
+          8302,
+          14125,
+          8262,
+          13835,
+          7276,
+          14036,
+          7594,
+          13916,
+          7481
+        ],
+        "view_fractions": [
+          0.09377507220795891,
+          0.09964698331193839,
+          0.09172416559691912,
+          0.09946646341463415,
+          0.04699033215661104,
+          0.0430640243902439,
+          0.049828506097560975,
+          0.04162989409499358,
+          0.07082898748395379,
+          0.04142931643132221,
+          0.06937479942233633,
+          0.03648507702182285,
+          0.07038270218228498,
+          0.03807966944801027,
+          0.06978096919127086,
+          0.03751303754813864
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 1.2072783708572388,
+        "median": 0.9647599458694458,
+        "min": 0.7638005018234253,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "4703f26d3fd7e29e3b64071ecf43c314dc51fbcca322a12237094ca190142f3b",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.0478013753890991,
+        "shape": {
+          "pca_eigenvalues": [
+            0.034952575538832555,
+            0.006615610480807381,
+            0.0013187905662816724
+          ],
+          "pca_extents": [
+            1.0026759339517712,
+            0.41647666420080165,
+            0.18601207172592324
+          ],
+          "pca_smallest_to_largest": 0.18551564411525054,
+          "pca_variance_fractions": [
+            0.8149927628683982,
+            0.15425686321238763,
+            0.030750373919214164
+          ],
+          "point_count": 199420,
+          "robust_pca_1_99_extents": [
+            0.91970552606261,
+            0.3415688839591934,
+            0.16667714867246552
+          ],
+          "robust_pca_smallest_to_largest": 0.18122882156208636,
+          "world_bbox_extents": [
+            0.5325470268726349,
+            0.9659951403737068,
+            0.34437674283981323
+          ],
+          "world_bbox_smallest_to_largest": 0.35649945682603223
+        },
+        "view_counts": [
+          18763,
+          24155,
+          22615,
+          32435,
+          4369,
+          949,
+          1315,
+          1002,
+          23542,
+          0,
+          23058,
+          0,
+          23393,
+          632,
+          23192,
+          0
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 58720256,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15604252672,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.09230960090644658,
+        "load_seconds": 0.2868315390078351,
+        "model_parameter_bytes": 541466396,
+        "model_parameters": 135366599,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 1467970560,
+        "peak_reserved_bytes": 2044723200,
+        "post_unload_allocated_bytes": 43591680,
+        "post_unload_reserved_bytes": 79691776,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.035031517036259174,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.28951827506534755
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.09302783778288365,
+            0.008604424006314757,
+            0.0013240198513351747
+          ],
+          "pca_extents": [
+            1.0511199754385179,
+            0.44629006230491947,
+            0.17642673682065257
+          ],
+          "pca_smallest_to_largest": 0.16784643137149868,
+          "pca_variance_fractions": [
+            0.9035664099417016,
+            0.08357356995813668,
+            0.012860020100161738
+          ],
+          "point_count": 332366,
+          "robust_pca_1_99_extents": [
+            0.9954386392147276,
+            0.37080314578752627,
+            0.15514571970387425
+          ],
+          "robust_pca_smallest_to_largest": 0.1558566380608494,
+          "world_bbox_extents": [
+            0.5786172300577164,
+            1.0420367792248726,
+            0.35122209787368774
+          ],
+          "world_bbox_smallest_to_largest": 0.3370534561505085
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060,
+          15618,
+          14313,
+          16561,
+          13836,
+          23542,
+          13769,
+          23058,
+          12126,
+          23393,
+          12656,
+          23192,
+          12468
+        ]
+      },
+      "model": "base",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          16,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          441060.0,
+          465614.40625,
+          445294.875,
+          469943.625,
+          455770.09375,
+          471986.75,
+          473460.53125,
+          488835.59375,
+          466343.46875,
+          452757.125,
+          448387.375,
+          494585.4375,
+          449423.4375,
+          468704.0625,
+          432140.03125,
+          477654.96875
+        ],
+        "intrinsic_shape": [
+          16,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 2.226911677283283e-07,
+        "rotation_determinants": [
+          0.9999999858000169,
+          0.9999999444297655,
+          1.000000005556894,
+          0.9999999725188128,
+          1.0000000382011331,
+          0.9999999143163463,
+          1.0000000707342984,
+          0.9999999986290571,
+          1.000000027598968,
+          0.9999999422229977,
+          1.0000001721216834,
+          0.9999999229118851,
+          0.9999999771810388,
+          0.9999998270720911,
+          1.0000000105418765,
+          0.9999999483840097
+        ]
+      },
+      "views": 16
+    },
+    {
+      "balanced_current_fusion": {
+        "points_per_view": 7277,
+        "shape": {
+          "pca_eigenvalues": [
+            0.06895627519670945,
+            0.01058847866481662,
+            0.0002928263884988418
+          ],
+          "pca_extents": [
+            0.9102659032974691,
+            0.6158716419898524,
+            0.08686052851782863
+          ],
+          "pca_smallest_to_largest": 0.09542324743041943,
+          "pca_variance_fractions": [
+            0.8637069783523147,
+            0.13262524529998285,
+            0.0036677763477025024
+          ],
+          "point_count": 116432,
+          "robust_pca_1_99_extents": [
+            0.8561176511948205,
+            0.5406207108050503,
+            0.07066569231103648
+          ],
+          "robust_pca_smallest_to_largest": 0.08254203404451894,
+          "world_bbox_extents": [
+            0.5576904714107513,
+            0.7074808031320572,
+            0.4254762530326843
+          ],
+          "world_bbox_smallest_to_largest": 0.6013961808561831
+        }
+      },
+      "confidence": {
+        "finite_fraction": 1.0,
+        "max": 1.9584614038467407,
+        "median": 1.0033648014068604,
+        "min": 1.0,
+        "positive_fraction": 1.0
+      },
+      "current_fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.0163772583007813,
+          1.0559197187423706,
+          1.0235166549682617,
+          1.0498284339904784,
+          1.006601095199585,
+          1.0113303899765014,
+          1.0134001970291138,
+          1.0086466073989868,
+          1.451465630531311,
+          1.008674693107605,
+          1.0667556524276733,
+          1.0075092315673828,
+          1.592711615562439,
+          1.010812520980835,
+          1.0436774253845216,
+          1.0141973972320557
+        ],
+        "largest_view_fraction": 0.09964648364046634,
+        "per_view": [
+          {
+            "fraction": 0.0937746019806945,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002812734630211457,
+                0.0007946839320198725,
+                6.005176428568096e-06
+              ],
+              "pca_extents": [
+                0.21009443704979325,
+                0.11709579580211596,
+                0.01212179279917974
+              ],
+              "pca_smallest_to_largest": 0.057696876554169906,
+              "pca_variance_fractions": [
+                0.7784126174071712,
+                0.2199254749775334,
+                0.0016619076152954101
+              ],
+              "point_count": 18701,
+              "robust_pca_1_99_extents": [
+                0.1969995499660735,
+                0.10861757128656513,
+                0.009549821329976088
+              ],
+              "robust_pca_smallest_to_largest": 0.04847636114712303,
+              "world_bbox_extents": [
+                0.20674528926610947,
+                0.12115247547626495,
+                0.06037169694900513
+              ],
+              "world_bbox_smallest_to_largest": 0.29201002433142986
+            },
+            "view_index": 0
+          },
+          {
+            "fraction": 0.09964648364046634,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0016754077916380722,
+                0.001373372458105829,
+                2.3993988030122475e-06
+              ],
+              "pca_extents": [
+                0.16826142070072178,
+                0.1571213461198822,
+                0.008329243149925721
+              ],
+              "pca_smallest_to_largest": 0.04950179973067345,
+              "pca_variance_fractions": [
+                0.5491016539901099,
+                0.45011196202750003,
+                0.0007863839823901985
+              ],
+              "point_count": 19872,
+              "robust_pca_1_99_extents": [
+                0.15182370984292973,
+                0.14148207654804673,
+                0.0066693388714706295
+              ],
+              "robust_pca_smallest_to_largest": 0.04392817747880381,
+              "world_bbox_extents": [
+                0.16388531029224396,
+                0.14753339439630508,
+                0.07621699571609497
+              ],
+              "world_bbox_smallest_to_largest": 0.46506301010251083
+            },
+            "view_index": 1
+          },
+          {
+            "fraction": 0.09172872007020183,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002837560849731499,
+                0.0006900634782305426,
+                7.698931464121005e-06
+              ],
+              "pca_extents": [
+                0.2092257118251194,
+                0.11226364796710958,
+                0.01567035898862451
+              ],
+              "pca_smallest_to_largest": 0.07489690847233216,
+              "pca_variance_fractions": [
+                0.8026312281814022,
+                0.19519105541215784,
+                0.002177716406439919
+              ],
+              "point_count": 18293,
+              "robust_pca_1_99_extents": [
+                0.19625034091017216,
+                0.10310874696190633,
+                0.011839251927171212
+              ],
+              "robust_pca_smallest_to_largest": 0.06032729355914995,
+              "world_bbox_extents": [
+                0.2101844921708107,
+                0.11437784135341644,
+                0.061556100845336914
+              ],
+              "world_bbox_smallest_to_largest": 0.2928669960831939
+            },
+            "view_index": 2
+          },
+          {
+            "fraction": 0.09946596464836405,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0016223830881543528,
+                0.0014787495805633113,
+                3.158057382270341e-06
+              ],
+              "pca_extents": [
+                0.16174949445152415,
+                0.15744472339422244,
+                0.009308844342924415
+              ],
+              "pca_smallest_to_largest": 0.05755099497831351,
+              "pca_variance_fractions": [
+                0.5226260138954925,
+                0.4763566659947258,
+                0.0010173201097817136
+              ],
+              "point_count": 19836,
+              "robust_pca_1_99_extents": [
+                0.14834419169607765,
+                0.14435502859366084,
+                0.007705704105879075
+              ],
+              "robust_pca_smallest_to_largest": 0.051944764522134104,
+              "world_bbox_extents": [
+                0.15921033918857574,
+                0.15090373158454895,
+                0.07555615901947021
+              ],
+              "world_bbox_smallest_to_largest": 0.47456816815130437
+            },
+            "view_index": 3
+          },
+          {
+            "fraction": 0.04699511094396389,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0025093295975868986,
+                0.0008076165448092668,
+                3.178843787908874e-06
+              ],
+              "pca_extents": [
+                0.21717233511933376,
+                0.12150206477675349,
+                0.010192081206658241
+              ],
+              "pca_smallest_to_largest": 0.046930845040910975,
+              "pca_variance_fractions": [
+                0.7557937150043713,
+                0.24324883797145427,
+                0.0009574470241743582
+              ],
+              "point_count": 9372,
+              "robust_pca_1_99_extents": [
+                0.20002563757478198,
+                0.10730748504902876,
+                0.007345697863481019
+              ],
+              "robust_pca_smallest_to_largest": 0.03672378177389757,
+              "world_bbox_extents": [
+                0.16061675548553467,
+                0.1930629462003708,
+                0.08126616477966309
+              ],
+              "world_bbox_smallest_to_largest": 0.42093092630690937
+            },
+            "view_index": 4
+          },
+          {
+            "fraction": 0.04306380844929172,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0019958544812455703,
+                0.0015269068938021375,
+                3.230383844986411e-06
+              ],
+              "pca_extents": [
+                0.18151297299419583,
+                0.19078941656446066,
+                0.01704149035459335
+              ],
+              "pca_smallest_to_largest": 0.08932094170347056,
+              "pca_variance_fractions": [
+                0.5660405972906614,
+                0.43304323952295587,
+                0.0009161631863827394
+              ],
+              "point_count": 8588,
+              "robust_pca_1_99_extents": [
+                0.16798606367741997,
+                0.1550814888095957,
+                0.00948644451779368
+              ],
+              "robust_pca_smallest_to_largest": 0.05647161621698747,
+              "world_bbox_extents": [
+                0.16235101222991943,
+                0.1593894064426422,
+                0.10514664649963379
+              ],
+              "world_bbox_smallest_to_largest": 0.6476500827153849
+            },
+            "view_index": 5
+          },
+          {
+            "fraction": 0.049828256236680454,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0024143103002005435,
+                0.0010548105965638127,
+                2.119210344589115e-06
+              ],
+              "pca_extents": [
+                0.20517567516072793,
+                0.12669821778969675,
+                0.011668675073440864
+              ],
+              "pca_smallest_to_largest": 0.05687162995467179,
+              "pca_variance_fractions": [
+                0.6955180931610416,
+                0.3038714015788212,
+                0.0006105052601371672
+              ],
+              "point_count": 9937,
+              "robust_pca_1_99_extents": [
+                0.18983968317341487,
+                0.11638121092635245,
+                0.006672377585408603
+              ],
+              "robust_pca_smallest_to_largest": 0.03514743321244123,
+              "world_bbox_extents": [
+                0.20259834825992584,
+                0.10185372829437256,
+                0.07168149948120117
+              ],
+              "world_bbox_smallest_to_largest": 0.35381087800990646
+            },
+            "view_index": 6
+          },
+          {
+            "fraction": 0.041629685345367935,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0022333242602512377,
+                0.001397653241301222,
+                3.684391031969094e-06
+              ],
+              "pca_extents": [
+                0.180534298816606,
+                0.15979078753390075,
+                0.01879895880252428
+              ],
+              "pca_smallest_to_largest": 0.10412956942669947,
+              "pca_variance_fractions": [
+                0.6144517224030516,
+                0.38453459568076076,
+                0.0010136819161876169
+              ],
+              "point_count": 8302,
+              "robust_pca_1_99_extents": [
+                0.16716400908930554,
+                0.136772765809604,
+                0.009683532658805885
+              ],
+              "robust_pca_smallest_to_largest": 0.05792833464309033,
+              "world_bbox_extents": [
+                0.17063601315021515,
+                0.1503654420375824,
+                0.10488307476043701
+              ],
+              "world_bbox_smallest_to_largest": 0.6146596654722929
+            },
+            "view_index": 7
+          },
+          {
+            "fraction": 0.070828632317914,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0036982255991546567,
+                0.0007849081341292501,
+                1.8087240999867313e-06
+              ],
+              "pca_extents": [
+                0.2354074020141559,
+                0.15146088701137023,
+                0.008031546373959308
+              ],
+              "pca_smallest_to_largest": 0.03411764585667677,
+              "pca_variance_fractions": [
+                0.824587078718478,
+                0.17500963314189186,
+                0.00040328813963017403
+              ],
+              "point_count": 14125,
+              "robust_pca_1_99_extents": [
+                0.21461222000151037,
+                0.11552946384552377,
+                0.006109587807986757
+              ],
+              "robust_pca_smallest_to_largest": 0.02846803321797687,
+              "world_bbox_extents": [
+                0.2318306863307953,
+                0.13033679872751236,
+                0.06651771068572998
+              ],
+              "world_bbox_smallest_to_largest": 0.28692366717500456
+            },
+            "view_index": 8
+          },
+          {
+            "fraction": 0.04142409427102921,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002522289587963826,
+                0.0017275771956523722,
+                2.416847544433307e-06
+              ],
+              "pca_extents": [
+                0.19849457281536498,
+                0.16449920962779432,
+                0.009736432208386932
+              ],
+              "pca_smallest_to_largest": 0.04905137742704701,
+              "pca_variance_fractions": [
+                0.5931611827302744,
+                0.406270452655775,
+                0.0005683646139506562
+              ],
+              "point_count": 8261,
+              "robust_pca_1_99_extents": [
+                0.18445455267096014,
+                0.1548891940011003,
+                0.007208084337572285
+              ],
+              "robust_pca_smallest_to_largest": 0.03907783371674458,
+              "world_bbox_extents": [
+                0.20906026847660542,
+                0.15992951393127441,
+                0.09768927097320557
+              ],
+              "world_bbox_smallest_to_largest": 0.46727803271781093
+            },
+            "view_index": 9
+          },
+          {
+            "fraction": 0.06937445154820107,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0019892766506487084,
+                0.0007301530124897913,
+                3.012408964076305e-06
+              ],
+              "pca_extents": [
+                0.188284844825434,
+                0.12926765877061494,
+                0.01072731189714463
+              ],
+              "pca_smallest_to_largest": 0.05697384676440807,
+              "pca_variance_fractions": [
+                0.7306956761479833,
+                0.268197814003765,
+                0.0011065098482517146
+              ],
+              "point_count": 13835,
+              "robust_pca_1_99_extents": [
+                0.16425309707556968,
+                0.1081105707086982,
+                0.0083771468405573
+              ],
+              "robust_pca_smallest_to_largest": 0.051001454399993054,
+              "world_bbox_extents": [
+                0.16403116285800934,
+                0.13348521618172526,
+                0.08124107122421265
+              ],
+              "world_bbox_smallest_to_largest": 0.4952782740102717
+            },
+            "view_index": 10
+          },
+          {
+            "fraction": 0.036489908486899834,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0021405256132498466,
+                0.001498295935493831,
+                3.133133310410886e-06
+              ],
+              "pca_extents": [
+                0.18007206943048276,
+                0.13857824248245293,
+                0.00874525346895908
+              ],
+              "pca_smallest_to_largest": 0.048565296642715625,
+              "pca_variance_fractions": [
+                0.5877408699777051,
+                0.4113988410884842,
+                0.0008602889338106141
+              ],
+              "point_count": 7277,
+              "robust_pca_1_99_extents": [
+                0.16705888339716024,
+                0.13020123259652877,
+                0.007456118620616188
+              ],
+              "robust_pca_smallest_to_largest": 0.04463167997412182,
+              "world_bbox_extents": [
+                0.18134235590696335,
+                0.119558185338974,
+                0.09748351573944092
+              ],
+              "world_bbox_smallest_to_largest": 0.5375661700868951
+            },
+            "view_index": 11
+          },
+          {
+            "fraction": 0.07038234925410555,
+            "shape": {
+              "pca_eigenvalues": [
+                0.003169868376126285,
+                0.0009429484044207029,
+                1.5108821356686706e-06
+              ],
+              "pca_extents": [
+                0.235029242748096,
+                0.1435330110992483,
+                0.006444853153889528
+              ],
+              "pca_smallest_to_largest": 0.027421494783085833,
+              "pca_variance_fractions": [
+                0.7704462638883366,
+                0.2291865115589443,
+                0.0003672245527191515
+              ],
+              "point_count": 14036,
+              "robust_pca_1_99_extents": [
+                0.21207044923977794,
+                0.12340003463965485,
+                0.004763783874396186
+              ],
+              "robust_pca_smallest_to_largest": 0.022463213953067093,
+              "world_bbox_extents": [
+                0.2290215790271759,
+                0.11987162753939629,
+                0.06908297538757324
+              ],
+              "world_bbox_smallest_to_largest": 0.3016439572245539
+            },
+            "view_index": 12
+          },
+          {
+            "fraction": 0.03807947850068948,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0026327237547863714,
+                0.0015709201773721551,
+                4.11458352333624e-06
+              ],
+              "pca_extents": [
+                0.22093037578842845,
+                0.18990627021953965,
+                0.010858643287979253
+              ],
+              "pca_smallest_to_largest": 0.0491496167026752,
+              "pca_variance_fractions": [
+                0.6256831861844004,
+                0.3733389574324441,
+                0.0009778563831554568
+              ],
+              "point_count": 7594,
+              "robust_pca_1_99_extents": [
+                0.199732987051908,
+                0.16771757729574877,
+                0.009062525424010655
+              ],
+              "robust_pca_smallest_to_largest": 0.045373203283919354,
+              "world_bbox_extents": [
+                0.22148963517975062,
+                0.15974465012550354,
+                0.10350632667541504
+              ],
+              "world_bbox_smallest_to_largest": 0.46731905351423847
+            },
+            "view_index": 13
+          },
+          {
+            "fraction": 0.06977560486398396,
+            "shape": {
+              "pca_eigenvalues": [
+                0.002067874043798538,
+                0.0007815026128115519,
+                2.129592892845204e-06
+              ],
+              "pca_extents": [
+                0.192601835345183,
+                0.12516304105100728,
+                0.009372361690310664
+              ],
+              "pca_smallest_to_largest": 0.048661850358348975,
+              "pca_variance_fractions": [
+                0.7251865725908905,
+                0.2740665965392083,
+                0.0007468308699012767
+              ],
+              "point_count": 13915,
+              "robust_pca_1_99_extents": [
+                0.1732106719553959,
+                0.10978488036932042,
+                0.006329113195835668
+              ],
+              "robust_pca_smallest_to_largest": 0.036539972533941215,
+              "world_bbox_extents": [
+                0.19461335986852646,
+                0.14174740388989449,
+                0.08955115079879761
+              ],
+              "world_bbox_smallest_to_largest": 0.4601490404322449
+            },
+            "view_index": 14
+          },
+          {
+            "fraction": 0.03751284944214617,
+            "shape": {
+              "pca_eigenvalues": [
+                0.0022808339486807766,
+                0.0014192960032470656,
+                3.958133929205935e-06
+              ],
+              "pca_extents": [
+                0.18392951659465012,
+                0.14102619636357314,
+                0.010777153763530604
+              ],
+              "pca_smallest_to_largest": 0.05859393295357617,
+              "pca_variance_fractions": [
+                0.6157612604812123,
+                0.3831701542590801,
+                0.0010685852597077496
+              ],
+              "point_count": 7481,
+              "robust_pca_1_99_extents": [
+                0.17021456285171194,
+                0.12758959471932707,
+                0.008263157118611551
+              ],
+              "robust_pca_smallest_to_largest": 0.048545535588575196,
+              "world_bbox_extents": [
+                0.19172216020524502,
+                0.15353423357009888,
+                0.1073218584060669
+              ],
+              "world_bbox_smallest_to_largest": 0.5597780574304777
+            },
+            "view_index": 15
+          }
+        ],
+        "shape": {
+          "pca_eigenvalues": [
+            0.060634562039001166,
+            0.007884775581933972,
+            0.00026137747839510725
+          ],
+          "pca_extents": [
+            0.9112503420812228,
+            0.6193977102465928,
+            0.08459213780072894
+          ],
+          "pca_smallest_to_largest": 0.09283084339647793,
+          "pca_variance_fractions": [
+            0.8815634142715041,
+            0.11463642927450096,
+            0.003800156453994943
+          ],
+          "point_count": 199425,
+          "robust_pca_1_99_extents": [
+            0.8536479580759526,
+            0.5172945571237018,
+            0.06630989979987889
+          ],
+          "robust_pca_smallest_to_largest": 0.07767827378084002,
+          "world_bbox_extents": [
+            0.5580287128686905,
+            0.7075186222791672,
+            0.4254762530326843
+          ],
+          "world_bbox_smallest_to_largest": 0.6013640342950624
+        },
+        "view_counts": [
+          18701,
+          19872,
+          18293,
+          19836,
+          9372,
+          8588,
+          9937,
+          8302,
+          14125,
+          8261,
+          13835,
+          7277,
+          14036,
+          7594,
+          13915,
+          7481
+        ],
+        "view_fractions": [
+          0.0937746019806945,
+          0.09964648364046634,
+          0.09172872007020183,
+          0.09946596464836405,
+          0.04699511094396389,
+          0.04306380844929172,
+          0.049828256236680454,
+          0.041629685345367935,
+          0.070828632317914,
+          0.04142409427102921,
+          0.06937445154820107,
+          0.036489908486899834,
+          0.07038234925410555,
+          0.03807947850068948,
+          0.06977560486398396,
+          0.03751284944214617
+        ]
+      },
+      "depth": {
+        "finite_fraction": 1.0,
+        "max": 1.3896890878677368,
+        "median": 0.953728437423706,
+        "min": 0.6998636722564697,
+        "positive_fraction": 1.0
+      },
+      "input_digest": "4703f26d3fd7e29e3b64071ecf43c314dc51fbcca322a12237094ca190142f3b",
+      "legacy_global_percentile_fusion": {
+        "confidence_threshold": 1.0261757373809814,
+        "shape": {
+          "pca_eigenvalues": [
+            0.0338820654846312,
+            0.0033050497095633053,
+            0.00020457460196757058
+          ],
+          "pca_extents": [
+            0.8982589417152727,
+            0.4392805406090162,
+            0.06706809844159498
+          ],
+          "pca_smallest_to_largest": 0.07466454863619272,
+          "pca_variance_fractions": [
+            0.9061389220261687,
+            0.08838995315752055,
+            0.00547112481631061
+          ],
+          "point_count": 199420,
+          "robust_pca_1_99_extents": [
+            0.8247853418714953,
+            0.25730297148876613,
+            0.052749225502080804
+          ],
+          "robust_pca_smallest_to_largest": 0.06395509573726073,
+          "world_bbox_extents": [
+            0.5407449975609779,
+            0.6938489228487015,
+            0.39953774213790894
+          ],
+          "world_bbox_smallest_to_largest": 0.5758281507414416
+        },
+        "view_counts": [
+          12687,
+          27640,
+          16635,
+          27106,
+          0,
+          4788,
+          5079,
+          3036,
+          23542,
+          4321,
+          22365,
+          454,
+          23393,
+          3620,
+          20521,
+          4233
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 79691776,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15583281152,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.22511889191810042,
+        "load_seconds": 0.8253300689393654,
+        "model_parameter_bytes": 1643767068,
+        "model_parameters": 410941767,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 3245586432,
+        "peak_reserved_bytes": 4339007488,
+        "post_unload_allocated_bytes": 43591680,
+        "post_unload_reserved_bytes": 71303168,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.09663410496432334,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.37925358896609396
+      },
+      "mask_only_fusion": {
+        "shape": {
+          "pca_eigenvalues": [
+            0.06438543259143012,
+            0.009076987913208257,
+            0.0002555681827133248
+          ],
+          "pca_extents": [
+            0.9604529243799146,
+            0.6639107853396204,
+            0.08341540582210855
+          ],
+          "pca_smallest_to_largest": 0.08685007219480644,
+          "pca_variance_fractions": [
+            0.8734019163829569,
+            0.12313124753993265,
+            0.003466836077110367
+          ],
+          "point_count": 332366,
+          "robust_pca_1_99_extents": [
+            0.8742534229131678,
+            0.5647059702063033,
+            0.06740858911545757
+          ],
+          "robust_pca_smallest_to_largest": 0.07710417522969504,
+          "world_bbox_extents": [
+            0.6201353073120117,
+            0.7352856546640396,
+            0.43078941106796265
+          ],
+          "world_bbox_smallest_to_largest": 0.5858803423341575
+        },
+        "view_counts": [
+          31168,
+          33120,
+          30486,
+          33060,
+          15618,
+          14313,
+          16561,
+          13836,
+          23542,
+          13769,
+          23058,
+          12126,
+          23393,
+          12656,
+          23192,
+          12468
+        ]
+      },
+      "model": "large",
+      "pose": {
+        "extrinsic_convention": "world_to_camera",
+        "extrinsic_shape": [
+          16,
+          3,
+          4
+        ],
+        "intrinsic_determinants": [
+          1077784.75,
+          1120933.25,
+          1088844.875,
+          1105238.375,
+          1138430.25,
+          1105616.375,
+          1080941.125,
+          1092656.625,
+          1127925.75,
+          1050501.875,
+          1133129.625,
+          1081770.25,
+          1112857.375,
+          1007259.5625,
+          1120637.0,
+          1053294.875
+        ],
+        "intrinsic_shape": [
+          16,
+          3,
+          3
+        ],
+        "max_rotation_orthogonality_error": 1.4799792680264545e-07,
+        "rotation_determinants": [
+          1.0000000189263631,
+          0.999999989933003,
+          0.9999999944585413,
+          1.0000000154494926,
+          0.9999999630679374,
+          1.0000001241748822,
+          1.0000000568393126,
+          1.0000000125091348,
+          0.9999999878654278,
+          1.0000001069769575,
+          1.0000000599973926,
+          1.0000000336040231,
+          1.0000000069578245,
+          1.0000000030225977,
+          1.000000014162353,
+          0.9999999803702418
+        ]
+      },
+      "views": 16
+    }
+  ],
+  "schema_version": "1.0",
+  "seed": 20260810,
+  "status": "diagnostic-not-benchmark"
+}
