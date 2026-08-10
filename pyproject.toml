@@ -50,6 +50,11 @@ da3 = [
   "opencv-python-headless==4.11.0.86",
   "safetensors>=0.6,<1",
 ]
+cadrille = [
+  "huggingface-hub>=0.36,<1",
+  "safetensors>=0.6,<1",
+  "transformers==4.50.3",
+]
 
 [project.scripts]
 da3-cad = "da3_cad.cli:app"
@@ -92,5 +97,5 @@ pretty = true
 packages = ["da3_cad"]
 
 [[tool.mypy.overrides]]
-module = ["cadquery.*", "scipy.*", "trimesh.*", "yaml.*"]
+module = ["cadquery.*", "scipy.*", "transformers.*", "trimesh.*", "yaml.*"]
 ignore_missing_imports = true

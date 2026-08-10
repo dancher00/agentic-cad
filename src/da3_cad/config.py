@@ -86,6 +86,17 @@ class GeometricFitterConfig(BaseModel):
     annular_center_tolerance_fraction: float = Field(default=0.05, ge=0.0, le=0.5)
 
 
+class CadrilleConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    checkpoint: Literal["sft", "rl"] = "rl"
+    cache_dir: Path = Path("data/hf")
+    local_files_only: bool = False
+    max_new_tokens: int = Field(default=768, ge=1, le=2048)
+    attn_implementation: Literal["sdpa"] = "sdpa"
+    use_cache: bool = True
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -100,6 +111,7 @@ class AppConfig(BaseModel):
     geometry: GeometryConfig = Field(default_factory=GeometryConfig)
     canonicalizer: CanonicalizerConfig = Field(default_factory=CanonicalizerConfig)
     geometric_fitter: GeometricFitterConfig = Field(default_factory=GeometricFitterConfig)
+    cadrille: CadrilleConfig = Field(default_factory=CadrilleConfig)
 
 
 def load_config(

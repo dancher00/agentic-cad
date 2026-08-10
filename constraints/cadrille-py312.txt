@@ -1,0 +1,9 @@
+# Exact direct Cadrille point-cloud inference dependencies tested on CPython 3.12,
+# torch 2.13.0+cu130 and sm_120 on 2026-08-10. Install the base lock and
+# cu130 overlay first, then this file and the local project with --no-deps.
+# No FlashAttention, PyTorch3D, Open3D, qwen-vl-utils or accelerate is required.
+huggingface-hub==0.36.2
+regex==2026.7.19
+safetensors==0.8.0
+tokenizers==0.21.4
+transformers==4.50.3

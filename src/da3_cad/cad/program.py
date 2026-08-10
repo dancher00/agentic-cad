@@ -49,8 +49,6 @@ def edit_parameters(source: str, updates: dict[str, float]) -> tuple[str, dict[s
         numeric = float(value)
         if not math.isfinite(numeric):
             raise ValueError(f"parameter is not finite: {key}")
-        if numeric <= 0.0:
-            raise ValueError(f"parameter must be positive: {key}")
         parameters[key] = numeric
     assignment.value = ast.Dict(
         keys=[ast.Constant(key) for key in sorted(parameters)],
