@@ -1,0 +1,10 @@
+name: da3-cad
+channels:
+  - defaults
+dependencies:
+  - python=3.12.13
+  - pip=26.1.2
+
+# After creating the prefix, install the hashed CPU requirements lock and then
+# the project with --no-deps. For RTX 5080/sm_120, install the exact GPU overlay
+# between those two commands. See README.md.

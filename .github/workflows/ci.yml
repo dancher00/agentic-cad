@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install -r constraints/cpu-py312.txt
+          python -m pip install --no-deps -e .
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy
+      - name: CPU tests (no weights, no network)
+        env:
+          DA3_CAD_TEST_NO_NETWORK: "1"
+        run: pytest -m 'not gpu and not weights and not benchmark'

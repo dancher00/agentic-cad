@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+dist/
+build/
+
+# Runtime assets and outputs are never committed.
+data/
+weights/
+cache/
+outputs/
+results/
+*.safetensors
+*.ckpt
+*.pth
+
+# Generated sample artefacts are rebuilt from source; the shipped fixture is
+# explicitly unignored below.
+sample_data/*/generated/
+

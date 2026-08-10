@@ -1,0 +1,11 @@
+profile: stub
+device: cpu
+seed: 20260810
+debug_artefacts: true
+depth_backend: stub
+cad_backend: stub
+sandbox:
+  memory_limit_mb: 8192
+  cpu_seconds: 30
+  wall_seconds: 45
+
