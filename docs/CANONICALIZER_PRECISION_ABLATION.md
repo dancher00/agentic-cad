@@ -1,5 +1,14 @@
 # Canonicalizer precision ablation: stop after cross-view rays
 
+> Protocol correction: the coverage-retention requirement in this historical
+> hard-filter experiment was invalid. With only 256 input points against 8,192
+> GT samples, that quantity is primarily a density measure, not cloud
+> completeness. The artifact remains a valid negative control because it also
+> lost precision, worsened normal residual and violated the 256-point contract
+> on three records. The corrected no-coverage scoring experiment is documented
+> in `docs/CANONICALIZER_SCORING_ABLATION.md`; it does not overwrite this
+> immutable result.
+
 The first precision-first canonicalizer step is a negative result. Strict
 cross-view z-depth confirmation does not move the frozen DA3 clouds toward the
 mesh-sampled Cadrille input distribution. On the 71 valid paired records it

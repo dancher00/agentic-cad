@@ -595,23 +595,47 @@ and one N=16 border-mask failure must be diagnosed. N=8 is the provisional
 safe point (20/20 best-10 valid in the pilot), while the 150-object view curve
 must make the actual headline-N decision.
 
-### 7.3 Precision-first canonicalizer stop after cross-view rays
+### 7.3 Historical hard ray gate and corrected metric interpretation
 
-The ordered precision ablation stopped at its first step. On the same 74 frozen
-clouds, a GT-blind two-view z-depth ray gate (2% of fused bbox extent) replaced
-the old spatial support heuristic. It produced only 71/74 valid decoder inputs.
-On those paired valid records the GT-axis-oracle median precision @.05 changed
-from 33.20% to 29.69%, coverage from 5.83% to 3.75%, and absolute normal
-residual from 0.0805 to 0.0957. The frozen stop values are -3.52 precision
-points, 64.23% coverage retention, and a 1.189x normal-residual ratio; all
-mandatory checks fail.
+The first implementation treated cross-view evidence as a hard filter before
+FPS. It produced only 71/74 valid inputs and reduced GT-axis-oracle median
+precision @.05 from 33.20% to 29.69% while increasing absolute normal residual
+from 0.0805 to 0.0957. Its coverage-retention check is retrospectively invalid:
+nearest-neighbor coverage from 8,192 GT samples to a 256-point input primarily
+measures sample density, not cloud completeness. The frozen
+`step1_ray.json` remains an immutable negative control, but its coverage gate
+is superseded and is not used by later decisions.
 
-Therefore local plane projection, area-uniform resampling and GT-blind axis
-hypotheses remain unexecuted under this ordered protocol. No pilot rerun, long
-campaign or README quality update is permitted from this result. The full
-contract, view curve and three invalid records are documented in
-`docs/CANONICALIZER_PRECISION_ABLATION.md` and
-`benchmarks/canonicalizer_precision_ablation/step1_ray.json`.
+### 7.4 Reliability-ranked selection stop
+
+The corrected experiment selects rather than filters. Four GT-blind components
+were frozen at equal weight before measurement: per-view confidence rank,
+cross-view z support, inverse per-view rank of a 16-neighbor normalized local
+plane residual, and per-view mask-edge-distance rank. Seeded FPS selects exactly
+256 unique points from the top 25%; if that pool were smaller than 256, the
+quantile would be relaxed without padding.
+
+On all 74 frozen pairs, every selection was valid, unique and unpadded; no pool
+needed relaxation. Baseline reproduction remained byte-exact. In the
+GT-axis-oracle frame, median precision @.05 changed from 33.01% to 30.08%
+(-2.93 points), mean absolute normal residual from 0.08190 to 0.08905
+(1.087x), and diagnostic sampled CD x1000 from 119.35 to 99.55 (0.834x).
+The preregistered gate therefore fails precision and normal residual despite
+the lower CD.
+
+The selector did find locally smoother observations: the median across records
+of the raw local-plane-residual median fell from 0.0276 to 0.0050 in selected
+points. Their residual to the true surface nevertheless worsened. This is
+evidence that local self-consistency cannot remove a systematic DA3
+depth/surface offset. N=16 is a post-measurement diagnostic exception
+(precision 19.92% to 33.98%), still far below the 60% target and not a license
+to retune weights by view count.
+
+Per the corrected gate, selected-point plane projection, area-uniform
+resampling, axis hypotheses, pilot rerun and long campaign remain unexecuted.
+The next registered hypothesis must be surface fitting rather than another
+filter. See `docs/CANONICALIZER_SCORING_ABLATION.md` and
+`benchmarks/canonicalizer_precision_ablation/step1b_scoring.json`.
 
 ## 8. Licensing and acquisition behavior
 
