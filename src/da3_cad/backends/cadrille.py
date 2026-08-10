@@ -469,10 +469,9 @@ class CadrilleBackend:
             prepare_point_cloud_prompt(canonical.decoder_points, tokenizer)
             for canonical in canonicals
         ]
-        batch = {
-            name: torch.cat([candidate[name] for candidate in individual_batches], dim=0)
-            for name in individual_batches[0]
-        }
+        decode_groups = [individual_batches[:1]]
+        if len(individual_batches) > 1:
+            decode_groups.append(individual_batches[1:])
         model_class = self._model_class_loader()
         model_contract: dict[str, object] = {}
 
@@ -518,25 +517,36 @@ class CadrilleBackend:
                     "generation_pad_token_id": getattr(generation_config, "pad_token_id", None),
                 }
             )
-            device = model.device
-            model_inputs = {name: value.to(device) for name, value in batch.items()}
-            with torch.inference_mode():
-                generated = model.generate(
-                    **model_inputs,
-                    do_sample=False,
-                    use_cache=self.config.use_cache,
-                    max_new_tokens=self.config.max_new_tokens,
+            decoded_all: list[str] = []
+            for group in decode_groups:
+                batch = {
+                    name: torch.cat([candidate[name] for candidate in group], dim=0)
+                    for name in group[0]
+                }
+                device = model.device
+                model_inputs = {name: value.to(device) for name, value in batch.items()}
+                with torch.inference_mode():
+                    generated = model.generate(
+                        **model_inputs,
+                        do_sample=False,
+                        use_cache=self.config.use_cache,
+                        max_new_tokens=self.config.max_new_tokens,
+                    )
+                prompt_length = int(model_inputs["input_ids"].shape[1])
+                generated_only = generated[:, prompt_length:].detach().cpu()
+                decoded = tokenizer.batch_decode(
+                    generated_only,
+                    skip_special_tokens=True,
+                    clean_up_tokenization_spaces=False,
                 )
-            prompt_length = int(model_inputs["input_ids"].shape[1])
-            generated_only = generated[:, prompt_length:].detach().cpu()
-            decoded = tokenizer.batch_decode(
-                generated_only,
-                skip_special_tokens=True,
-                clean_up_tokenization_spaces=False,
-            )
-            if len(decoded) != len(canonicals):
+                if len(decoded) != len(group):
+                    raise RuntimeError(
+                        "Cadrille grouped decode returned the wrong candidate count"
+                    )
+                decoded_all.extend(str(value) for value in decoded)
+            if len(decoded_all) != len(canonicals):
                 raise RuntimeError("Cadrille batch decode returned the wrong candidate count")
-            return [str(value) for value in decoded]
+            return decoded_all
 
         raw_text_list, lifecycle = StagedModelManager(self.device).execute(load_model, infer)
         programs: list[CadProgram] = []
@@ -606,6 +616,7 @@ class CadrilleBackend:
                 "strategy": "greedy",
                 "do_sample": False,
                 "candidate_count": len(programs),
+                "decode_batch_sizes": [len(group) for group in decode_groups],
                 "max_new_tokens": self.config.max_new_tokens,
                 "use_cache": self.config.use_cache,
                 "attention_implementation": self.config.attn_implementation,

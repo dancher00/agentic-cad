@@ -49,6 +49,7 @@ class _FakeTokenizer:
 class _FakeModel(torch.nn.Module):
     load_kwargs: dict[str, object] = {}
     load_count = 0
+    generate_batch_sizes: list[int] = []
 
     def __init__(self) -> None:
         super().__init__()
@@ -68,6 +69,7 @@ class _FakeModel(torch.nn.Module):
     def generate(self, **kwargs: Any) -> Any:
         assert kwargs["do_sample"] is False
         batch_size = kwargs["point_clouds"].shape[0]
+        self.generate_batch_sizes.append(batch_size)
         assert kwargs["point_clouds"].shape[1:] == (256, 3)
         suffix = torch.full((batch_size, 1), 42, device=self.device)
         return torch.cat((kwargs["input_ids"], suffix), dim=1)
@@ -141,9 +143,11 @@ def test_backend_uses_sdpa_greedy_generation_and_cpu_unload(tmp_path) -> None:
 def test_backend_generates_candidate_batch_with_one_model_lifecycle(tmp_path) -> None:
     first_points = np.linspace(-1.0, 1.0, 256 * 3, dtype=np.float32).reshape(256, 3)
     second_points = first_points[::-1].copy()
+    third_points = np.roll(first_points, 1, axis=0)
     canonicals = (
         SimpleNamespace(decoder_points=first_points),
         SimpleNamespace(decoder_points=second_points),
+        SimpleNamespace(decoder_points=third_points),
     )
     backend = CadrilleBackend(
         CadrilleConfig(
@@ -162,19 +166,22 @@ def test_backend_generates_candidate_batch_with_one_model_lifecycle(tmp_path) ->
         },
     )
     _FakeModel.load_count = 0
+    _FakeModel.generate_batch_sizes = []
 
     programs = backend.generate_many(
         canonicals,  # type: ignore[arg-type]
-        seeds=(101, 202),
+        seeds=(101, 202, 303),
     )
 
-    assert len(programs) == 2
+    assert len(programs) == 3
     assert _FakeModel.load_count == 1
-    assert len(backend.last_raw_texts) == 2
-    assert len(backend.last_clean_sources) == 2
-    assert len(backend.last_parameterization_reports) == 2
+    assert _FakeModel.generate_batch_sizes == [1, 2]
+    assert len(backend.last_raw_texts) == 3
+    assert len(backend.last_clean_sources) == 3
+    assert len(backend.last_parameterization_reports) == 3
     assert backend.last_runtime_report is not None
     generation = backend.last_runtime_report["generation"]
     assert isinstance(generation, dict)
-    assert generation["candidate_count"] == 2
-    assert len(generation["candidates"]) == 2  # type: ignore[arg-type]
+    assert generation["candidate_count"] == 3
+    assert generation["decode_batch_sizes"] == [1, 2]
+    assert len(generation["candidates"]) == 3  # type: ignore[arg-type]
