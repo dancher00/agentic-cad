@@ -33,6 +33,7 @@ class Da3Config(BaseModel):
 class GeometryConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    segmentation_backend: Literal["border-color", "depth-confidence"] = "border-color"
     segmentation_confidence_percentile: float = Field(default=25.0, ge=0.0, le=100.0)
     segmentation_depth_percentile: float = Field(default=75.0, ge=0.0, le=100.0)
     fusion_confidence_percentile: float = Field(default=40.0, ge=0.0, le=100.0)

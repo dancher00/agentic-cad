@@ -47,3 +47,13 @@ Install `constraints/cu130-py312.txt` before `constraints/da3-py312.txt`. OpenCV
 4.14 and newer can pull NumPy 2, which conflicts with the audited DA3/CadQuery
 environment; the DA3 constraint pins `opencv-python-headless==4.11.0.86` and
 keeps NumPy 1.26.4. `pip check` must report no broken requirements.
+
+## Foreground mask is empty or implausible
+
+The default Phase B mask expects one central object against a dominant image
+border color. Every report records the selected pixel count per view and writes
+mask overlays. For clutter, a background-matched object or a cropped object
+that touches every border, supply an explicit mask in the later user-mask path;
+do not treat the weight-free heuristic as object-aware segmentation. The
+`depth-confidence` alternative is retained for diagnosis but is not a silent
+fallback.

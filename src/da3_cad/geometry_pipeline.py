@@ -12,9 +12,13 @@ from da3_cad.backends.da3 import Da3Backend, da3_license_notice
 from da3_cad.config import AppConfig
 from da3_cad.geometry.diagnostics import write_geometry_diagnostics
 from da3_cad.geometry.fusion import FusedPointCloud, fuse_prediction
-from da3_cad.geometry.unprojection import as_homogeneous_extrinsic
+from da3_cad.geometry.unprojection import (
+    as_homogeneous_extrinsic,
+    unprojection_roundtrip_errors,
+)
 from da3_cad.models import DepthPrediction
 from da3_cad.observations import doctor_report, load_observations
+from da3_cad.segmentation.border_foreground import segment_border_foreground
 from da3_cad.segmentation.depth_foreground import segment_depth_foreground
 
 
@@ -85,11 +89,14 @@ def run_geometry(
         accepted_noncommercial=accepted_noncommercial,
     )
     prediction = backend.predict(observations, device=config.device, seed=config.seed)
-    segmentation = segment_depth_foreground(
-        prediction,
-        confidence_percentile=config.geometry.segmentation_confidence_percentile,
-        depth_percentile=config.geometry.segmentation_depth_percentile,
-    )
+    if config.geometry.segmentation_backend == "border-color":
+        segmentation = segment_border_foreground(prediction)
+    else:
+        segmentation = segment_depth_foreground(
+            prediction,
+            confidence_percentile=config.geometry.segmentation_confidence_percentile,
+            depth_percentile=config.geometry.segmentation_depth_percentile,
+        )
     cloud = fuse_prediction(
         prediction,
         segmentation.masks,
@@ -116,6 +123,15 @@ def run_geometry(
         raise RuntimeError("DA3 backend did not produce its required runtime report")
 
     cloud_bounds = np.stack((cloud.points.min(axis=0), cloud.points.max(axis=0)))
+    roundtrips = [
+        unprojection_roundtrip_errors(
+            prediction.depth[index],
+            prediction.intrinsics[index],
+            prediction.extrinsics[index],
+            convention="world_to_camera",
+        )
+        for index in range(prediction.depth.shape[0])
+    ]
     report: dict[str, object] = {
         "schema_version": "1.0",
         "command": "geometry",
@@ -138,6 +154,7 @@ def run_geometry(
             "pixel_coordinates": "integer u=0..W-1, v=0..H-1 as in pinned exporter",
         },
         "runtime_pose_validation": _pose_report(prediction),
+        "runtime_unprojection_roundtrip": roundtrips,
         "segmentation": {
             "backend": segmentation.backend,
             "selected_pixels": [int(mask.sum()) for mask in segmentation.masks],

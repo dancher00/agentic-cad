@@ -30,3 +30,15 @@ The admitted prediction must contain finite positive z-depth, finite confidence,
 non-singular intrinsics, valid `N×3×4` or `N×4×4` extrinsics and aligned processed
 images. Fusion interprets extrinsics as world-to-camera and preserves unresolved
 scale in a separate channel.
+
+The Phase B render profile uses a deterministic border-color central-component
+mask. A real BASE smoke exposed that the earlier near-depth heuristic could
+collapse one view to a single pixel, so it remains available only as an explicit
+alternative. Border-color masking also has a visible studio/background
+assumption and is not presented as a clutter-ready segmenter.
+
+Unload verification distinguishes model ownership from CUDA runtime residue.
+The report checks every model parameter and buffer after `model.to("cpu")`; both
+counts must be zero on CUDA. It also reports allocator bytes after garbage
+collection, `empty_cache()` and IPC collection. A small framework/context
+residual is retained as a measured value, not mislabelled as model residency.

@@ -17,6 +17,9 @@ class _Parameter:
     def numel(self) -> int:
         return 7
 
+    def element_size(self) -> int:
+        return 4
+
 
 class _Model:
     def __init__(self) -> None:
@@ -24,6 +27,9 @@ class _Model:
 
     def parameters(self) -> list[_Parameter]:
         return [_Parameter(), _Parameter()]
+
+    def buffers(self) -> list[_Parameter]:
+        return []
 
     def to(self, device: _Device) -> _Model:
         self.moves.append(str(device))
@@ -45,5 +51,6 @@ def test_cpu_stage_has_same_load_infer_unload_lifecycle(monkeypatch: object) -> 
     assert result == "result"
     assert model.moves == ["cpu", "cpu"]
     assert report.model_parameters == 14
+    assert report.model_parameter_bytes == 56
     assert report.peak_allocated_bytes is None
     assert report.unload_returned_to_baseline is None

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import os
 import random
 import subprocess
 import sys
+import time
 import types
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -31,6 +33,7 @@ class Da3ModelSpec:
     license: str
     noncommercial: bool
     parameter_scale: str
+    weight_sha256: str
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -40,6 +43,7 @@ class Da3ModelSpec:
             "license": self.license,
             "noncommercial": self.noncommercial,
             "parameter_scale": self.parameter_scale,
+            "weight_sha256": self.weight_sha256,
             "source_url": DA3_SOURCE_URL,
             "source_revision": DA3_SOURCE_REVISION,
         }
@@ -53,6 +57,7 @@ DA3_MODELS: dict[str, Da3ModelSpec] = {
         license="Apache-2.0",
         noncommercial=False,
         parameter_scale="0.12B (upstream model card)",
+        weight_sha256="e01067dc1659613083d9145a9a2547ccdbe6ccbbf83c4fe7b3e8a4e2bdae78b5",
     ),
     "large": Da3ModelSpec(
         key="large",
@@ -61,6 +66,7 @@ DA3_MODELS: dict[str, Da3ModelSpec] = {
         license="CC BY-NC 4.0",
         noncommercial=True,
         parameter_scale="0.35B (upstream model card)",
+        weight_sha256="eaf2ae06df55889ad23eb245c82e2dd2a30c0cbf7e3d873a118fa5ed27a3e421",
     ),
 }
 
@@ -139,6 +145,49 @@ def _import_da3_model_class(source_dir: Path) -> type[Any]:
         raise RuntimeError(f"imported DA3 from unexpected path: {module_path}")
     model_class: type[Any] = module.DepthAnything3
     return model_class
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _verified_checkpoint(
+    spec: Da3ModelSpec,
+    cache_dir: Path,
+    *,
+    local_files_only: bool,
+) -> dict[str, object]:
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as error:
+        raise RuntimeError("DA3 inference requires huggingface-hub") from error
+    started = time.perf_counter()
+    path = Path(
+        hf_hub_download(
+            repo_id=spec.model_id,
+            filename="model.safetensors",
+            revision=spec.revision,
+            cache_dir=cache_dir,
+            local_files_only=local_files_only,
+        )
+    )
+    actual_sha256 = _sha256(path)
+    if actual_sha256 != spec.weight_sha256:
+        raise RuntimeError(
+            f"checkpoint SHA-256 mismatch for {spec.model_id}: "
+            f"expected {spec.weight_sha256}, got {actual_sha256}"
+        )
+    return {
+        "filename": "model.safetensors",
+        "bytes": path.stat().st_size,
+        "sha256": actual_sha256,
+        "sha256_verified": True,
+        "acquisition_and_hash_seconds": time.perf_counter() - started,
+    }
 
 
 def _array_statistics(values: FloatArray) -> dict[str, object]:
@@ -240,6 +289,11 @@ class Da3Backend:
             torch.cuda.manual_seed_all(seed)
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint = _verified_checkpoint(
+            self.spec,
+            self.cache_dir,
+            local_files_only=self.local_files_only,
+        )
         model_class = self._model_class_loader(self.source_dir)
 
         def load_model() -> Any:
@@ -270,6 +324,7 @@ class Da3Backend:
         self.last_runtime_report = {
             "model": self.spec.as_dict(),
             "source_revision_verified": DA3_SOURCE_REVISION,
+            "checkpoint_file": checkpoint,
             "process_resolution": self.process_resolution,
             "process_resolution_method": self.process_resolution_method,
             "use_ray_pose": False,

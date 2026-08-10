@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
@@ -27,6 +28,7 @@ class ModelLifecycleReport:
     requested_device: str
     resolved_device: str
     model_parameters: int
+    model_parameter_bytes: int
     load_seconds: float
     transfer_seconds: float
     inference_seconds: float
@@ -37,6 +39,9 @@ class ModelLifecycleReport:
     peak_reserved_bytes: int | None
     post_unload_allocated_bytes: int | None
     post_unload_reserved_bytes: int | None
+    cuda_parameters_after_cpu_transfer: int | None
+    cuda_buffers_after_cpu_transfer: int | None
+    model_tensors_off_cuda: bool | None
     device_free_bytes_at_start: int | None
     device_total_bytes: int | None
     unload_returned_to_baseline: bool | None
@@ -51,6 +56,7 @@ class ModelLifecycleReport:
             "requested_device": self.requested_device,
             "resolved_device": self.resolved_device,
             "model_parameters": self.model_parameters,
+            "model_parameter_bytes": self.model_parameter_bytes,
             "load_seconds": self.load_seconds,
             "transfer_seconds": self.transfer_seconds,
             "inference_seconds": self.inference_seconds,
@@ -61,6 +67,9 @@ class ModelLifecycleReport:
             "peak_reserved_bytes": self.peak_reserved_bytes,
             "post_unload_allocated_bytes": self.post_unload_allocated_bytes,
             "post_unload_reserved_bytes": self.post_unload_reserved_bytes,
+            "cuda_parameters_after_cpu_transfer": (self.cuda_parameters_after_cpu_transfer),
+            "cuda_buffers_after_cpu_transfer": self.cuda_buffers_after_cpu_transfer,
+            "model_tensors_off_cuda": self.model_tensors_off_cuda,
             "device_free_bytes_at_start": self.device_free_bytes_at_start,
             "device_total_bytes": self.device_total_bytes,
             "unload_returned_to_baseline": self.unload_returned_to_baseline,
@@ -124,9 +133,15 @@ class StagedModelManager:
         model = loader()
         load_seconds = time.perf_counter() - load_started
         model_parameters = sum(int(parameter.numel()) for parameter in model.parameters())
+        model_parameter_bytes = sum(
+            int(parameter.numel()) * int(parameter.element_size())
+            for parameter in model.parameters()
+        )
         transfer_seconds = 0.0
         inference_seconds = 0.0
         unload_started = 0.0
+        cuda_parameters_after_cpu_transfer: int | None = None
+        cuda_buffers_after_cpu_transfer: int | None = None
         try:
             transfer_started = time.perf_counter()
             model = model.to(device)
@@ -144,10 +159,20 @@ class StagedModelManager:
         finally:
             unload_started = time.perf_counter()
             model.to(torch.device("cpu"))
+            if is_cuda:
+                cuda_parameters_after_cpu_transfer = sum(
+                    int(parameter.device.type == "cuda") for parameter in model.parameters()
+                )
+                cuda_buffers_after_cpu_transfer = sum(
+                    int(buffer.device.type == "cuda") for buffer in model.buffers()
+                )
             del model
             gc.collect()
             if is_cuda:
                 torch.cuda.empty_cache()
+                with suppress(RuntimeError, AttributeError):
+                    torch.cuda.ipc_collect()
+                gc.collect()
                 torch.cuda.synchronize(device)
 
         unload_seconds = time.perf_counter() - unload_started
@@ -168,6 +193,7 @@ class StagedModelManager:
             requested_device=self.requested_device,
             resolved_device=str(device),
             model_parameters=model_parameters,
+            model_parameter_bytes=model_parameter_bytes,
             load_seconds=load_seconds,
             transfer_seconds=transfer_seconds,
             inference_seconds=inference_seconds,
@@ -178,6 +204,13 @@ class StagedModelManager:
             peak_reserved_bytes=peak_reserved,
             post_unload_allocated_bytes=post_allocated,
             post_unload_reserved_bytes=post_reserved,
+            cuda_parameters_after_cpu_transfer=cuda_parameters_after_cpu_transfer,
+            cuda_buffers_after_cpu_transfer=cuda_buffers_after_cpu_transfer,
+            model_tensors_off_cuda=(
+                cuda_parameters_after_cpu_transfer == 0 and cuda_buffers_after_cpu_transfer == 0
+                if is_cuda
+                else None
+            ),
             device_free_bytes_at_start=free_at_start,
             device_total_bytes=total_memory,
             unload_returned_to_baseline=returned_to_baseline,

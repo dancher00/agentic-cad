@@ -66,3 +66,21 @@ def test_extrinsic_shapes_and_homogeneous_row_are_validated() -> None:
         as_homogeneous_extrinsic(invalid)
     with pytest.raises(ValueError, match="singular"):
         unproject_depth(np.ones((1, 1)), np.zeros((3, 3)), np.eye(4))
+
+
+def test_unprojection_roundtrip_recovers_pixels_and_z_depth() -> None:
+    from da3_cad.geometry.unprojection import unprojection_roundtrip_errors
+
+    depth = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
+    intrinsics = np.array(
+        [[2.0, 0.0, 0.25], [0.0, 3.0, 0.5], [0.0, 0.0, 1.0]],
+        dtype=np.float32,
+    )
+    world_to_camera = np.eye(4, dtype=np.float32)
+    world_to_camera[:3, 3] = (0.5, -1.0, 2.0)
+
+    report = unprojection_roundtrip_errors(depth, intrinsics, world_to_camera)
+
+    assert report["points"] == 4
+    assert report["max_pixel_abs_error"] < 1e-6
+    assert report["max_z_depth_abs_error"] < 1e-6

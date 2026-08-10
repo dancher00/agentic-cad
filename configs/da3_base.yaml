@@ -12,6 +12,7 @@ da3:
   process_resolution_method: upper_bound_resize
   local_files_only: false
 geometry:
+  segmentation_backend: border-color
   segmentation_confidence_percentile: 25.0
   segmentation_depth_percentile: 75.0
   fusion_confidence_percentile: 40.0

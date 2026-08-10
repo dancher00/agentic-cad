@@ -114,3 +114,41 @@ def unproject_depth(
         points=points.astype(np.float32),
         valid_mask=valid.astype(np.bool_),
     )
+
+
+def unprojection_roundtrip_errors(
+    depth: FloatArray,
+    intrinsics: FloatArray,
+    extrinsic: FloatArray,
+    *,
+    convention: ExtrinsicConvention = "world_to_camera",
+) -> dict[str, float | int]:
+    """Unproject then reproject real values to verify z-depth/frame semantics."""
+
+    unprojected = unproject_depth(
+        depth,
+        intrinsics,
+        extrinsic,
+        convention=convention,
+    )
+    valid = unprojected.valid_mask
+    ys, xs = np.nonzero(valid)
+    if len(xs) == 0:
+        raise ValueError("roundtrip requires at least one valid depth pixel")
+    points = unprojected.points[valid].astype(np.float64)
+    world_h = np.concatenate(
+        (points, np.ones((len(points), 1), dtype=np.float64)),
+        axis=1,
+    )
+    c2w = camera_to_world_matrix(extrinsic, convention=convention)
+    w2c = np.linalg.inv(c2w)
+    camera = world_h @ w2c.T
+    projected_h = camera[:, :3] @ np.asarray(intrinsics, dtype=np.float64).T
+    projected_xy = projected_h[:, :2] / projected_h[:, 2:3]
+    expected_xy = np.stack((xs, ys), axis=1).astype(np.float64)
+    expected_depth = np.asarray(depth, dtype=np.float64)[valid]
+    return {
+        "points": len(points),
+        "max_pixel_abs_error": float(np.max(np.abs(projected_xy - expected_xy))),
+        "max_z_depth_abs_error": float(np.max(np.abs(camera[:, 2] - expected_depth))),
+    }
