@@ -29,3 +29,15 @@ def test_doctor_detects_an_exact_duplicate(sample_case: Path) -> None:
     warnings = report["warnings"]
     assert isinstance(warnings, list)
     assert "exact duplicate inputs: view_004.png" in warnings
+
+
+def test_doctor_does_not_invent_a_numeric_capture_threshold(sample_case: Path) -> None:
+    report = doctor_report(load_observations(sample_case / "views"))
+    capture = report["capture_benchmark"]
+
+    assert capture["status"] == "no-numeric-capture-threshold-established"
+    assert capture["tested_view_counts"] == [8, 16, 24, 32]
+    assert capture["numeric_warning_below"] is None
+    assert capture["numeric_minimum_views"] is None
+    assert capture["numeric_recommended_views"] is None
+    assert not any("6-12" in warning for warning in report["warnings"])

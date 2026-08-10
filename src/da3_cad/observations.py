@@ -14,6 +14,31 @@ from da3_cad.models import ImageObservation, ObservationSet, UInt8Array
 
 IMAGE_EXTENSIONS: Final = {".jpg", ".jpeg", ".png"}
 EXIF_ORIENTATION: Final = 274
+CAPTURE_BENCHMARK: Final = {
+    "status": "no-numeric-capture-threshold-established",
+    "tested_view_counts": [8, 16, 24, 32],
+    "numeric_warning_below": None,
+    "numeric_minimum_views": None,
+    "numeric_recommended_views": None,
+    "reason": (
+        "the common-object reconstruction curve was non-monotone and neither "
+        "GT-blind parameter criterion passed its gate at any tested view count"
+    ),
+    "capture_design_limit": (
+        "the nested schedule changes image count and angular fill together; "
+        "count versus separation is not causally identified"
+    ),
+    "sources": [
+        {
+            "path": "benchmarks/high_view_sweep/report.json",
+            "sha256": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072",
+        },
+        {
+            "path": "benchmarks/gt_blind_view_curve/report.json",
+            "sha256": "fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6",
+        },
+    ],
+}
 
 
 def _sha256(path: Path) -> str:
@@ -130,8 +155,6 @@ def doctor_report(observations: ObservationSet) -> dict[str, object]:
 
     if len(images) < 3:
         warnings.append("fewer than 3 views: unseen geometry will be inferred")
-    elif len(images) < 6:
-        warnings.append("limited view count: capture 6-12 well-spaced views when possible")
     if exact_duplicates:
         warnings.append(f"exact duplicate inputs: {', '.join(exact_duplicates)}")
     if near_pairs:
@@ -161,6 +184,7 @@ def doctor_report(observations: ObservationSet) -> dict[str, object]:
         "exact_duplicates": exact_duplicates,
         "near_duplicate_pairs": [list(pair) for pair in near_pairs],
         "coverage_heuristic": coverage,
+        "capture_benchmark": CAPTURE_BENCHMARK,
         "verdict": "ready-with-warnings" if warnings else "ready",
         "warnings": warnings,
         "note": "coverage is an image-diversity heuristic, not recovered camera-pose proof",

@@ -851,6 +851,18 @@ objects at every N, unchanged estimator code, and no precision or product
 selection. Raw N-dependent direct metrics may diagnose whether redundancy
 improves identifiability, but cannot rewrite the failed primary gate.
 
+The supplement completed all 114 new parameter runs without failure. Projected
+scale/shift rho rose monotonically from 0.044/0.043 at N=8 to 0.406/0.410 at
+N=32. Fixed-plane rose overall from 0.322/0.364 to 0.524/0.530, with a dip at
+N=24. Median parameter errors also fell, so additional overlaps improve
+identifiability. They do not solve it: neither criterion passed the original
+gate at any N, scale sign agreement remained below 55% at N=32, and the oracle
+median scale max/min expanded to 13.89 versus blind 2.51/2.39. Product precision
+therefore remained locked. The immutable supplemental report SHA-256 is
+`fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6`.
+There is still no numeric minimum/recommended capture count; doctor and
+`docs/REAL_PHOTO_VALIDATION.md` say so explicitly.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source

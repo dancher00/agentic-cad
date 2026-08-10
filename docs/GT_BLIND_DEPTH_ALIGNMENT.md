@@ -41,3 +41,25 @@ The immutable machine-readable report is
 `58972ea7f26f275262653530fe8e90501c1760ece32db9f411629edd704389b5`.
 The protocol and exact gate are in
 `docs/GT_BLIND_DEPTH_ALIGNMENT_PROTOCOL.md`.
+
+## Post-gate view-count result
+
+A separately preregistered parameter-only supplement kept the primary
+selection at `none` and evaluated both unchanged criteria on the 19 objects
+common to N={8,16,24,32}. Projected scale/shift Spearman rho rose monotonically
+from 0.044/0.043 to 0.406/0.410. Fixed-plane rho changed from 0.322/0.364 to
+0.519/0.532, 0.478/0.485 and 0.524/0.530. Median absolute errors fell with N,
+but neither criterion passed the original gate at any tested view count.
+
+At N=32, projected scale/shift sign agreement was 54.5%/58.2% and fixed-plane
+was 53.3%/59.9%; both miss the required 55% scale agreement. More importantly,
+the gauge-fixed oracle median within-object scale max/min expanded to 13.89,
+while the blind estimates remained at 2.51 and 2.39. Between 11% and 21% of
+high-N oracle scales lay outside the blind `[0.5,2.0]` bounds depending on N.
+The added overlaps improve ranking and error, but do not identify the oracle
+correction closely enough for deployment.
+
+The supplemental immutable report is
+`benchmarks/gt_blind_view_curve/report.json`, SHA-256
+`fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6`.
+No reconstruction metric was computed.
