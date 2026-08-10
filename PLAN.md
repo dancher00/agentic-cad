@@ -733,6 +733,30 @@ The implementation, synthetic tests and full command are frozen in
 report regardless of outcome. Neither a long campaign nor README figures may
 start from this step.
 
+### 7.8 Camera/scale diagnostic result and stop
+
+The corrected v1.1 run completed all 74 records: GT-pose on the 49 identifiable
+N={4,8,16} records, and metric-depth, ray-pose and both scale oracles on all 74.
+No control reached the preregistered 0.60 axis-oracle precision @.05 gate.
+Medians were 0.3008 baseline, 0.3867 GT-pose, 0.1406 metric+GT cameras, 0.2930
+ray-pose, 0.3867 single-axis scale and 0.3750 diagonal scale. On the common
+20-object N=8 slice, exact pose raised 0.2188 to 0.4297: pose error is material
+but insufficient.
+
+Scale optimization reduced diagnostic Chamfer, but 39/74 single-axis and 47/74
+diagonal fits reached a [0.5,2.0] boundary and neither produced working
+precision. This is inconsistent with a single small coherent 5--10% depth-scale
+error; it does not authorize an unbounded GT deformation at inference.
+DA3METRIC-LARGE regressed and ray-pose was neutral. Exact returned K/E, verified
+checkpoint hashes, sm_120 execution and model-tensor unload (not allocator
+baseline restoration) are frozen
+in `benchmarks/camera_scale_diagnostics/report.json` (SHA-256
+`a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a`).
+
+The registered next hypothesis is independent silhouette constraints. It, the
+long campaign and README result claims remain unexecuted. See
+`docs/CAMERA_SCALE_DIAGNOSTICS.md`.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
