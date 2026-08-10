@@ -785,6 +785,18 @@ After the measurement the scientific branch stops regardless of result; the
 next authorized scope is T-LESS Primesense, viewer and honest domain-gap
 documentation. No campaign or README result run starts here.
 
+The frozen run completed from preregistration commit `71d7dee`. On the primary
+N=8 slice it raised median axis-oracle precision@0.05 from 0.4297 to 0.6270,
+crossing the 0.60 gate; 17/20 objects improved. Median within-object scale
+max/min was 1.497 and median corrected-depth span was 0.122 GT largest extents.
+Only 1/160 N=8 scale coefficients hit a bound (42/504 across all secondary
+slices); no centre parameter hit a bound. Per-view affine depth inconsistency
+is therefore supported as a major residual cause after exact pose, but the
+oracle is not a GT-blind product correction. The immutable report SHA-256 is
+`dac2f2fb617adb99167ea8c77dc068dc40c5e91bbc2f7ffe55f3f0c423c83569`.
+The scientific branch is now closed as required; see
+`docs/PER_VIEW_DEPTH_ORACLE.md`.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source

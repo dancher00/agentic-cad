@@ -102,7 +102,11 @@ reduced to the registered modest anisotropic scale model.
 The original frozen decision rule pointed next to independent silhouettes.
 Inspection of the 39/74 global-scale boundary hits motivated one final,
 separately preregistered diagnostic first: distinct scale and depth shift per
-view with exact cameras. Its protocol is
-`docs/PER_VIEW_DEPTH_ORACLE_PROTOCOL.md`. It remains GT-only and forbidden at
-inference. The project must stop after that measurement regardless of outcome;
-no long campaign is authorized.
+view with exact cameras. That measurement is now complete: on N=8 it raises
+0.4297 to 0.6270 and confirms material per-view depth inconsistency after pose
+is controlled. The pose gain from the uncalibrated path remains slightly larger
+(+0.2109 versus +0.1973), while the depth result uses 16 GT-fitted parameters
+and is forbidden at inference. Protocol and result are in
+`docs/PER_VIEW_DEPTH_ORACLE_PROTOCOL.md` and
+`docs/PER_VIEW_DEPTH_ORACLE.md`. The scientific branch stops here; no long
+campaign is authorized.
