@@ -555,34 +555,43 @@ Each result row includes dataset revision, exact IDs/count, subset/full label,
 profile/checkpoint revision, N, seed, GPU, wall-clock, peak VRAM, evaluator
 version/config and repository commit SHA.
 
-### 7.2 Preliminary runtime estimate
+### 7.2 Measured stop-point-6 runtime estimate
 
-No DA3/cadrille checkpoint inference has yet been timed in this environment, so
-the following is a capacity estimate, not a result. It assumes stage batching,
-candidate batching where 16 GB permits it, cached renders/DA3 clouds, one RTX
-5080, no simultaneous resident models, and separate CPU validation/evaluation.
-A 20-item pilot across all N and both candidate budgets will replace these
-assumptions before stop point 6.
+The committed 20-item pilot ran all five N values and both candidate rows on
+DA3-LARGE/Cadrille-RL at `33c0003`. It produced 100 item/view combinations
+and 200 strict metric records in 48 minutes 22 seconds. A concurrent unrelated
+training process left only 7.64--7.87 GiB free at model-stage entry, so these are
+conservative planning measurements rather than idle-GPU performance claims.
+See `docs/PHASE_D_PILOT.md` and the frozen files in `benchmarks/pilot/`.
 
-| Work | Count / reuse | Preliminary wall-clock |
-|---|---:|---:|
-| Single-decode view sweep | 150 x 5 = 750 reconstructions | 5--11 GPU h |
-| Best-N headline, both candidate rows | 500 DA3 outputs, 5,000 decoder candidates; candidate 0 reused | 10--22 GPU h |
-| GT-pc, image, no-canonicalizer, fitter, GT-pose controls | mostly best-N, reuse renders/clouds | 5--10 GPU h + 2--5 CPU h |
-| Canonicalizer leave-one-step-out ablations | 100 objects, cached DA3 clouds, up to 800 single decodes | 4--8 GPU h |
-| DA3-BASE/LARGE comparison and hard subset | cached meshes/renders | 4--8 GPU h |
-| T-LESS Primesense sweep plus best-N candidate row | 150 single reconstructions + 300 candidate decodes | 1--4 GPU h |
-| Metric computation and reference-evaluator audit | resumable CPU work | 5--12 CPU h |
-| Expected complete experiment campaign | serialized conservatively | about 2--3 wall-clock days |
+| N | Single all / valid median s | Best-10 all / valid median s | Max own peak GiB |
+|---:|---:|---:|---:|
+| 1 | 7.70 / 7.70 | 26.77 / 26.77 | 4.96 |
+| 2 | 2.51 / 7.84 | 2.51 / 26.68 | 4.96 |
+| 4 | 5.69 / 9.11 | 14.61 / 28.60 | 4.96 |
+| 8 | 10.55 / 10.55 | 30.22 / 30.22 | 5.58 |
+| 16 | 14.52 / 14.54 | 33.56 / 33.59 | 6.26 |
 
-The complete DeepCAD+Fusion split is 9,771 items. To meet the prompt's 24-hour
-limit, the measured sustained end-to-end throughput must be at most
-`86,400 / 9,771 = 8.84 seconds/item`, including decode and validation. The
-ten-candidate published protocol makes a full-split best-of-10 run still
-less likely to fit: its measured sustained total must also remain below the same
-19.2-hour safety gate. The fixed 500-item best-N headline and 150-item view curve
-therefore remain the expected release scope unless pilot evidence proves the
-full configuration affordable without reduced-quality settings.
+The all-item medians include early invalid exits; valid medians condition on a
+valid output. The 150-object five-N curve projects to 1.71/4.49 serial hours for
+single/best-10 with current exits, or 2.07/6.08 hours on successful paths. A
+500-object N=8 headline projects to 1.46/4.20 hours and N=16 to 2.02/4.67
+hours. Best-10 already contains candidate 0, so the two row costs are not added
+for a jointly cached run. The primary view curve plus headline is therefore
+about 8.7--10.8 serial hours; controls, ablations and T-LESS remain separately
+measured work rather than unsupported extrapolations.
+
+The full 9,771-item best-of-10 configuration projects to 72.4--91.2 serial
+hours across N on success-conditioned medians and cannot meet the 24-hour gate.
+Single N=1 projects to 20.9 hours, but it is not the published best-of-N
+protocol. N=2 appears cheap only because pilot IR is 75--85%; its
+success-conditioned cost is normal and it is not a viable shortcut. The fixed
+500-item headline and 150-item view curve remain the release scope.
+
+Before that longer run, the measured N=2/N=4 multi-view-consistency collapse
+and one N=16 border-mask failure must be diagnosed. N=8 is the provisional
+safe point (20/20 best-10 valid in the pilot), while the 150-object view curve
+must make the actual headline-N decision.
 
 ## 8. Licensing and acquisition behavior
 
@@ -667,18 +676,24 @@ the ordering and stop-point gates will not be bypassed.
 
 ## 11. Still unverified and required before claims
 
-- Representative DA3 throughput at resolution 504 and without concurrent GPU
-  load; BASE/LARGE compatibility, real inference and resolution-280 memory peaks
-  are verified at stop point 4.
+- The 20-item resolution-504 pilot measured throughput under a concurrent GPU
+  workload with only 7.64--7.87 GiB free. Representative idle-GPU throughput
+  remains unverified; BASE/LARGE compatibility and real inference are verified.
 - SFT and RL loading, greedy SDPA generation and model-tensor unload are
-  verified on torch 2.13/sm_120. SFT emitted an invalid solid on the single
-  stop-point fixture; checkpoint validity rates and quality remain unmeasured.
-- The pinned CadQuery version executes the RL raw/parameterized program and a
-  real named edit. Compatibility across the generated-program distribution is
-  still unverified.
-- Cadrille peak VRAM is verified at 4.237 GiB allocated for the single
-  256-point smoke input. Peak VRAM and throughput across benchmark view counts,
-  resolution 504 and future batch/candidate budgets remain unverified.
+  verified on torch 2.13/sm_120. SFT emitted an invalid solid on the stop-point
+  fixture. The RL pilot validated 709/740 generated candidates, but the timing
+  split is too small for a checkpoint-quality claim.
+- The pinned CadQuery version executed and equivalence-checked the 740-program
+  RL pilot distribution; 31 invalid candidates remained explicit. Broader
+  compatibility and engineering-semantic parameter quality remain unverified.
+- The pilot measured up to 6.26 GiB own-process peak across N and best-10.
+  All recorded model tensors moved off CUDA. DA3 retained small allocator
+  buffers and therefore did not satisfy the stricter allocator-baseline flag.
+- Multi-view consistency collapsed 15/20 N=2 and 10/20 N=4 canonical clouds
+  before decode. That behavior must be diagnosed before the 150-object sweep.
+- One Fusion360 N=16 combination failed the explicit border-mask component
+  contract on an edge view; the mask policy needs a deterministic repair before
+  the long run.
 - Robust mesh boolean behavior and the exact root cause/reproduction range of
   cadrille issue #19.
 - Broader normalization validation beyond the committed five DeepCAD and five

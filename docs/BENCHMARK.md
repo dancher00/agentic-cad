@@ -72,6 +72,26 @@ are immutable: a divergent write is an error. Aggregation rejects missing,
 extra, duplicate and mixed-manifest results and can be regenerated without
 inference.
 
+## Frozen Phase D timing pilot
+
+After downloading and rendering the two pilot splits, run the real resumable
+pilot with explicit NC acceptance:
+
+```bash
+python scripts/run_phase_d_pilot.py \
+  --render-summary data/benchmark_runs/render_normal_summary.json \
+  --data-root data/benchmarks \
+  --output-root data/benchmark_runs/pilot \
+  --report benchmarks/pilot/report.json \
+  --experiment-manifest benchmarks/pilot/experiment_manifest.json \
+  --accept-noncommercial-weights \
+  --accept-license cc-by-nc-4.0
+```
+
+The committed stop-point-6 run, strict combined diagnostic table, failures and
+success-conditioned capacity estimate are in `PHASE_D_PILOT.md`. The output
+root is ignored; the compact report and experiment manifest are tracked.
+
 ## Candidate and metric boundary
 
 Two rows are predeclared. `single-decode` evaluates candidate 0.
