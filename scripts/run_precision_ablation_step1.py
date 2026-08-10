@@ -28,8 +28,11 @@ from da3_cad.evaluation.mesh import (
     validate_mesh,
     verify_official_test_mesh_frame,
 )
-from da3_cad.geometry.canonicalizer import PointCloudCanonicalizer
-from da3_cad.geometry.ray_consistency import filter_cross_view_depth_support
+from da3_cad.geometry.canonicalizer import CanonicalCloud, PointCloudCanonicalizer
+from da3_cad.geometry.ray_consistency import (
+    CrossViewRayResult,
+    filter_cross_view_depth_support,
+)
 from da3_cad.models import FloatArray
 
 RAY_MINIMUM_VIEWS = 2
@@ -140,6 +143,30 @@ def _stats(values: list[float]) -> dict[str, float | int]:
 def _diagnostics(record: dict[str, object], variant: str) -> dict[str, Any]:
     payload = cast(dict[str, Any], record[variant])
     return cast(dict[str, Any], payload["diagnostics"])
+
+
+def _step_valid(record: dict[str, object]) -> bool:
+    payload = cast(dict[str, object], record["cross_view_ray"])
+    return payload.get("valid") is True
+
+
+def _validity_summary(records: list[dict[str, object]]) -> dict[str, object]:
+    invalid = [record for record in records if not _step_valid(record)]
+    valid_count = len(records) - len(invalid)
+    return {
+        "total_records": len(records),
+        "valid_records": valid_count,
+        "invalid_records": len(invalid),
+        "valid_fraction": valid_count / len(records),
+        "invalid_keys": [
+            {
+                "dataset": record["dataset"],
+                "item_id": record["item_id"],
+                "view_count": record["view_count"],
+            }
+            for record in invalid
+        ],
+    }
 
 
 def _relation(
@@ -280,7 +307,12 @@ def _curve(records: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
-def _stop_decision(curve: dict[str, object]) -> dict[str, object]:
+def _stop_decision(
+    curve: dict[str, object],
+    *,
+    total_records: int,
+    valid_records: int,
+) -> dict[str, object]:
     baseline = cast(dict[str, Any], curve["baseline"])["gt_axis_oracle"]
     step = cast(dict[str, Any], curve["cross_view_ray"])["gt_axis_oracle"]
     baseline_precision = float(baseline["point_precision_fraction"]["0.05"]["median"])
@@ -290,11 +322,15 @@ def _stop_decision(curve: dict[str, object]) -> dict[str, object]:
     baseline_normal = float(baseline["absolute_normal_residual_mean"]["median"])
     step_normal = float(step["absolute_normal_residual_mean"]["median"])
     values = {
+        "valid_records": valid_records,
+        "required_records": total_records,
+        "valid_fraction": valid_records / total_records,
         "precision_gain": step_precision - baseline_precision,
         "coverage_retention": step_coverage / baseline_coverage,
         "normal_residual_ratio": step_normal / baseline_normal,
     }
     checks = {
+        "all_records_valid": valid_records == total_records,
         "precision_gain_at_least_0.02": (values["precision_gain"] >= MINIMUM_PRECISION_GAIN),
         "coverage_retention_at_least_0.95": (
             values["coverage_retention"] >= MINIMUM_COVERAGE_RETENTION
@@ -307,7 +343,9 @@ def _stop_decision(curve: dict[str, object]) -> dict[str, object]:
     return {
         "frozen_before_measurement": True,
         "primary_frame": "GT-aware proper-axis oracle; diagnostic only",
+        "metric_population": "valid paired records; validity is a separate mandatory gate",
         "thresholds": {
+            "required_valid_records": total_records,
             "minimum_absolute_precision_0.05_gain": MINIMUM_PRECISION_GAIN,
             "minimum_coverage_0.05_retention": MINIMUM_COVERAGE_RETENTION,
             "maximum_normal_residual_ratio": MAXIMUM_NORMAL_RESIDUAL_RATIO,
@@ -383,7 +421,8 @@ def main() -> int:
         raise ValueError("baseline domain-gap report does not contain 74 unique records")
 
     started = time.perf_counter()
-    canonicalizer = PointCloudCanonicalizer(CanonicalizerConfig())
+    baseline_canonicalizer = PointCloudCanonicalizer(CanonicalizerConfig())
+    ray_canonicalizer = PointCloudCanonicalizer(CanonicalizerConfig(consistency_enabled=False))
     records: list[dict[str, object]] = []
     for index, (dataset, item_id_value, view_count, frozen_path) in enumerate(artifacts, 1):
         dataset_name = cast(DatasetName, dataset)
@@ -398,11 +437,14 @@ def main() -> int:
             role=f"reconstruct:n{view_count}",
         )
         frozen_decoder = np.load(frozen_path, allow_pickle=False)
-        baseline = canonicalizer.run(cloud, seed=seed)
+        baseline = baseline_canonicalizer.run(cloud, seed=seed)
         if not np.array_equal(baseline.decoder_tensor, frozen_decoder):
             raise RuntimeError(f"baseline reproduction mismatch: {frozen_path}")
 
         camera_path = geometry_output / "artefacts" / "camera_prediction.npz"
+        ray: CrossViewRayResult | None = None
+        step: CanonicalCloud | None = None
+        step_failure: dict[str, str] | None = None
         with np.load(camera_path, allow_pickle=False) as camera:
             if set(camera.files) != {
                 "depth",
@@ -412,17 +454,32 @@ def main() -> int:
                 "masks",
             }:
                 raise ValueError(f"unexpected frozen camera contract: {camera_path}")
-            ray = filter_cross_view_depth_support(
-                cloud,
-                np.asarray(camera["depth"], dtype=np.float32),
-                np.asarray(camera["confidence"], dtype=np.float32),
-                np.asarray(camera["intrinsics"], dtype=np.float32),
-                np.asarray(camera["extrinsics"], dtype=np.float32),
-                np.asarray(camera["masks"], dtype=np.bool_),
-                minimum_views=RAY_MINIMUM_VIEWS,
-                depth_tolerance_fraction=RAY_DEPTH_TOLERANCE_FRACTION,
-            )
-        step = canonicalizer.run(ray.cloud, seed=seed)
+            try:
+                ray = filter_cross_view_depth_support(
+                    cloud,
+                    np.asarray(camera["depth"], dtype=np.float32),
+                    np.asarray(camera["confidence"], dtype=np.float32),
+                    np.asarray(camera["intrinsics"], dtype=np.float32),
+                    np.asarray(camera["extrinsics"], dtype=np.float32),
+                    np.asarray(camera["masks"], dtype=np.bool_),
+                    minimum_views=RAY_MINIMUM_VIEWS,
+                    depth_tolerance_fraction=RAY_DEPTH_TOLERANCE_FRACTION,
+                )
+            except (RuntimeError, ValueError) as error:
+                step_failure = {
+                    "stage": "cross-view-depth-ray",
+                    "type": type(error).__name__,
+                    "message": str(error),
+                }
+        if ray is not None:
+            try:
+                step = ray_canonicalizer.run(ray.cloud, seed=seed)
+            except (RuntimeError, ValueError) as error:
+                step_failure = {
+                    "stage": "downstream-canonicalizer",
+                    "type": type(error).__name__,
+                    "message": str(error),
+                }
 
         gt_cloud_path = args.gt_control_root / dataset / f"{item_id_value}.npz"
         gt_mesh_path = args.data_root / dataset / f"{item_id_value}.stl"
@@ -439,12 +496,40 @@ def main() -> int:
                 "baseline diagnostic reproduction mismatch: "
                 f"{dataset}:{item_id_value}:n{view_count}"
             )
-        step_diagnostics = measure_domain_gap(
-            step.decoder_points,
-            gt_decoder,
-            gt_surface,
-            gt_mesh,
-        )
+        cross_view_payload: dict[str, object]
+        if step is None:
+            if step_failure is None:
+                raise RuntimeError("ray step is missing without a recorded failure")
+            cross_view_payload = {
+                "valid": False,
+                "failure": step_failure,
+                "ray_report": ray.report if ray is not None else None,
+                "ray_points": len(ray.cloud.points) if ray is not None else 0,
+                "diagnostics": None,
+            }
+        else:
+            if ray is None or step_failure is not None:
+                raise RuntimeError("valid ray step has inconsistent execution state")
+            step_diagnostics = measure_domain_gap(
+                step.decoder_points,
+                gt_decoder,
+                gt_surface,
+                gt_mesh,
+            )
+            cross_view_payload = {
+                "valid": True,
+                "decoder_sha256": _array_sha256(step.decoder_points),
+                "diagnostics": step_diagnostics,
+                "ray_report": ray.report,
+                "ray_points": len(ray.cloud.points),
+                "canonicalizer_stage_point_counts": {
+                    stage.name: len(stage.points) for stage in step.stages
+                },
+                "spatial_multiview_support_enabled": False,
+                "orientation_method": (
+                    step.orientation.method if step.orientation is not None else None
+                ),
+            }
         records.append(
             {
                 "dataset": dataset,
@@ -457,17 +542,7 @@ def main() -> int:
                     "byte_exact_reproduction": True,
                     "diagnostics": baseline_diagnostics,
                 },
-                "cross_view_ray": {
-                    "decoder_sha256": _array_sha256(step.decoder_points),
-                    "diagnostics": step_diagnostics,
-                    "ray_report": ray.report,
-                    "canonicalizer_stage_point_counts": {
-                        stage.name: len(stage.points) for stage in step.stages
-                    },
-                    "orientation_method": (
-                        step.orientation.method if step.orientation is not None else None
-                    ),
-                },
+                "cross_view_ray": cross_view_payload,
                 "artifacts": {
                     "frozen_decoder": str(frozen_path),
                     "geometry_output": str(geometry_output),
@@ -483,11 +558,26 @@ def main() -> int:
         if index % 10 == 0 or index == len(artifacts):
             print(json.dumps({"completed": index, "total": len(artifacts)}))
 
-    curve = _curve(records)
+    valid_records = [record for record in records if _step_valid(record)]
+    if not valid_records:
+        raise RuntimeError("cross-view ray produced no valid paired records")
+    curve = _curve(valid_records)
+    validity = _validity_summary(records)
     by_view: dict[int, list[dict[str, object]]] = defaultdict(list)
     for record in records:
         by_view[int(cast(int, record["view_count"]))].append(record)
-    stop = _stop_decision(curve)
+    curve_by_view: dict[str, object] = {}
+    for view_count, group in sorted(by_view.items()):
+        valid_group = [record for record in group if _step_valid(record)]
+        curve_by_view[str(view_count)] = {
+            "validity": _validity_summary(group),
+            "metrics_on_valid_pairs": _curve(valid_group) if valid_group else None,
+        }
+    stop = _stop_decision(
+        curve,
+        total_records=len(records),
+        valid_records=len(valid_records),
+    )
     report: dict[str, object] = {
         "schema_version": "da3-cad-canonicalizer-precision-ablation-v1",
         "status": (
@@ -522,12 +612,18 @@ def main() -> int:
                 "nearest projected pixel, object mask, original fusion confidence "
                 "threshold, z-depth agreement"
             ),
+            "baseline_spatial_multiview_support": "enabled",
+            "step_spatial_multiview_support": (
+                "disabled; cross-view depth-ray replaces the heuristic spatial-support stage"
+            ),
             "gt_access": False,
         },
+        "validity": validity,
+        "curve_population": (
+            "valid paired records only; invalid records remain mandatory failures"
+        ),
         "curve_overall": curve,
-        "curve_by_view_count": {
-            str(view_count): _curve(group) for view_count, group in sorted(by_view.items())
-        },
+        "curve_by_view_count": curve_by_view,
         "stop_decision": stop,
         "target": {
             "precision_0.05": "0.60-0.70 before pilot rerun",
