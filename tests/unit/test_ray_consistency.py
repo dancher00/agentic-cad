@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -183,3 +185,29 @@ def test_source_observation_does_not_require_camera_round_trip() -> None:
     assert result.support_counts.tolist() == [2, 2]
     assert result.report["source_view_confirmation_fraction"] == 1.0
     assert len(result.cloud.points) == 2
+
+
+def test_confidence_gate_preserves_fusion_float32_threshold_semantics() -> None:
+    cloud, depth, confidence, intrinsics, extrinsics, masks = _two_view_fixture()
+    boundary = np.float32(1.0085315704345703)
+    percentile = 1.0085315942764281
+    confidence.fill(boundary)
+    cloud = replace(
+        cloud,
+        confidences=np.full(len(cloud.points), boundary, dtype=np.float32),
+        report=replace(
+            cloud.report,
+            confidence_thresholds=(percentile, percentile),
+        ),
+    )
+
+    result = filter_cross_view_depth_support(
+        cloud,
+        depth,
+        confidence,
+        intrinsics,
+        extrinsics,
+        masks,
+    )
+
+    assert len(result.cloud.points) == 6

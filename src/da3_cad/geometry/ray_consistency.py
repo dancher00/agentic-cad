@@ -42,7 +42,9 @@ def _validate_evidence(
     masks: BoolArray,
 ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray, BoolArray]:
     depth_values = np.asarray(depth, dtype=np.float64)
-    confidence_values = np.asarray(confidence, dtype=np.float64)
+    # Preserve the fusion-time float32 scalar-comparison semantics at exact
+    # percentile boundaries; widening only the array can reject tied pixels.
+    confidence_values = np.asarray(confidence, dtype=np.float32)
     intrinsic_values = np.asarray(intrinsics, dtype=np.float64)
     extrinsic_values = np.asarray(extrinsics, dtype=np.float64)
     mask_values = np.asarray(masks, dtype=np.bool_)
