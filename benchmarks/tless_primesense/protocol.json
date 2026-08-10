@@ -1,0 +1,16 @@
+{
+  "candidate_rows": {"best-of-10-input-CD": 10, "single-decode": 1},
+  "checkpoints": {"cadrille": "rl", "da3": "large"},
+  "dataset": {"objects": 30, "sensor": "Primesense Carmine 1.09", "source_manifest": "benchmarks/manifests/tless.json"},
+  "evaluator": "da3-cad-evaluator-v2-centered",
+  "failure_policy": "retain every planned object/view/row; no worst-case removal",
+  "global_seed": 20260810,
+  "ground_truth": {"mesh_family": "official models_cad", "repair": "retain valid byte-equivalent meshes; audit minimal repair of invalid triangulations before metrics"},
+  "metrics": ["bidirectional squared Chamfer x1000 at 8192 points", "complete-mesh IoU percent", "IR percent"],
+  "protocol": "da3-cad-tless-primesense-v1",
+  "reconstruction": {"camera_metadata": false, "crop": false, "depth": false, "full_frame_rgb_only": true, "gt_mask": false, "intrinsics": false},
+  "schema_version": "1.0",
+  "segmentation": {"audit": "post-hoc against GT visible masks", "backend": "depth-confidence-central-component-v1", "gt_drives_reconstruction": false},
+  "view_counts": [1, 2, 4, 8, 16],
+  "view_selection": {"instance_consistency": "one scene and gt index", "nested": true, "rule": "visibility fallback then quality-first/max-min camera direction", "visibility_thresholds": [0.8, 0.75, 0.7, 0.6, 0.0]}
+}
