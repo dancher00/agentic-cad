@@ -28,6 +28,7 @@ class Da3Config(BaseModel):
         "upper_bound_resize"
     )
     local_files_only: bool = False
+    use_ray_pose: bool = False
 
 
 class GeometryConfig(BaseModel):

@@ -87,6 +87,7 @@ def run_geometry(
         process_resolution_method=config.da3.process_resolution_method,
         local_files_only=config.da3.local_files_only,
         accepted_noncommercial=accepted_noncommercial,
+        use_ray_pose=config.da3.use_ray_pose,
     )
     prediction = backend.predict(observations, device=config.device, seed=config.seed)
     if config.geometry.segmentation_backend == "border-color":

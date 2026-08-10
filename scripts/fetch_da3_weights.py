@@ -17,7 +17,11 @@ from da3_cad.backends.da3 import (
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", choices=("base", "large", "all"), default="all")
+    parser.add_argument(
+        "--profile",
+        choices=("base", "large", "metric-large", "all"),
+        default="all",
+    )
     parser.add_argument("--cache-dir", type=Path, default=Path("data/hf"))
     parser.add_argument("--accept-noncommercial-weights", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

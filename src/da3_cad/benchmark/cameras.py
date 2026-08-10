@@ -148,3 +148,25 @@ def minimum_pairwise_angle_degrees(cameras: tuple[Camera, ...]) -> float:
             for second in directions[index + 1 :]
         )
     )
+
+
+def renderer_camera_to_opencv(camera: Camera) -> tuple[FloatArray, FloatArray]:
+    """Return DA3/OpenCV K and proper world-to-camera pose for a renderer camera.
+
+    The CPU renderer stores camera coordinates as right/up/forward and projects
+    image rows with ``v = cy - fy*y/z``. OpenCV uses right/down/forward with
+    ``v = cy + fy*y/z``. Flipping the camera-frame y row preserves every pixel
+    while converting the renderer's improper basis to a proper rotation.
+    """
+
+    flip_y = np.diag(np.asarray([1.0, -1.0, 1.0, 1.0], dtype=np.float64))
+    extrinsic = flip_y @ np.asarray(camera.world_to_camera, dtype=np.float64)
+    rotation = extrinsic[:3, :3]
+    if not np.allclose(rotation @ rotation.T, np.eye(3), atol=1e-10):
+        raise ValueError("converted renderer camera rotation is not orthonormal")
+    if not np.isclose(np.linalg.det(rotation), 1.0, atol=1e-10):
+        raise ValueError("converted renderer camera rotation is not proper")
+    return (
+        np.asarray(camera.intrinsics, dtype=np.float32).copy(),
+        extrinsic.astype(np.float32),
+    )

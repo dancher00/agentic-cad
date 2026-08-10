@@ -28,7 +28,7 @@ DA3_SOURCE_URL = "https://github.com/ByteDance-Seed/Depth-Anything-3"
 
 @dataclass(frozen=True, slots=True)
 class Da3ModelSpec:
-    key: Literal["base", "large"]
+    key: Literal["base", "large", "metric-large"]
     model_id: str
     revision: str
     license: str
@@ -68,6 +68,15 @@ DA3_MODELS: dict[str, Da3ModelSpec] = {
         noncommercial=True,
         parameter_scale="0.35B (upstream model card)",
         weight_sha256="eaf2ae06df55889ad23eb245c82e2dd2a30c0cbf7e3d873a118fa5ed27a3e421",
+    ),
+    "metric-large": Da3ModelSpec(
+        key="metric-large",
+        model_id="depth-anything/DA3METRIC-LARGE",
+        revision="4010e39f3634a45bc60553321fb49fb760bd594e",
+        license="Apache-2.0",
+        noncommercial=False,
+        parameter_scale="0.35B (upstream model card)",
+        weight_sha256="bbea5b0b3ee389849cffa7ddae89de064a90abd2b055fc5aa99aac68db324776",
     ),
 }
 
@@ -270,6 +279,7 @@ class Da3Backend:
         process_resolution_method: str = "upper_bound_resize",
         local_files_only: bool = False,
         accepted_noncommercial: bool = False,
+        use_ray_pose: bool = False,
         model_class_loader: Callable[[Path], type[Any]] = _import_da3_model_class,
     ) -> None:
         self.spec = get_da3_model_spec(checkpoint)
@@ -282,11 +292,43 @@ class Da3Backend:
         self.process_resolution = process_resolution
         self.process_resolution_method = process_resolution_method
         self.local_files_only = local_files_only
+        self.use_ray_pose = use_ray_pose
         self._model_class_loader = model_class_loader
         self.last_lifecycle: ModelLifecycleReport | None = None
         self.last_runtime_report: dict[str, object] | None = None
 
-    def predict(self, observations: ObservationSet, *, device: str, seed: int) -> DepthPrediction:
+    def predict(
+        self,
+        observations: ObservationSet,
+        *,
+        device: str,
+        seed: int,
+        extrinsics: FloatArray | None = None,
+        intrinsics: FloatArray | None = None,
+        align_to_input_ext_scale: bool = True,
+    ) -> DepthPrediction:
+        if self.spec.key == "metric-large":
+            raise ValueError(
+                "DA3METRIC-LARGE has no pose/confidence heads; use the explicit "
+                "benchmark metric-depth adapter with supplied cameras"
+            )
+        if (extrinsics is None) != (intrinsics is None):
+            raise ValueError("posed DA3 inference requires both extrinsics and intrinsics")
+        pose_extrinsics: FloatArray | None = None
+        pose_intrinsics: FloatArray | None = None
+        if extrinsics is not None and intrinsics is not None:
+            pose_extrinsics = np.asarray(extrinsics, dtype=np.float32)
+            pose_intrinsics = np.asarray(intrinsics, dtype=np.float32)
+            count = len(observations.images)
+            if pose_extrinsics.shape != (count, 4, 4):
+                raise ValueError(f"posed DA3 extrinsics must have shape ({count},4,4)")
+            if pose_intrinsics.shape != (count, 3, 3):
+                raise ValueError(f"posed DA3 intrinsics must have shape ({count},3,3)")
+            for extrinsic in pose_extrinsics:
+                as_homogeneous_extrinsic(extrinsic)
+            if not np.isfinite(pose_intrinsics).all():
+                raise ValueError("posed DA3 intrinsics must be finite")
+
         random.seed(seed)
         np.random.seed(seed % (2**32))
         try:
@@ -318,10 +360,13 @@ class Da3Backend:
         def infer(model: Any) -> Any:
             return model.inference(
                 image_paths,
+                extrinsics=pose_extrinsics,
+                intrinsics=pose_intrinsics,
+                align_to_input_ext_scale=align_to_input_ext_scale,
                 process_res=self.process_resolution,
                 process_res_method=self.process_resolution_method,
                 export_dir=None,
-                use_ray_pose=False,
+                use_ray_pose=self.use_ray_pose,
             )
 
         raw, lifecycle = StagedModelManager(device).execute(load_model, infer)
@@ -336,7 +381,11 @@ class Da3Backend:
             "checkpoint_file": checkpoint,
             "process_resolution": self.process_resolution,
             "process_resolution_method": self.process_resolution_method,
-            "use_ray_pose": False,
+            "use_ray_pose": self.use_ray_pose,
+            "camera_conditioning": pose_extrinsics is not None,
+            "align_to_input_ext_scale": (
+                align_to_input_ext_scale if pose_extrinsics is not None else None
+            ),
             "input_views": len(observations.images),
             "depth": _array_statistics(prediction.depth),
             "confidence": _array_statistics(confidence),

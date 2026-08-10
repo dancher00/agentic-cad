@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
+import pytest
+
 from da3_cad.benchmark.cameras import (
     MASTER_ANGLES,
     master_schedule,
     minimum_pairwise_angle_degrees,
+    renderer_camera_to_opencv,
 )
 from da3_cad.benchmark.renderer import RenderConfig, materialize_view_subset, render_item
 
@@ -22,6 +26,26 @@ def test_camera_schedule_is_nested_and_well_separated() -> None:
     for camera in cameras:
         assert camera.intrinsics.shape == (3, 3)
         assert camera.world_to_camera.shape == (4, 4)
+
+
+def test_renderer_to_opencv_pose_preserves_pixels_and_is_proper() -> None:
+    camera = master_schedule(image_size=504)[3]
+    intrinsics, world_to_camera = renderer_camera_to_opencv(camera)
+    point_world = np.asarray([0.11, -0.07, 0.04, 1.0], dtype=np.float64)
+    renderer_point = np.asarray(camera.world_to_camera) @ point_world
+    opencv_point = np.asarray(world_to_camera) @ point_world
+    renderer_pixel = np.asarray(
+        [
+            camera.intrinsics[0, 0] * renderer_point[0] / renderer_point[2]
+            + camera.intrinsics[0, 2],
+            camera.intrinsics[1, 2]
+            - camera.intrinsics[1, 1] * renderer_point[1] / renderer_point[2],
+        ]
+    )
+    opencv_h = intrinsics @ opencv_point[:3]
+
+    assert np.linalg.det(world_to_camera[:3, :3]) == pytest.approx(1.0)
+    assert np.allclose(opencv_h[:2] / opencv_h[2], renderer_pixel, atol=1e-5)
 
 
 def test_renderer_is_repeatable_and_keeps_gt_masks_outside_views(tmp_path: Path) -> None:
