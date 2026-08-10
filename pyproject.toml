@@ -67,7 +67,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-da3_cad = ["py.typed"]
+da3_cad = ["py.typed", "viewer/*.html"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"

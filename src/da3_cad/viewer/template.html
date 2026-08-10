@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DA3-CAD Viewer</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b0e13;--panel:#141923;--line:#283141;--ink:#eef3fa;--muted:#93a4ba;--accent:#69d2b5;--warn:#ffca68}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 ui-sans-serif,system-ui,sans-serif}
+    header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;justify-content:space-between}
+    h1,h2{margin:0}h1{font-size:20px}h2{font-size:15px;margin-bottom:12px}.muted{color:var(--muted)}
+    main{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:16px;padding:16px;min-height:calc(100vh - 67px)}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}.stack{display:grid;gap:16px;align-content:start}
+    canvas{width:100%;height:66vh;display:block;background:radial-gradient(circle at 50% 40%,#1d2937,#090c11);border-radius:8px;cursor:grab}
+    button,.button{border:1px solid var(--line);background:#202938;color:var(--ink);border-radius:7px;padding:7px 10px;text-decoration:none;cursor:pointer}
+    button.active{border-color:var(--accent);color:var(--accent)}.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}th{color:var(--muted);font-weight:500}
+    .badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;margin:2px}.ok{color:var(--accent)}.warning{color:var(--warn)}
+    #drop{border:1px dashed #44536b;border-radius:8px;padding:16px;text-align:center}.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.thumbs img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px}
+    pre{white-space:pre-wrap;max-height:180px;overflow:auto;color:var(--muted);font-size:11px}
+    @media(max-width:900px){main{grid-template-columns:1fr}canvas{height:52vh}}
+  </style>
+</head>
+<body>
+<header><div><h1>DA3-CAD Viewer</h1><div class="muted" id="run"></div></div><div id="status"></div></header>
+<main>
+  <section class="panel"><div class="toolbar"><button id="solidBtn">Solid</button><button id="cloudBtn">Cloud</button><button id="resetBtn">Reset view</button><span class="muted" id="geometryInfo"></span></div><canvas id="view"></canvas><p class="muted">Drag to orbit · wheel to zoom. Cloud and solid are normalized independently for inspection; this view does not invent metric scale.</p></section>
+  <aside class="stack">
+    <section class="panel"><h2>Exports</h2><div id="downloads"></div></section>
+    <section class="panel"><h2>Primary engineering parameters</h2><table><thead><tr><th>Name</th><th>Value</th><th>Role</th></tr></thead><tbody id="params"></tbody></table><details><summary>Implementation literals</summary><table><tbody id="implementation"></tbody></table></details></section>
+    <section class="panel"><h2>Capture images</h2><div id="drop"><input id="folder" type="file" accept="image/*" multiple webkitdirectory><div class="muted">Drop/select any image folder for a local preview. Reconstruction still runs explicitly through <code>da3-cad reconstruct</code>.</div></div><div class="thumbs" id="thumbs"></div></section>
+    <section class="panel"><h2>Provenance</h2><pre id="provenance"></pre></section>
+  </aside>
+</main>
+<script>
+const data=__DA3_CAD_VIEWER_PAYLOAD__; const canvas=document.getElementById('view'),ctx=canvas.getContext('2d'); let mode=data.solid?'solid':'cloud',rx=-.35,ry=.55,zoom=1,drag=false,last=[0,0];
+const esc=s=>String(s??''); document.getElementById('run').textContent=data.run; const quality=data.quality||{},statusNode=document.getElementById('status');[quality.status||'unknown',quality.backend||'backend unknown'].forEach((value,index)=>{const span=document.createElement('span');span.className=`badge ${index===0?(quality.status==='valid'?'ok':'warning'):''}`;span.textContent=esc(value);statusNode.appendChild(span)});
+function rows(target,items){const node=document.getElementById(target);(items||[]).forEach(p=>{const tr=document.createElement('tr');[p.name,`${esc(p.value)} ${esc(p.unit||data.parameters.units||'')}`,p.semantic_role||p.role||''].forEach(value=>{const td=document.createElement('td');td.textContent=esc(value);tr.appendChild(td)});node.appendChild(tr)})} rows('params',data.parameters.primary); rows('implementation',data.parameters.implementation);
+const dl=document.getElementById('downloads');Object.entries(data.downloads).forEach(([name,url])=>{if(url){const a=document.createElement('a');a.className='button';a.href=url;a.download='';a.textContent=`Download ${name.toUpperCase()}`;dl.appendChild(a);dl.append(' ')}});
+document.getElementById('provenance').textContent=JSON.stringify({schema:data.provenance?.schema_version,run_id:data.provenance?.run_id,command:data.provenance?.command,warnings:data.provenance?.warnings},null,2);
+const thumbs=document.getElementById('thumbs');function addThumb(url,name){const img=document.createElement('img');img.src=url;img.title=name;thumbs.appendChild(img)};(data.images||[]).forEach(x=>addThumb(x.data_url,x.name));document.getElementById('folder').addEventListener('change',e=>{thumbs.innerHTML='';[...e.target.files].filter(f=>f.type.startsWith('image/')).slice(0,16).forEach(f=>addThumb(URL.createObjectURL(f),f.name))});
+function normalize(points){let lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];points.forEach(p=>p.forEach((v,i)=>{lo[i]=Math.min(lo[i],v);hi[i]=Math.max(hi[i],v)}));const c=lo.map((v,i)=>(v+hi[i])/2),s=Math.max(...hi.map((v,i)=>v-lo[i]))||1;return points.map(p=>p.map((v,i)=>(v-c[i])/s))}
+let cloud=data.cloud?normalize(data.cloud.points):[];let rawTriangles=data.solid?data.solid.triangles.map(t=>[t.slice(0,3),t.slice(3,6),t.slice(6,9)]):[],solidPoints=rawTriangles.flat(),normalizedSolid=solidPoints.length?normalize(solidPoints):[],triangles=rawTriangles.map((_,index)=>normalizedSolid.slice(index*3,index*3+3));
+function project(p,w,h){let [x,y,z]=p,cy=Math.cos(ry),sy=Math.sin(ry),cx=Math.cos(rx),sx=Math.sin(rx);let x1=cy*x+sy*z,z1=-sy*x+cy*z,y1=cx*y-sx*z,z2=sx*y+cx*z;return [w/2+x1*w*.78*zoom,h/2-y1*w*.78*zoom,z2]}
+function draw(){const dpr=devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);if(mode==='cloud'&&cloud.length){cloud.forEach((p,i)=>{const q=project(p,w,h),c=data.cloud.colors?.[i]||[105,210,181];ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fillRect(q[0],q[1],1.4,1.4)});document.getElementById('geometryInfo').textContent=`${data.cloud.displayed_points.toLocaleString()} / ${data.cloud.original_points.toLocaleString()} points`}else if(triangles.length){let projected=triangles.map(t=>t.map(p=>project(p,w,h))).sort((a,b)=>a.reduce((s,p)=>s+p[2],0)-b.reduce((s,p)=>s+p[2],0));projected.forEach(t=>{ctx.beginPath();ctx.moveTo(t[0][0],t[0][1]);ctx.lineTo(t[1][0],t[1][1]);ctx.lineTo(t[2][0],t[2][1]);ctx.closePath();ctx.fillStyle='rgba(105,210,181,.23)';ctx.strokeStyle='rgba(155,234,214,.28)';ctx.fill();ctx.stroke()});document.getElementById('geometryInfo').textContent=`${data.solid.displayed_faces.toLocaleString()} / ${data.solid.original_faces.toLocaleString()} faces`}else{ctx.fillStyle='#93a4ba';ctx.fillText('No geometry artifact in this run',20,30)}document.getElementById('solidBtn').classList.toggle('active',mode==='solid');document.getElementById('cloudBtn').classList.toggle('active',mode==='cloud')}
+canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-last[0])*.01;rx+=(e.clientY-last[1])*.01;last=[e.clientX,e.clientY];draw()});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.25,Math.min(4,zoom*Math.exp(-e.deltaY*.001)));draw()},{passive:false});document.getElementById('solidBtn').onclick=()=>{mode='solid';draw()};document.getElementById('cloudBtn').onclick=()=>{mode='cloud';draw()};document.getElementById('resetBtn').onclick=()=>{rx=-.35;ry=.55;zoom=1;draw()};addEventListener('resize',draw);draw();
+</script>
+</body>
+</html>

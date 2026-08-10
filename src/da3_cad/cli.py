@@ -22,6 +22,7 @@ from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.pipeline import edit_run, inspect_run, reconstruct
 from da3_cad.reconstruction_pipeline import reconstruct_full
+from da3_cad.viewer import build_viewer
 
 app = typer.Typer(
     name="da3-cad",
@@ -311,6 +312,52 @@ def edit_command(
         console.print(f"[red]Edited program is invalid:[/red] {result.error}")
         raise typer.Exit(1)
     console.print(f"[green]Edited STEP:[/green] {result.step_path}")
+
+
+@app.command("viewer")
+def viewer_command(
+    run_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
+    images: Annotated[
+        Path | None,
+        typer.Option(
+            "--images",
+            help="Optional original image directory to embed as local thumbnails.",
+        ),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", "-o", help="HTML path; defaults to RUN/viewer.html."),
+    ] = None,
+    config: ConfigOption = None,
+    device: DeviceOption = None,
+    seed: SeedOption = None,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Build a self-contained offline cloud, solid and parameter viewer."""
+
+    settings = _config(config, device, seed)
+    destination = output if output is not None else run_dir / "viewer.html"
+    if dry_run:
+        console.print(
+            Pretty(
+                {
+                    "command": "viewer",
+                    "run": str(run_dir.resolve()),
+                    "images": str(images.resolve()) if images is not None else None,
+                    "output": str(destination.resolve()),
+                    "config": settings.model_dump(),
+                    "writes": False,
+                }
+            )
+        )
+        return
+    try:
+        result = build_viewer(run_dir, output=output, images_dir=images)
+    except (OSError, ValueError) as error:
+        console.print(f"[red]Viewer build failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(f"[green]Offline viewer:[/green] {result}")
+    console.print("[yellow]Open the HTML locally; it makes no network requests.[/yellow]")
 
 
 @app.command("doctor")
