@@ -134,3 +134,52 @@ def test_ray_gate_rejects_invalid_evidence_contract() -> None:
             extrinsics,
             masks,
         )
+
+
+def test_source_observation_does_not_require_camera_round_trip() -> None:
+    depth = np.ones((2, 2, 2), dtype=np.float32)
+    confidence = np.ones_like(depth)
+    masks = np.ones_like(depth, dtype=np.bool_)
+    masks[0, 0, 1] = False
+    intrinsics = np.repeat(np.eye(3, dtype=np.float32)[None, ...], 2, axis=0)
+    intrinsics[1, 0, 2] = -0.51
+    extrinsics = np.repeat(np.eye(4, dtype=np.float32)[None, ...], 2, axis=0)
+    report = FusionReport(
+        confidence_percentile=0.0,
+        confidence_scope="per-view",
+        confidence_thresholds=(0.0, 0.0),
+        mask_source="synthetic",
+        require_confidence=True,
+        views=tuple(
+            ViewFusionStats(
+                view_index=index,
+                pixels=4,
+                finite_positive_depth=4,
+                mask_selected=4,
+                confidence_selected=4,
+                fused=1,
+            )
+            for index in range(2)
+        ),
+    )
+    cloud = FusedPointCloud(
+        points=np.asarray([[0.51, 0.0, 1.0], [0.0, 1.0, 1.0]], dtype=np.float32),
+        colors=np.zeros((2, 3), dtype=np.uint8),
+        confidences=np.ones(2, dtype=np.float32),
+        view_indices=np.asarray([0, 1], dtype=np.int32),
+        pixel_xy=np.asarray([[0, 0], [0, 1]], dtype=np.int32),
+        report=report,
+    )
+
+    result = filter_cross_view_depth_support(
+        cloud,
+        depth,
+        confidence,
+        intrinsics,
+        extrinsics,
+        masks,
+    )
+
+    assert result.support_counts.tolist() == [2, 2]
+    assert result.report["source_view_confirmation_fraction"] == 1.0
+    assert len(result.cloud.points) == 2

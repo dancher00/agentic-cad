@@ -120,8 +120,36 @@ def filter_cross_view_depth_support(
     depth_tolerance = depth_tolerance_fraction * largest_extent
     view_count, height, width = depth_values.shape
     effective_minimum = min(minimum_views, view_count)
-    support = np.zeros(len(points), dtype=np.int32)
-    source_confirmed = np.zeros(len(points), dtype=np.bool_)
+    source_x = cloud.pixel_xy[:, 0]
+    source_y = cloud.pixel_xy[:, 1]
+    source_in_frame = (source_x >= 0) & (source_x < width) & (source_y >= 0) & (source_y < height)
+    if not source_in_frame.all():
+        raise ValueError("fused-cloud source pixels are outside ray evidence")
+    source_valid = np.zeros(len(points), dtype=np.bool_)
+    for view_index in range(view_count):
+        indices = np.flatnonzero(cloud.view_indices == view_index)
+        sampled_x = source_x[indices]
+        sampled_y = source_y[indices]
+        sampled_depth = depth_values[view_index, sampled_y, sampled_x]
+        sampled_confidence = confidence_values[view_index, sampled_y, sampled_x]
+        eligible = (
+            mask_values[view_index, sampled_y, sampled_x]
+            & np.isfinite(sampled_depth)
+            & (sampled_depth > 0.0)
+            & np.isfinite(sampled_confidence)
+        )
+        threshold = cloud.report.confidence_thresholds[view_index]
+        if threshold is not None:
+            eligible &= sampled_confidence >= float(threshold)
+        source_valid[indices] = eligible
+    if not source_valid.all():
+        missing = int((~source_valid).sum())
+        raise RuntimeError(f"ray evidence invalidates {missing} fused source observations")
+
+    # Fusion provenance is the first observation. Reprojection is deliberately
+    # used only for other views: float32 camera serialization need not map a
+    # world point back to the exact integer source pixel.
+    support = np.ones(len(points), dtype=np.int32)
     confirmation_counts: list[int] = []
     world_h = np.concatenate(
         (points, np.ones((len(points), 1), dtype=np.float64)),
@@ -169,13 +197,9 @@ def filter_cross_view_depth_support(
         sampled_depth = sampled_depth[eligible]
         agrees = np.abs(camera[indices, 2] - sampled_depth) <= depth_tolerance
         confirmed = indices[agrees]
-        support[confirmed] += 1
-        source_confirmed[confirmed[cloud.view_indices[confirmed] == view_index]] = True
-        confirmation_counts.append(int(len(confirmed)))
-
-    if not source_confirmed.all():
-        missing = int((~source_confirmed).sum())
-        raise RuntimeError(f"ray reprojection failed to confirm {missing} source observations")
+        cross_view_confirmed = confirmed[cloud.view_indices[confirmed] != view_index]
+        support[cross_view_confirmed] += 1
+        confirmation_counts.append(int(len(cross_view_confirmed)))
     keep = support >= effective_minimum
     if not keep.any():
         raise ValueError("cross-view ray gate removed every fused observation")
@@ -198,7 +222,8 @@ def filter_cross_view_depth_support(
         "requested_minimum_views": minimum_views,
         "effective_minimum_views": effective_minimum,
         "single_view_not_applicable": bool(view_count == 1 and minimum_views > 1),
-        "source_view_confirmation_fraction": float(source_confirmed.mean()),
+        "source_view_confirmation_fraction": float(source_valid.mean()),
+        "source_view_evidence": "fused provenance pixel; no float32 camera round-trip",
         "depth_tolerance_fraction_of_fused_bbox": depth_tolerance_fraction,
         "fused_bbox_largest_extent": largest_extent,
         "depth_tolerance": depth_tolerance,
