@@ -8,6 +8,17 @@ generated from clean commit `b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e`.
 It covers the same 74 frozen item/view records and 20 objects as the preceding
 precision analysis. No long campaign or README result run was started.
 
+## Main finding: camera pose is the largest measured bottleneck
+
+On the fair common 20-object `N=8` slice, replacing DA3's recovered cameras
+with exact renderer intrinsics/extrinsics raises GT-axis-oracle precision at
+0.05 from **0.2188 to 0.4297**: +0.2109 absolute and 1.96x. This is the largest
+improvement produced by any tested intervention. The central result is therefore
+that camera-pose estimation from uncalibrated photographs is the dominant
+measured bottleneck in this photo-to-CAD pipeline. It is not a claim that depth
+is correct or that exact cameras close the domain gap: 0.4297 remains below the
+predeclared 0.60 working threshold.
+
 ## Validity and protocol correction
 
 DA3-LARGE GT-pose is complete on all 49 mathematically identifiable
@@ -53,18 +64,21 @@ On the common 20-object N=8 slice, precision @.05 is:
 |---|---:|---:|---:|---:|---:|---:|
 | median | 0.2188 | 0.4297 | 0.1445 | 0.3066 | 0.3242 | 0.3750 |
 
-Exact poses therefore matter, but do not solve the problem. Across the 49
+Exact poses are the main result, but do not solve the problem. Across the 49
 eligible paired records they move the matching baseline median from 0.2422 to
 0.3867; the median per-record change is +0.0547. The N=8 median nearly doubles,
 yet remains well below the preregistered 0.60 target. Returned GT camera
 baselines are exact; the residual is not attributable to a failed camera
 adapter.
 
-The metric checkpoint is not a scale cure in this pipeline: its overall @.05
-median is 0.1406 and its paired median change is -0.0859. This is a result about
-the tested monocular DA3METRIC-LARGE adapter with exact renderer cameras, not a
-general claim that metric depth cannot help. Ray-pose is effectively neutral:
-its @.05 median is 0.2930 and its paired median change is -0.0020.
+DA3METRIC-LARGE reaches an overall @.05 median of 0.1406 and a paired change of
+-0.0859. The pinned upstream model catalog describes this checkpoint as
+"metric depth with sky segmentation" (`data/upstream/Depth-Anything-3/docs/API.md`).
+A tabletop CAD object is outside that sky-aware scene setting. This row shows
+that this particular out-of-distribution checkpoint/control is unsuitable here;
+it does **not** show that metric depth in general cannot help. Ray-pose is
+effectively neutral: its @.05 median is 0.2930 and its paired median change is
+-0.0020.
 
 The Chamfer-optimized scale oracles reduce median sampled Chamfer x1000 from
 99.55 to 68.84 (one axis) and 63.01 (diagonal), but precision @.05 reaches only
@@ -85,9 +99,10 @@ perfect cameras, a metric-depth checkpoint, ray-pose and one-to-three scalar
 GT oracles all fail the 60% working threshold. The residual geometry cannot be
 reduced to the registered modest anisotropic scale model.
 
-Per the frozen decision rule, the next scientific hypothesis is independent
-silhouette constraints, which introduce external evidence absent from the
-self-consistent DA3 surface. That hypothesis was not implemented or measured.
-The project stops here so the next decision can explicitly choose between
-continuing that scientific branch and freezing the current honest product
-scope.
+The original frozen decision rule pointed next to independent silhouettes.
+Inspection of the 39/74 global-scale boundary hits motivated one final,
+separately preregistered diagnostic first: distinct scale and depth shift per
+view with exact cameras. Its protocol is
+`docs/PER_VIEW_DEPTH_ORACLE_PROTOCOL.md`. It remains GT-only and forbidden at
+inference. The project must stop after that measurement regardless of outcome;
+no long campaign is authorized.

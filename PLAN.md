@@ -740,22 +740,50 @@ N={4,8,16} records, and metric-depth, ray-pose and both scale oracles on all 74.
 No control reached the preregistered 0.60 axis-oracle precision @.05 gate.
 Medians were 0.3008 baseline, 0.3867 GT-pose, 0.1406 metric+GT cameras, 0.2930
 ray-pose, 0.3867 single-axis scale and 0.3750 diagonal scale. On the common
-20-object N=8 slice, exact pose raised 0.2188 to 0.4297: pose error is material
-but insufficient.
+20-object N=8 slice, exact pose raised 0.2188 to 0.4297 (+0.2109, 1.96x). This
+is the largest measured intervention and makes recovery of camera poses from
+uncalibrated photographs the dominant measured bottleneck. It remains
+insufficient because 0.4297 is below the working threshold.
 
 Scale optimization reduced diagnostic Chamfer, but 39/74 single-axis and 47/74
 diagonal fits reached a [0.5,2.0] boundary and neither produced working
 precision. This is inconsistent with a single small coherent 5--10% depth-scale
 error; it does not authorize an unbounded GT deformation at inference.
-DA3METRIC-LARGE regressed and ray-pose was neutral. Exact returned K/E, verified
+DA3METRIC-LARGE regressed in this control, but upstream defines the checkpoint
+as metric depth with sky segmentation. The tabletop CAD render is outside that
+sky-aware setting, so this is not evidence that metric depth in general cannot
+help. Ray-pose was neutral. Exact returned K/E, verified
 checkpoint hashes, sm_120 execution and model-tensor unload (not allocator
 baseline restoration) are frozen
 in `benchmarks/camera_scale_diagnostics/report.json` (SHA-256
 `a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a`).
 
-The registered next hypothesis is independent silhouette constraints. It, the
-long campaign and README result claims remain unexecuted. See
+The long campaign and README result claims remain unexecuted. See
 `docs/CAMERA_SCALE_DIAGNOSTICS.md`.
+
+### 7.9 Final per-view affine-depth diagnostic
+
+Before the independent-silhouette branch, one final diagnostic tests the
+specific alternative exposed by 39/74 global-scale boundary hits: each view may
+have a different depth scale and shift. The protocol is frozen in
+`docs/PER_VIEW_DEPTH_ORACLE_PROTOCOL.md` before result inspection.
+
+It uses all 49 cached exact-GT-pose `N={4,8,16}` records, with the same 20-object
+`N=8` slice as the primary gate. For every view it fits
+`z'_v=s_v(z_v-m_v)+c_v` along the original fixed ray. Parameters are per-view;
+K/E, pixels and rays never change. A joint bidirectional squared sampled
+Chamfer x1,000 objective uses 128 stable fusion-gated samples per view and the
+same 8,192 GT points. Scale is bounded to `[0.1,10]`; corrected median depth is
+bounded by the view's GT camera-z slab plus 10%, while retaining identity.
+Precision is not optimized. Rotation, ICP, arbitrary 3D translation and use at
+inference are forbidden.
+
+The report includes the unchanged final precision/CD protocol and within-object
+spread of scale, affine shift and median-depth correction. The hypothesis is
+supported only if median axis-oracle precision@0.05 reaches 0.60 on `N=8`.
+After the measurement the scientific branch stops regardless of result; the
+next authorized scope is T-LESS Primesense, viewer and honest domain-gap
+documentation. No campaign or README result run starts here.
 
 ## 8. Licensing and acquisition behavior
 
