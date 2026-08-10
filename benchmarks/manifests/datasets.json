@@ -1,0 +1,27 @@
+{
+  "datasets": [
+    {
+      "expected_count": 8046,
+      "full_id_list_sha256": "01a7c400ded42f38b85add32af79470772fa543506d0e97b38366eed116b0736",
+      "license": "CC BY-NC 4.0 label on mirror; upstream provenance remains distinct",
+      "name": "deepcad",
+      "redistributed": false,
+      "repo_id": "maksimko123/deepcad_test_mesh",
+      "revision": "ee4999c749fbb6a726df6284abb1a949ec7548c1",
+      "terms_url": "https://huggingface.co/datasets/maksimko123/deepcad_test_mesh"
+    },
+    {
+      "expected_count": 1725,
+      "full_id_list_sha256": "bdb400ea1a0ab95c99df57203e4648ce9c451dc0e7b12ed7eaf7bffbde28a1e1",
+      "license": "Autodesk Fusion 360 Gallery Dataset non-commercial terms",
+      "name": "fusion360",
+      "redistributed": false,
+      "repo_id": "maksimko123/fusion360_test_mesh",
+      "revision": "af9643d11bdae5512020bfba024cb4d609b893e1",
+      "terms_url": "https://github.com/AutodeskAILab/Fusion360GalleryDataset/blob/master/LICENSE.md"
+    }
+  ],
+  "global_seed": 20260810,
+  "protocol": "da3-cad-render-benchmark-v1",
+  "schema_version": "1.0"
+}

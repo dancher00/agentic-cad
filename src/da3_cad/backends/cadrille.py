@@ -267,6 +267,9 @@ class CadrilleBackend:
         self.last_raw_text: str | None = None
         self.last_clean_source: str | None = None
         self.last_parameterization_report: dict[str, object] | None = None
+        self.last_raw_texts: tuple[str, ...] = ()
+        self.last_clean_sources: tuple[str, ...] = ()
+        self.last_parameterization_reports: tuple[dict[str, object], ...] = ()
 
     def generate(
         self,
@@ -421,3 +424,186 @@ class CadrilleBackend:
                 "neural program was not replaced by the geometric fallback",
             ),
         )
+
+    def generate_many(
+        self,
+        canonicals: tuple[DecoderPointInput, ...],
+        *,
+        seeds: tuple[int, ...],
+    ) -> tuple[CadProgram, ...]:
+        """Generate a frozen candidate batch with one model load/unload lifecycle."""
+
+        if not canonicals or len(canonicals) != len(seeds):
+            raise ValueError("canonicals and seeds must have the same non-zero length")
+        if len(set(seeds)) != len(seeds):
+            raise ValueError("candidate generation seeds must be unique")
+        random.seed(seeds[0])
+        np.random.seed(seeds[0] % (2**32))
+        try:
+            import torch
+        except ImportError as error:
+            raise RuntimeError("Cadrille inference requires the pinned torch overlay") from error
+        torch.manual_seed(seeds[0])
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seeds[0])
+
+        self.config.cache_dir.mkdir(parents=True, exist_ok=True)
+        checkpoint = self._checkpoint_verifier(
+            self.spec,
+            self.config.cache_dir,
+            local_files_only=self.config.local_files_only,
+        )
+        tokenizer = self._tokenizer_loader(
+            self.config.cache_dir,
+            self.config.local_files_only,
+        )
+        individual_batches = [
+            prepare_point_cloud_prompt(canonical.decoder_points, tokenizer)
+            for canonical in canonicals
+        ]
+        batch = {
+            name: torch.cat([candidate[name] for candidate in individual_batches], dim=0)
+            for name in individual_batches[0]
+        }
+        model_class = self._model_class_loader()
+        model_contract: dict[str, object] = {}
+
+        def load_model() -> Any:
+            model = model_class.from_pretrained(
+                self.spec.model_id,
+                revision=self.spec.revision,
+                cache_dir=self.config.cache_dir,
+                local_files_only=self.config.local_files_only,
+                torch_dtype=torch.bfloat16,
+                attn_implementation=self.config.attn_implementation,
+            )
+            model.config.use_cache = self.config.use_cache
+            if hasattr(model, "generation_config"):
+                model.generation_config.do_sample = False
+                model.generation_config.temperature = None
+                model.generation_config.top_p = None
+                model.generation_config.top_k = None
+            return model.eval()
+
+        def infer(model: Any) -> list[str]:
+            actual_attention = getattr(model.config, "_attn_implementation", None)
+            if actual_attention is not None and actual_attention != "sdpa":
+                raise RuntimeError(
+                    f"Cadrille attention implementation is {actual_attention!r}, not 'sdpa'"
+                )
+            point_encoder = getattr(model, "point_encoder", None)
+            projection = getattr(point_encoder, "projection", None)
+            point_dtype = str(projection.weight.dtype) if projection is not None else None
+            if point_dtype is not None and point_dtype != "torch.float32":
+                raise RuntimeError(
+                    f"Cadrille point encoder loaded as {point_dtype}, expected torch.float32"
+                )
+            generation_config = getattr(model, "generation_config", None)
+            model_contract.update(
+                {
+                    "attention_implementation": actual_attention,
+                    "point_encoder_dtype": point_dtype,
+                    "input_embedding_dtype": str(model.get_input_embeddings().weight.dtype)
+                    if hasattr(model, "get_input_embeddings")
+                    else None,
+                    "generation_eos_token_id": getattr(generation_config, "eos_token_id", None),
+                    "generation_pad_token_id": getattr(generation_config, "pad_token_id", None),
+                }
+            )
+            device = model.device
+            model_inputs = {name: value.to(device) for name, value in batch.items()}
+            with torch.inference_mode():
+                generated = model.generate(
+                    **model_inputs,
+                    do_sample=False,
+                    use_cache=self.config.use_cache,
+                    max_new_tokens=self.config.max_new_tokens,
+                )
+            prompt_length = int(model_inputs["input_ids"].shape[1])
+            generated_only = generated[:, prompt_length:].detach().cpu()
+            decoded = tokenizer.batch_decode(
+                generated_only,
+                skip_special_tokens=True,
+                clean_up_tokenization_spaces=False,
+            )
+            if len(decoded) != len(canonicals):
+                raise RuntimeError("Cadrille batch decode returned the wrong candidate count")
+            return [str(value) for value in decoded]
+
+        raw_text_list, lifecycle = StagedModelManager(self.device).execute(load_model, infer)
+        programs: list[CadProgram] = []
+        clean_sources: list[str] = []
+        parameterizations: list[dict[str, object]] = []
+        candidate_reports: list[dict[str, object]] = []
+        for index, (canonical, seed, raw_text) in enumerate(
+            zip(canonicals, seeds, raw_text_list, strict=True)
+        ):
+            source = clean_generated_source(raw_text)
+            try:
+                parameters = extract_parameters(source)
+                parameterization: dict[str, object] = {
+                    "mode": "model-emitted",
+                    "parameter_count": len(parameters),
+                }
+            except ValueError as error:
+                if "does not expose a PARAMETERS mapping" not in str(error):
+                    raise
+                source, parameters, result = parameterize_generated_source(source)
+                parameterization = {"mode": "ast-literal-lift", **result.as_dict()}
+            point_sha256 = hashlib.sha256(
+                np.asarray(canonical.decoder_points, dtype="<f4").tobytes(order="C")
+            ).hexdigest()
+            programs.append(
+                CadProgram(
+                    source=source,
+                    parameters=parameters,
+                    backend=f"{self.name}-{self.spec.key}",
+                    template_id=f"cadrille-{self.spec.key}-greedy",
+                    warnings=(
+                        f"checkpoint weights are {CADRILLE_LICENSE}; non-commercial research use",
+                        "output scale is normalized unless a separate scale channel is applied",
+                        f"named parameter table source: {parameterization['mode']}",
+                        "neural program was not replaced by the geometric fallback",
+                    ),
+                )
+            )
+            clean_sources.append(source)
+            parameterizations.append(parameterization)
+            candidate_reports.append(
+                {
+                    "index": index,
+                    "seed": seed,
+                    "point_sha256": point_sha256,
+                    "raw_text_sha256": hashlib.sha256(raw_text.encode()).hexdigest(),
+                    "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+                    "parameterization": parameterization,
+                }
+            )
+
+        self.last_lifecycle = lifecycle
+        self.last_raw_texts = tuple(raw_text_list)
+        self.last_clean_sources = tuple(clean_sources)
+        self.last_parameterization_reports = tuple(parameterizations)
+        self.last_raw_text = self.last_raw_texts[0]
+        self.last_clean_source = self.last_clean_sources[0]
+        self.last_parameterization_report = self.last_parameterization_reports[0]
+        self.last_runtime_report = {
+            "model": self.spec.as_dict(),
+            "checkpoint_file": checkpoint,
+            "processor": {
+                "model_id": CADRILLE_PROCESSOR_ID,
+                "revision": CADRILLE_PROCESSOR_REVISION,
+            },
+            "generation": {
+                "strategy": "greedy",
+                "do_sample": False,
+                "candidate_count": len(programs),
+                "max_new_tokens": self.config.max_new_tokens,
+                "use_cache": self.config.use_cache,
+                "attention_implementation": self.config.attn_implementation,
+                "candidates": candidate_reports,
+            },
+            "runtime_model_contract": model_contract,
+            "lifecycle": lifecycle.as_dict(),
+        }
+        return tuple(programs)

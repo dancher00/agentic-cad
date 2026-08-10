@@ -1,0 +1,4207 @@
+{
+  "meshes": [
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00010710",
+      "path": "00010710.stl",
+      "sha256": "ca20717b494c895c39b4a060da9d7b66a3a2c9a74aaf35dcff07df7606d04e1b"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00011581",
+      "path": "00011581.stl",
+      "sha256": "2d2c0c376a0f741eb7eaffb1c4e937d15f7f4786eecd8f65c6c5af00338141e2"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00013296",
+      "path": "00013296.stl",
+      "sha256": "ed1b573c8c62a29a847c936e1f7875cdf7191a2087f106b147fb6985b61232ab"
+    },
+    {
+      "bytes": 129284,
+      "dataset": "deepcad",
+      "item_id": "00020600",
+      "path": "00020600.stl",
+      "sha256": "d2bfe870294132ebabab689e177a54b9bbd03f911bb8731f5ea04528f6798bac"
+    },
+    {
+      "bytes": 54084,
+      "dataset": "deepcad",
+      "item_id": "00026929",
+      "path": "00026929.stl",
+      "sha256": "6a1f741fc62dbda783eb567a6ed70fcadaa59cbe19082198d0bae6ac4c0087d9"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "deepcad",
+      "item_id": "00033625",
+      "path": "00033625.stl",
+      "sha256": "a840aa6e4c10e56ddfadff429dfc7289ec970d9562161a79b7e372131de2ec81"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00034053",
+      "path": "00034053.stl",
+      "sha256": "cfe2607a976f7a784e3e79eff29ab3613a46e17a684667451d235883f4b06623"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00036454",
+      "path": "00036454.stl",
+      "sha256": "d5033accc570a17d01033f4a66e26422cbf85e8382aebbcb50afa9e686a03a62"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00037493",
+      "path": "00037493.stl",
+      "sha256": "217d59f6cc79333e6919f27775340ab71f5df8b12ab4ca38f1d13b4df49761b0"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00037503",
+      "path": "00037503.stl",
+      "sha256": "58f43cc6e74624da1b5098870b263ad2f685895fb709a570e13a4edfe4dc3c24"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00038775",
+      "path": "00038775.stl",
+      "sha256": "e141d69e1830ee747ad2d15436055bcfd97cc120d3a9d7722d1e05679f3a8804"
+    },
+    {
+      "bytes": 14484,
+      "dataset": "deepcad",
+      "item_id": "00049922",
+      "path": "00049922.stl",
+      "sha256": "63baef14f88350909089821b6944a5aa0d0c14d2560313aa5b908f50a20d7a31"
+    },
+    {
+      "bytes": 26084,
+      "dataset": "deepcad",
+      "item_id": "00050760",
+      "path": "00050760.stl",
+      "sha256": "18f16035d3389ba3c05a712cf29a14a7f1fb79f7e0fee622879c1765e7c0367c"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00051370",
+      "path": "00051370.stl",
+      "sha256": "50fd785aa7e81feb09495a320eba8e26b33c94ef9fdd63269d2ce64b9a4b1b24"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00058312",
+      "path": "00058312.stl",
+      "sha256": "e44460d175ae2ac8b6d2d403db69937d13cc78200b5de1de081bafcef374a193"
+    },
+    {
+      "bytes": 130684,
+      "dataset": "deepcad",
+      "item_id": "00060016",
+      "path": "00060016.stl",
+      "sha256": "de6e888a522a21af95c9624fb7181b6ae27ce9d3dfc7a8d6c78043d563184a15"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "deepcad",
+      "item_id": "00066823",
+      "path": "00066823.stl",
+      "sha256": "7ed119c5ab0916683688d3cef1e5a4291c418f4d757ba0a525bff105f4315904"
+    },
+    {
+      "bytes": 124884,
+      "dataset": "deepcad",
+      "item_id": "00067561",
+      "path": "00067561.stl",
+      "sha256": "b5aef7bde74ca57c27cd50d530694e256ca8417d1fda53d5c91beca5ed083b5d"
+    },
+    {
+      "bytes": 307284,
+      "dataset": "deepcad",
+      "item_id": "00079323",
+      "path": "00079323.stl",
+      "sha256": "4f0f6a4364acc2c251f6a73add3018c6d612626e06e6db43ad34e4efcb108dd0"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00080752",
+      "path": "00080752.stl",
+      "sha256": "84f0658e56d31faad641f205e742f0f38c988e688d34d35838932fbd5e96a39b"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00081530",
+      "path": "00081530.stl",
+      "sha256": "9e7066b17fa11898bc8e20e7048518ae4f91f6aebf09f60065161bfdafc2d5f9"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00083111",
+      "path": "00083111.stl",
+      "sha256": "0fa210f1d60d744ad41c76bd976b84664f2757082c1d040546c07ccd0c9ad5d8"
+    },
+    {
+      "bytes": 5684,
+      "dataset": "deepcad",
+      "item_id": "00083402",
+      "path": "00083402.stl",
+      "sha256": "b0b7e53ec10f5aa66bec8397be3494565ccee294e071897380bb376cdb3626c1"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00083573",
+      "path": "00083573.stl",
+      "sha256": "7c1574ee269675bd13ff2775a2e4d45f0e64cce6e5a2e004d63d90999ee11dac"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00086431",
+      "path": "00086431.stl",
+      "sha256": "3416004eab80f679f6671f43e90c7bdd2f892edeb52d491f7cbad072f8029082"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00087422",
+      "path": "00087422.stl",
+      "sha256": "7247b20d724cabf0f612183d2ffbb7cf1cc1f22cdba24a99ce717283d175fdcc"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00090799",
+      "path": "00090799.stl",
+      "sha256": "408f2ac90c4fa5994f4f33c1c76be07b66921bc1eac607dd1283055791aff573"
+    },
+    {
+      "bytes": 2684,
+      "dataset": "deepcad",
+      "item_id": "00092270",
+      "path": "00092270.stl",
+      "sha256": "4c2a31dedd02b682cd913e83a5d3bed023d57f25303bc91af778742a125f3c32"
+    },
+    {
+      "bytes": 26084,
+      "dataset": "deepcad",
+      "item_id": "00092559",
+      "path": "00092559.stl",
+      "sha256": "af7e8678a00ccb2d3a2463004b3a411912d11b55b29fe02a9b2d67965b1f48bf"
+    },
+    {
+      "bytes": 53484,
+      "dataset": "deepcad",
+      "item_id": "00097388",
+      "path": "00097388.stl",
+      "sha256": "adc9315cb09a95bd6689d5273497a67ecd492ce6ed9b2fa3cb69b8df3a765ae1"
+    },
+    {
+      "bytes": 3684,
+      "dataset": "deepcad",
+      "item_id": "00099812",
+      "path": "00099812.stl",
+      "sha256": "7b3a9375ab683f85ac5b706811e4c4964de04decd76b0be57304f8cb2f7ecb11"
+    },
+    {
+      "bytes": 241884,
+      "dataset": "deepcad",
+      "item_id": "00100771",
+      "path": "00100771.stl",
+      "sha256": "050f898b36a83f0420e291a1639957899e2636d56d692a8db92462bf7ae98c5f"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00101787",
+      "path": "00101787.stl",
+      "sha256": "dc5b652baec189628de94032d7fb5b09c559545a243cf2bbd9c510caee972870"
+    },
+    {
+      "bytes": 278084,
+      "dataset": "deepcad",
+      "item_id": "00103060",
+      "path": "00103060.stl",
+      "sha256": "d266e5812dc6f3a5d2bbc77031a6542e31fb5e7e106d9813606616fcb815621c"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00103257",
+      "path": "00103257.stl",
+      "sha256": "8d68eeeb6bf11eb33aee54a91ab36b2d01bf67a0d1dc58fbde6c63fd60c16615"
+    },
+    {
+      "bytes": 26884,
+      "dataset": "deepcad",
+      "item_id": "00105129",
+      "path": "00105129.stl",
+      "sha256": "8aa9db9d15c8cb48dd5c8329fca0e72af4f93f6cef4aa78a95d77643820f0c77"
+    },
+    {
+      "bytes": 51084,
+      "dataset": "deepcad",
+      "item_id": "00107320",
+      "path": "00107320.stl",
+      "sha256": "0b1e61e5e1359a5f468ccf3b1316ac1869d429fe176245713bef79e7a7e4703d"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00110546",
+      "path": "00110546.stl",
+      "sha256": "74e54ac5ef3d484274d97c0641ff246918914fbfe3b6d59af083f6f81f0d2735"
+    },
+    {
+      "bytes": 54284,
+      "dataset": "deepcad",
+      "item_id": "00113843",
+      "path": "00113843.stl",
+      "sha256": "badc8ed9d8e6cc93a26c9c7229db83149243a035977beb9663ab4235a47917d9"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00115761",
+      "path": "00115761.stl",
+      "sha256": "d4b409e7bdefc561f6d156aabac0fc5f0f83dddd66798841d5e0ff5bc2c0002b"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00117873",
+      "path": "00117873.stl",
+      "sha256": "a08876469c6641abc9797f3c7f486efd5b72bb8efd68714aae7e43c616d4b194"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00122741",
+      "path": "00122741.stl",
+      "sha256": "b298dd32bb8bf4eb42e8f7e94db460fd9e60370b9c012799c90175e120f5550b"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00125735",
+      "path": "00125735.stl",
+      "sha256": "e688d61182eb114403f5ce138a02591a16258ba9dfd65a31596af7106023cfb9"
+    },
+    {
+      "bytes": 37284,
+      "dataset": "deepcad",
+      "item_id": "00125988",
+      "path": "00125988.stl",
+      "sha256": "350fdf4c2f70cd72eb4b0752334d503171dff0e3bd4fd641a3b4e9a1bdf7463a"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00126039",
+      "path": "00126039.stl",
+      "sha256": "d757b900fa05b6cff37e00e765fd27e26cf381744b19680fcc23b9047f62c52f"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00129391",
+      "path": "00129391.stl",
+      "sha256": "06854510a510319afe46e1ae3f6104c5367ab89d84f97f646e6612e38528661d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00130895",
+      "path": "00130895.stl",
+      "sha256": "27efcaa5325ebb2fed7b2d68018e7cdd229eb66558f8b922aff764272adecbbc"
+    },
+    {
+      "bytes": 154884,
+      "dataset": "deepcad",
+      "item_id": "00131068",
+      "path": "00131068.stl",
+      "sha256": "a320341da3d6c16b9990ec03ca6ab80331a2a171edb4d8055033a6001c6a91a1"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00131316",
+      "path": "00131316.stl",
+      "sha256": "4ac68f5a06bac687d4b1bb30161857172cb91e9b4e6bbc57dd90476687c14d4d"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "deepcad",
+      "item_id": "00131893",
+      "path": "00131893.stl",
+      "sha256": "ddb4a5b73429fd8cc215bffaaceeba0ac5395e3679106ed5570bf5202cb1e173"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00134148",
+      "path": "00134148.stl",
+      "sha256": "c861b25afc3fe46ffca46a524f37f75c6d520e2e37e55bd314d39f24660db7a5"
+    },
+    {
+      "bytes": 52284,
+      "dataset": "deepcad",
+      "item_id": "00137505",
+      "path": "00137505.stl",
+      "sha256": "3a2f0950da9a6d9d643a983876a91e99e90aa0ce07165ea879dfdd2144f7941b"
+    },
+    {
+      "bytes": 258884,
+      "dataset": "deepcad",
+      "item_id": "00138880",
+      "path": "00138880.stl",
+      "sha256": "806f9114b2567dc75a5db97bab280185811041c3ada8fb75046ce93aa7ac04d0"
+    },
+    {
+      "bytes": 26684,
+      "dataset": "deepcad",
+      "item_id": "00140290",
+      "path": "00140290.stl",
+      "sha256": "77bf1317617066d96b6ab65c9d8223c7c309e3a2df845d456b98d186ba7b98b8"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00142997",
+      "path": "00142997.stl",
+      "sha256": "60ad6bc737b3b28219a3301004b0cde0351d4133580f6881b1fe4c10b046c1ee"
+    },
+    {
+      "bytes": 77684,
+      "dataset": "deepcad",
+      "item_id": "00145748",
+      "path": "00145748.stl",
+      "sha256": "e116d4fe085e090c3b9101d6e51ec7306530752c55ed67be24dacf2f9851f801"
+    },
+    {
+      "bytes": 4684,
+      "dataset": "deepcad",
+      "item_id": "00146958",
+      "path": "00146958.stl",
+      "sha256": "e1f8e7bc1f4b39175d3905e7e6cc0f289ea54f55331343b6a2a749f38d43ca2e"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "deepcad",
+      "item_id": "00149387",
+      "path": "00149387.stl",
+      "sha256": "4ce62130b54b26458ea158617a222917a789bbc2aed32807186225b0053327dc"
+    },
+    {
+      "bytes": 126084,
+      "dataset": "deepcad",
+      "item_id": "00153434",
+      "path": "00153434.stl",
+      "sha256": "2aa720ff960e02389928bd2f29ea2f532d8229be2d020b9340a97e8561a7409f"
+    },
+    {
+      "bytes": 128084,
+      "dataset": "deepcad",
+      "item_id": "00160241",
+      "path": "00160241.stl",
+      "sha256": "7e353e6011c2655ab7aadd9cf031aa7a7272a7d9378fc3ee3735e878996422e7"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00160404",
+      "path": "00160404.stl",
+      "sha256": "d2319f78e7381800899c082dc8996bad7684c29f54834100f29e4d3802ce6e4a"
+    },
+    {
+      "bytes": 102684,
+      "dataset": "deepcad",
+      "item_id": "00160917",
+      "path": "00160917.stl",
+      "sha256": "fdea376da86d81d4d9613379402c555a2957040b4cdc31b2d21b8988e2aed1af"
+    },
+    {
+      "bytes": 126684,
+      "dataset": "deepcad",
+      "item_id": "00166337",
+      "path": "00166337.stl",
+      "sha256": "c308aa1785b907e78dd38c87310e8a95d9baad1cac3626f6cb86a5699359f10c"
+    },
+    {
+      "bytes": 75684,
+      "dataset": "deepcad",
+      "item_id": "00167890",
+      "path": "00167890.stl",
+      "sha256": "72460a15b1ff21bc0f32cefed66be099cb5ce575412fb97cf87869f31567b0b5"
+    },
+    {
+      "bytes": 30584,
+      "dataset": "deepcad",
+      "item_id": "00172976",
+      "path": "00172976.stl",
+      "sha256": "05dc1280c731bb5696b77cde7861b21d18c1c81ef4266f79c049497aa148d1f5"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "deepcad",
+      "item_id": "00172987",
+      "path": "00172987.stl",
+      "sha256": "9be955459cd1a5dc9ccd1b0826c1a17e4416b32fe1c663372602ce2dc21eebc5"
+    },
+    {
+      "bytes": 76684,
+      "dataset": "deepcad",
+      "item_id": "00177978",
+      "path": "00177978.stl",
+      "sha256": "42eb18bd4e5c57736669807e510773c07a8919e95240f52a1b75e3577ec0b56b"
+    },
+    {
+      "bytes": 153284,
+      "dataset": "deepcad",
+      "item_id": "00182133",
+      "path": "00182133.stl",
+      "sha256": "ee7617ce34595651420fa9c462b1aa88c129aeb526681cebb060a624b078b70e"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00184983",
+      "path": "00184983.stl",
+      "sha256": "1142349fd16c23380d5355615aa1d64e3d04a883a4156d23e9d5ce7c32dedd64"
+    },
+    {
+      "bytes": 22484,
+      "dataset": "deepcad",
+      "item_id": "00186042",
+      "path": "00186042.stl",
+      "sha256": "ab38b86a542a2790e523bf496d2980d37649b1821e4cfd911aae735e5b87a892"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00193895",
+      "path": "00193895.stl",
+      "sha256": "a0642a15384e91936021ab6aee36d34bba3a040f395de472d6a466b829703d6b"
+    },
+    {
+      "bytes": 75884,
+      "dataset": "deepcad",
+      "item_id": "00198083",
+      "path": "00198083.stl",
+      "sha256": "ff4085ccbc06ed75bbda6dcaac49a6b1544365e44f524421e60701dec17db77b"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "deepcad",
+      "item_id": "00202884",
+      "path": "00202884.stl",
+      "sha256": "c622dedb466d3928ca0f1eae909806afb66f35672f97707cadbb32cf6aed0c02"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00203949",
+      "path": "00203949.stl",
+      "sha256": "c87306ca7297141ee48923020d57d211caa6d166e5429f6ebf1d91bbd8b60a81"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "deepcad",
+      "item_id": "00205323",
+      "path": "00205323.stl",
+      "sha256": "b39e84282e3cba3281aa8bfe3c853feaeab54820abcf8baad6b97d1b9984b694"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00211465",
+      "path": "00211465.stl",
+      "sha256": "0dca1962cb37b1b9081c059612b52314d5a18cd0cd8de9662a903b0b3b4d118e"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00214514",
+      "path": "00214514.stl",
+      "sha256": "7afc370366bf62c8b65eb43935441e3118be343646f56f510d2eb1e179ad8ca5"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00214885",
+      "path": "00214885.stl",
+      "sha256": "22cd3fb62fecce3311c07e7e66a8470a6c6bfa76fe7dd70dff7ca04ce551bf3c"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00216099",
+      "path": "00216099.stl",
+      "sha256": "f39957f395eeb7fa6bee069be8aa02a0a40dfb83f40467a7c46d21bfd5fd131d"
+    },
+    {
+      "bytes": 102284,
+      "dataset": "deepcad",
+      "item_id": "00219342",
+      "path": "00219342.stl",
+      "sha256": "f9d977b386dce7646f1674f22951ac26fc0cfb22b75f1a82913922d295ec9cc6"
+    },
+    {
+      "bytes": 52684,
+      "dataset": "deepcad",
+      "item_id": "00219388",
+      "path": "00219388.stl",
+      "sha256": "d3ae21b039905cf3fd54edaba9fb56cc1d4f34e65fc854517b295d519aec64ab"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00219954",
+      "path": "00219954.stl",
+      "sha256": "7127d2e467c5af9cae16765fd657aa02230edf282ff1156b3c1690c54c573c15"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00226604",
+      "path": "00226604.stl",
+      "sha256": "226b1d33aec7abea917a30537812c384b8dbb8cd430c305936461c2722a9b17a"
+    },
+    {
+      "bytes": 3084,
+      "dataset": "deepcad",
+      "item_id": "00234013",
+      "path": "00234013.stl",
+      "sha256": "d7a6792d56ff6c9e06299ea0239312b3693682493ae0cefbb7db2f37974ef895"
+    },
+    {
+      "bytes": 143284,
+      "dataset": "deepcad",
+      "item_id": "00235990",
+      "path": "00235990.stl",
+      "sha256": "1eb1902ab4a97dbc724a0a4414cf6c04ee9532ee7350ebc245f69e5218be7604"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00236015",
+      "path": "00236015.stl",
+      "sha256": "31c2ed007ca1200ac2cbf65d0276f7f86e4fbf6c4d69cfb154721affb509eaee"
+    },
+    {
+      "bytes": 76884,
+      "dataset": "deepcad",
+      "item_id": "00238109",
+      "path": "00238109.stl",
+      "sha256": "c6dc2ba17502d91827bde2e7dbd617f17aebe31f24ce220a757ce248bb3b2f39"
+    },
+    {
+      "bytes": 2684,
+      "dataset": "deepcad",
+      "item_id": "00240546",
+      "path": "00240546.stl",
+      "sha256": "03b26f66634501e3010daec940c1f4b33afbdbb25e4ff671d3cbe1e7f4606713"
+    },
+    {
+      "bytes": 129284,
+      "dataset": "deepcad",
+      "item_id": "00240631",
+      "path": "00240631.stl",
+      "sha256": "00a02b72be9a4c4afded2a6ca66e49f85ceb13557ea582acc20f08242ee51994"
+    },
+    {
+      "bytes": 2084,
+      "dataset": "deepcad",
+      "item_id": "00241916",
+      "path": "00241916.stl",
+      "sha256": "bd0f65ffd76830ae381a6223db36648198afcc4bd9e2404c3f8e3fff0c5670e6"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00242476",
+      "path": "00242476.stl",
+      "sha256": "41740ea5d32e30f25d12be50111a87052d6d002dfe882b35b77bf0645fd7605b"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00243226",
+      "path": "00243226.stl",
+      "sha256": "450b22443321c78c8ec77cac33d674858868adcc01c7e59b5364a08cb09e6099"
+    },
+    {
+      "bytes": 228084,
+      "dataset": "deepcad",
+      "item_id": "00254881",
+      "path": "00254881.stl",
+      "sha256": "da66f65bfb7c67b1734d1a6573476db417f2a0037a00b1899ee88a38d7a2129a"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00256804",
+      "path": "00256804.stl",
+      "sha256": "c13010d203f8a4dfbdd7fd53070d97ce8fb229e654797693ea923f6c71d97e3d"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00263787",
+      "path": "00263787.stl",
+      "sha256": "c7df0eb1298d641d071d9e6a628f733938fe4817983abe8c97c903a67ed3159b"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00264010",
+      "path": "00264010.stl",
+      "sha256": "176bb8eb8077e66beb003fb854fa021d5e9f81a6b5731fb8fc2b2e77ec7360e3"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00264027",
+      "path": "00264027.stl",
+      "sha256": "cb872488447da69c9b4d1187754c2506f90c257316637dddfed7945e1cbfeec9"
+    },
+    {
+      "bytes": 3684,
+      "dataset": "deepcad",
+      "item_id": "00269476",
+      "path": "00269476.stl",
+      "sha256": "fcab6fa1472795497b8c9011c85e02f0f44d41b31a46999314d977ac3049f22f"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00271286",
+      "path": "00271286.stl",
+      "sha256": "2c1d62955e173a31ed9240daa9c369687ac2631182d21f48b8f637d289ec48bf"
+    },
+    {
+      "bytes": 64484,
+      "dataset": "deepcad",
+      "item_id": "00272343",
+      "path": "00272343.stl",
+      "sha256": "8c660e4e79c3d44ed790124c7fc345823201c85efa9102822a698dc285ed8b6c"
+    },
+    {
+      "bytes": 7084,
+      "dataset": "deepcad",
+      "item_id": "00272862",
+      "path": "00272862.stl",
+      "sha256": "6dfec8513269a80938edabfd281ed72df225e270f175dc649ae6c9f9cac053dc"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00273267",
+      "path": "00273267.stl",
+      "sha256": "308a58d0acb6a14a193647984697f543912c2db704428c768586d9d12d7fe8ae"
+    },
+    {
+      "bytes": 12684,
+      "dataset": "deepcad",
+      "item_id": "00274306",
+      "path": "00274306.stl",
+      "sha256": "70bf0256b8d0212658f0f998606d77a9f93deed4f9e3fd16d33525f174b310ae"
+    },
+    {
+      "bytes": 4284,
+      "dataset": "deepcad",
+      "item_id": "00274698",
+      "path": "00274698.stl",
+      "sha256": "ea8ad54170c4965133268a707dc253876bf81bcee856320c72b6671a0f2e537a"
+    },
+    {
+      "bytes": 62884,
+      "dataset": "deepcad",
+      "item_id": "00277207",
+      "path": "00277207.stl",
+      "sha256": "deb77db3263df9c5f79091294c7a59364d325b34eff87926b621b4709a6272d3"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00281853",
+      "path": "00281853.stl",
+      "sha256": "653641b6520109db85b1e0934c29413783eafee4b7e74bbcaed380d136a3e446"
+    },
+    {
+      "bytes": 884,
+      "dataset": "deepcad",
+      "item_id": "00282177",
+      "path": "00282177.stl",
+      "sha256": "1f0dc857c456c58e55dc1ace627e5de45760fa0c2404e6a245cdce7f49947dc3"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00282234",
+      "path": "00282234.stl",
+      "sha256": "5630806853ba2bddfe48e73c966220cb8719d8f3c0db0c1044be8b82b03cbc71"
+    },
+    {
+      "bytes": 139984,
+      "dataset": "deepcad",
+      "item_id": "00287139",
+      "path": "00287139.stl",
+      "sha256": "f0691b85e855878100f3d6b460c353f978e4ecf068f01155955e53d894387a06"
+    },
+    {
+      "bytes": 37684,
+      "dataset": "deepcad",
+      "item_id": "00290300",
+      "path": "00290300.stl",
+      "sha256": "8f035f55a4377c016dc84fcf693e836377420b23a786cb4eb14cb24030db11c2"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00290403",
+      "path": "00290403.stl",
+      "sha256": "a6911c3e70366871acd5e92dce2a4448c74c2281cab649becc707b49c771f125"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00291530",
+      "path": "00291530.stl",
+      "sha256": "abdf43bdd4eda89aef89fff44b5314d810a8a71b3f7e4140ac46f12c51f8b329"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00292128",
+      "path": "00292128.stl",
+      "sha256": "c019c2789c8803e7d81ca7c6514b4c5df5ffb472c83a0527fda6f2bc30eaaba8"
+    },
+    {
+      "bytes": 4884,
+      "dataset": "deepcad",
+      "item_id": "00293766",
+      "path": "00293766.stl",
+      "sha256": "6cfe02ba8521a37a4da5bd5d69644416d2d8ce3aa468bd1666e11332a78b4298"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00299397",
+      "path": "00299397.stl",
+      "sha256": "d94a917a23964dcfb155d69a43cd5d459c7766b767f9b21c7d647e14c9bc4ee8"
+    },
+    {
+      "bytes": 2484,
+      "dataset": "deepcad",
+      "item_id": "00300035",
+      "path": "00300035.stl",
+      "sha256": "4bc3bb8819279e9176472b19f084ac0ff0878228479f4d9b1df60e162a37bf6c"
+    },
+    {
+      "bytes": 57484,
+      "dataset": "deepcad",
+      "item_id": "00301325",
+      "path": "00301325.stl",
+      "sha256": "3c4343aec6dba16889d8bef37b3b01ccafdac2e55fc299a48415ccf020b23298"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00301470",
+      "path": "00301470.stl",
+      "sha256": "a02f07ec42b1f4676b351f54a41a9aec4237d3ab09cace83f623443c8a9c7283"
+    },
+    {
+      "bytes": 9584,
+      "dataset": "deepcad",
+      "item_id": "00303021",
+      "path": "00303021.stl",
+      "sha256": "7d6fc08ced90047e0c1881f6feabb879ebf95beb500b8027abb5982f02e7b42a"
+    },
+    {
+      "bytes": 51084,
+      "dataset": "deepcad",
+      "item_id": "00303363",
+      "path": "00303363.stl",
+      "sha256": "8d0296620cd3c0f7db7f8a6daa50fb763ed49f33e5dd49bc0f45e5d23cc74196"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00306563",
+      "path": "00306563.stl",
+      "sha256": "6f7c61ce055d095e6fb23c4d286ba1c77409ae797465c3627b30325ae081b862"
+    },
+    {
+      "bytes": 66084,
+      "dataset": "deepcad",
+      "item_id": "00309684",
+      "path": "00309684.stl",
+      "sha256": "e233e23a67450b1f0a7e0e02cd25037c9ff16fa95a4810f15a8c2ba148e7d849"
+    },
+    {
+      "bytes": 2084,
+      "dataset": "deepcad",
+      "item_id": "00314660",
+      "path": "00314660.stl",
+      "sha256": "e51aa89f02f2350163d02db13f206a70673dc04662b85ad0f6da232f5f9c1e8d"
+    },
+    {
+      "bytes": 82884,
+      "dataset": "deepcad",
+      "item_id": "00322363",
+      "path": "00322363.stl",
+      "sha256": "ab94ad70f5ba6f20019649293e77c6bd0c615dec5a4a43c0d45ea3c6df72a63f"
+    },
+    {
+      "bytes": 53684,
+      "dataset": "deepcad",
+      "item_id": "00332859",
+      "path": "00332859.stl",
+      "sha256": "22410bdfe3c1b6e94b6b3cd3dd1745d8ff43579e8779315bee71845e00c8dced"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00335067",
+      "path": "00335067.stl",
+      "sha256": "410e06db7fff8928b02f969ad8f961f85707a430175c8b66e7c53c79b24088fa"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00337571",
+      "path": "00337571.stl",
+      "sha256": "e3f373d31d0c89b89fe1d1f3d5c84751f1cf7c8b64ac1c43a5c283d1ef299152"
+    },
+    {
+      "bytes": 13784,
+      "dataset": "deepcad",
+      "item_id": "00347615",
+      "path": "00347615.stl",
+      "sha256": "ffac8464284985c31f3a5f7afea6ce1c5f95a7b7a4ad833bb6ad377a0fef0e97"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00348643",
+      "path": "00348643.stl",
+      "sha256": "9bab19d517622d9bdf511287e20a8ca8ddf60d3745b16a5da8ffc41834c92461"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00349162",
+      "path": "00349162.stl",
+      "sha256": "2d7e7318f0c8a69ea03c0e74080e5750fb70c1fb3a638c9ca179b14c33bd1e35"
+    },
+    {
+      "bytes": 248084,
+      "dataset": "deepcad",
+      "item_id": "00350559",
+      "path": "00350559.stl",
+      "sha256": "fc9dfbdc3b95530a89fc1ca9405ee54e3541e6ba7553676c58e655679d7e48af"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00351402",
+      "path": "00351402.stl",
+      "sha256": "c3743cf667686dcf2b1ee359ac8f1f861553fdd269800671fc23e17e76b6cfd8"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00351852",
+      "path": "00351852.stl",
+      "sha256": "058e58c93abeb7262b1cc9acd3c73db725edc1f66e24e510b7da4e7650aa9266"
+    },
+    {
+      "bytes": 172084,
+      "dataset": "deepcad",
+      "item_id": "00356815",
+      "path": "00356815.stl",
+      "sha256": "d8e0fbd587185d0696f935ef279fcb99a4b92934c8af1c8f01385bfacfedcd00"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00359456",
+      "path": "00359456.stl",
+      "sha256": "3bf1bc161e192a86b54544a2bce8bee63edf13ff65edb508e54a7d94ae776f4d"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00359832",
+      "path": "00359832.stl",
+      "sha256": "8b0c871bfeba887f0ec8d783cb934423a0a5dcafa5de27e73457d9fe6af96b6e"
+    },
+    {
+      "bytes": 6284,
+      "dataset": "deepcad",
+      "item_id": "00361171",
+      "path": "00361171.stl",
+      "sha256": "385094bcac5859095d917cb732427f36e40f941977a82be2e59f4cdd619f2157"
+    },
+    {
+      "bytes": 13884,
+      "dataset": "deepcad",
+      "item_id": "00361175",
+      "path": "00361175.stl",
+      "sha256": "a9c0fb0c1a43249b97df7ebe26416de7a4747c63a4eb98dc2ff4a912761eb53a"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00361673",
+      "path": "00361673.stl",
+      "sha256": "da2b51a90aa6c97682d3f93ea5bed3a1582bf387e03a5ef061707749f7e6ad4e"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00364031",
+      "path": "00364031.stl",
+      "sha256": "444ccd8eaf7a79e17d835eb0912105ffafed456a61fa2946c5f498f5effd844a"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00365228",
+      "path": "00365228.stl",
+      "sha256": "e3631e7ee4bc26460eff6f9260edb050e0dbe4889ed5a3fefbf8ad84ee735c47"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00368641",
+      "path": "00368641.stl",
+      "sha256": "94866a053413a5a15c144a62c14a0121da6f12e53d5aa173d28c3e5e0d5050a3"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00368998",
+      "path": "00368998.stl",
+      "sha256": "a7201a5bd7788086f1bb6cfa2b9c0c2ef32446252108c0506a674470b5a95fe8"
+    },
+    {
+      "bytes": 80284,
+      "dataset": "deepcad",
+      "item_id": "00369976",
+      "path": "00369976.stl",
+      "sha256": "a0135cc0ff274f0aef264a3dc50712a2fee711c1a87e20a97fd3f0fc50b63c53"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00370802",
+      "path": "00370802.stl",
+      "sha256": "64f3712ea5ae0799c1c90e155e0731dd7a513696685303c4450181f72a2be489"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00373550",
+      "path": "00373550.stl",
+      "sha256": "c3d59be9f6fbf1b6e962a46eff47f24c57650a321e824392cf57d7e6cd95758c"
+    },
+    {
+      "bytes": 43084,
+      "dataset": "deepcad",
+      "item_id": "00374765",
+      "path": "00374765.stl",
+      "sha256": "79183e10c1ac4b7171f6ec0b9afedce44557da0abd65b84400174ca748564fc5"
+    },
+    {
+      "bytes": 45284,
+      "dataset": "deepcad",
+      "item_id": "00379437",
+      "path": "00379437.stl",
+      "sha256": "c9b9ebd911d2e743307d3b7a67636a2eb5c6081a0d20ed4fe900c87da47917a6"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00381605",
+      "path": "00381605.stl",
+      "sha256": "bfc2d3b11d3a25218c2874b3822ea2f7e2b2571419bbd3c14370730054ff7681"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00385112",
+      "path": "00385112.stl",
+      "sha256": "1e2189660ad2f91780ee65b94abfc727149ee7dcaf296d7cfd453b4cc9adb864"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00386227",
+      "path": "00386227.stl",
+      "sha256": "edad7ff0a1c240afb00e43c970d719948e7df6d3e735c6b93f6b2f3990697280"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00394660",
+      "path": "00394660.stl",
+      "sha256": "186703dff5831888cddcf5c448fd6e32233fbe7ffd6f5cc09947ac58ebe93023"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00398357",
+      "path": "00398357.stl",
+      "sha256": "1b2be95353874d894f9db40524abff6380885bc320153ef219497971ca76cd4e"
+    },
+    {
+      "bytes": 127884,
+      "dataset": "deepcad",
+      "item_id": "00404317",
+      "path": "00404317.stl",
+      "sha256": "90f7a4086d837ba1aaee25d8b58b6ae5781813d681377890f6291cff35ebe85f"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00408849",
+      "path": "00408849.stl",
+      "sha256": "5574f03e629936315d9b7d78be9632274113b1987f6054107116c05f87a90b97"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00411527",
+      "path": "00411527.stl",
+      "sha256": "715209ddc05b27253257159b8baf0c105b6fb14234cd51915d3e337c06cca1b4"
+    },
+    {
+      "bytes": 11884,
+      "dataset": "deepcad",
+      "item_id": "00412086",
+      "path": "00412086.stl",
+      "sha256": "c342bb3f04cd599754daaf40b46e588c2dbc5d5bec853eb628156519dd9a77ef"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00419363",
+      "path": "00419363.stl",
+      "sha256": "0fcf64bd88a4e5116f9cfe115f54f27b5cd7ae74f19768baf11d99c3b0af9570"
+    },
+    {
+      "bytes": 5484,
+      "dataset": "deepcad",
+      "item_id": "00421837",
+      "path": "00421837.stl",
+      "sha256": "a4b3e62cb2d2b391be33ab1cf08c776ed84df3d2294e2fd522e1b479b1bb91b0"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00422140",
+      "path": "00422140.stl",
+      "sha256": "9c20012040bfb347e9a475e9cc635104444965870f9e898f1ebc135df515f119"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00422269",
+      "path": "00422269.stl",
+      "sha256": "2bc10c0ba5ab1e0a1c4f972cb1ffbe3d3bbf3095132a631f9b54b57caff16ff1"
+    },
+    {
+      "bytes": 24884,
+      "dataset": "deepcad",
+      "item_id": "00423247",
+      "path": "00423247.stl",
+      "sha256": "252dbfd2ca5de83df1f3c377dde160ee39b9d6272816936b04817b7ec4bd499a"
+    },
+    {
+      "bytes": 2684,
+      "dataset": "deepcad",
+      "item_id": "00426095",
+      "path": "00426095.stl",
+      "sha256": "375be6373fb8c0aed819304efdeaa154e91bee6b0d817193f4de5218d51e4651"
+    },
+    {
+      "bytes": 3484,
+      "dataset": "deepcad",
+      "item_id": "00426927",
+      "path": "00426927.stl",
+      "sha256": "81830cc9438e3c6b628bf1eefedd9955fc3014b0cf5b3167641be9a0fef77804"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00428314",
+      "path": "00428314.stl",
+      "sha256": "11d9583a33c19365468f67dc0cdcd701d5f61ab3a89039095288dfab51bcba71"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00432819",
+      "path": "00432819.stl",
+      "sha256": "d99ce9595697e17819e7b8b7c5f23a52325fbfe72f7d589fc8a418f0d68033d2"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "deepcad",
+      "item_id": "00436340",
+      "path": "00436340.stl",
+      "sha256": "14c9f53a190ffec5242f0611b94b24a018ff67da341c1ded4809ac720fac33f5"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00436471",
+      "path": "00436471.stl",
+      "sha256": "c91a1b867dbf3ebd9c9ab562dc9b9f829c74b0c4dc0f2c929efe14a84ed17841"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00437756",
+      "path": "00437756.stl",
+      "sha256": "959f157d41332fdc80b67a417cacd8e09a215e116d0c18083e57d531af3d3109"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00440000",
+      "path": "00440000.stl",
+      "sha256": "b01fca3a576a98d56a7b1448b9d994f45c1fad9e08f4374f6a3a9df65ec116be"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "deepcad",
+      "item_id": "00440070",
+      "path": "00440070.stl",
+      "sha256": "260bee21e8325e8e444f913227fef08f71bbeeb6524976cfcb8a05a00cb0b7bc"
+    },
+    {
+      "bytes": 51084,
+      "dataset": "deepcad",
+      "item_id": "00445021",
+      "path": "00445021.stl",
+      "sha256": "bdd208551ebd1a0370c08496c3d5c2e79fda2211ff02241cd976383735a50d47"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00457637",
+      "path": "00457637.stl",
+      "sha256": "2145a41ae7a239db4812f201ec6fca0544cb70a95cbf06ba065f63bba3ef987b"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "deepcad",
+      "item_id": "00461495",
+      "path": "00461495.stl",
+      "sha256": "c7d3c0446944decba6c0fe99601cbdc43081afa816e6a7fae934742faf2a5bc6"
+    },
+    {
+      "bytes": 126084,
+      "dataset": "deepcad",
+      "item_id": "00462068",
+      "path": "00462068.stl",
+      "sha256": "2aa720ff960e02389928bd2f29ea2f532d8229be2d020b9340a97e8561a7409f"
+    },
+    {
+      "bytes": 3284,
+      "dataset": "deepcad",
+      "item_id": "00464083",
+      "path": "00464083.stl",
+      "sha256": "61214b67dfae114b73d2e85e226cbda8318b4ea06e699dee5f0bb8c654dd6ad0"
+    },
+    {
+      "bytes": 37684,
+      "dataset": "deepcad",
+      "item_id": "00466988",
+      "path": "00466988.stl",
+      "sha256": "07eafbd43ef787de6b7cbca9593734b987ed51454389c13a99bbebe1ed0331db"
+    },
+    {
+      "bytes": 52284,
+      "dataset": "deepcad",
+      "item_id": "00467407",
+      "path": "00467407.stl",
+      "sha256": "7c79d859455a2603f0def992cd0ac8b1309f8496bf112d73e75c45d3e32e3079"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00469798",
+      "path": "00469798.stl",
+      "sha256": "cead1fe440b2c73c7a08de95d850affc070c69e89dcadeb53b0ed73756a1cd09"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00470963",
+      "path": "00470963.stl",
+      "sha256": "bad4a41e16015a02f5802fbec3d5e3d1dd3d28f9f8a844eaf5e8143e3900eb27"
+    },
+    {
+      "bytes": 38484,
+      "dataset": "deepcad",
+      "item_id": "00473372",
+      "path": "00473372.stl",
+      "sha256": "3477e85ac8edb3bff68dd6e7211d067986225657702a78b460390566d54bd58f"
+    },
+    {
+      "bytes": 66484,
+      "dataset": "deepcad",
+      "item_id": "00476498",
+      "path": "00476498.stl",
+      "sha256": "24fc0c0bd31cba46158514c38e2ec6df6c4db8b557adcdee91e596be3f520574"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00476756",
+      "path": "00476756.stl",
+      "sha256": "99b0edde203ccc9ec28080cab3547c69a55e16482a99ffa132fe39295154af7b"
+    },
+    {
+      "bytes": 62884,
+      "dataset": "deepcad",
+      "item_id": "00478468",
+      "path": "00478468.stl",
+      "sha256": "3a24933ef3e4633e33303fbc7dfee815b3c3666e6a5c680402c56a0b5e6c5d4f"
+    },
+    {
+      "bytes": 1584,
+      "dataset": "deepcad",
+      "item_id": "00481279",
+      "path": "00481279.stl",
+      "sha256": "4d38db4cb747ea594b2634dae804d7363b20a481227075b54e3ba10a9f19b8b0"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00481549",
+      "path": "00481549.stl",
+      "sha256": "a1aaeee1e73ac1874c7f188b1cdbaeeebe80e34f616afa5dd448684acb35489d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00482678",
+      "path": "00482678.stl",
+      "sha256": "a52a910d87a91ba373335ca520e39f58591a42dba7683a93f86c7d3cd9625360"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00484073",
+      "path": "00484073.stl",
+      "sha256": "7599c14a32576aab11980bf8c07e44c428e5038a4688c3028c87544b25b02034"
+    },
+    {
+      "bytes": 13484,
+      "dataset": "deepcad",
+      "item_id": "00485151",
+      "path": "00485151.stl",
+      "sha256": "9ee01f2068af1a6f8a5ef7b6c64d7df1716e3858ca02180d9e31e2e5524c421c"
+    },
+    {
+      "bytes": 1984,
+      "dataset": "deepcad",
+      "item_id": "00486941",
+      "path": "00486941.stl",
+      "sha256": "d29a0a38bc8aeed4a41ebb547eb53babdba666f76f7027c02fa77f6e06d3a9f9"
+    },
+    {
+      "bytes": 5484,
+      "dataset": "deepcad",
+      "item_id": "00502640",
+      "path": "00502640.stl",
+      "sha256": "dff96a2c8ace2cfaa6812ae60c07355ae14d446814a7afa58f9abe124cda3129"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "deepcad",
+      "item_id": "00509083",
+      "path": "00509083.stl",
+      "sha256": "78f3170c94ba633d3e8c97a128177dd73b8a88853ecde037c4ac3cc177a1c500"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00510678",
+      "path": "00510678.stl",
+      "sha256": "798e550042467c5cbdde6db1d58313aadc00419c3c7a63bd809a151b697a17a1"
+    },
+    {
+      "bytes": 76484,
+      "dataset": "deepcad",
+      "item_id": "00511874",
+      "path": "00511874.stl",
+      "sha256": "e55f78fc8f4ed5bd23a2ba056ec377940afa2a54356409b13c0bfac0574dcd75"
+    },
+    {
+      "bytes": 51284,
+      "dataset": "deepcad",
+      "item_id": "00513967",
+      "path": "00513967.stl",
+      "sha256": "b5087bb80495384e45e6f304067be378d65d5509da285af34132e1764284c872"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00514147",
+      "path": "00514147.stl",
+      "sha256": "679f3e1d4be22418e3b87377180e116505d28f41395740b16e1ea0650439f909"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00519355",
+      "path": "00519355.stl",
+      "sha256": "958b4a0dfb283e2c8819154d1e317276c951abdd5e1839392298180c2fd91e46"
+    },
+    {
+      "bytes": 62884,
+      "dataset": "deepcad",
+      "item_id": "00520669",
+      "path": "00520669.stl",
+      "sha256": "c2489b27dc6f21b01a9f97751d1d684c40ce39eea150123bd53b37b41774ef64"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00522533",
+      "path": "00522533.stl",
+      "sha256": "c61ff88f01897fd25808f73cbd5b6e11f1d8d50f091b4ae0213aef2c48efa470"
+    },
+    {
+      "bytes": 39084,
+      "dataset": "deepcad",
+      "item_id": "00526633",
+      "path": "00526633.stl",
+      "sha256": "0f553f24452c71c1c97cf6691c4f0d8fbeeeec6481a2df074cea3855f02d62ab"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00529471",
+      "path": "00529471.stl",
+      "sha256": "17e64f0ed42a31513b992d1863553a077f3a358dce382790bad415fcadb7b63f"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00530411",
+      "path": "00530411.stl",
+      "sha256": "13cdd6db00e609fa43cf145f58909e1408dfa841201fd420f0b4f27e3b91daef"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00530488",
+      "path": "00530488.stl",
+      "sha256": "b78dc5f286167c1717d56777917040365492ff37258661abe0e028544db0dd7e"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00530996",
+      "path": "00530996.stl",
+      "sha256": "f70d5c7168cf64c0770d2b2456bed36f4e4853065ff9597f53306044f2c5d9fb"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00533012",
+      "path": "00533012.stl",
+      "sha256": "6bd8ad2d4b13d85879a74f563a8ea5137b48bfc9d9044655a7d16b4051366640"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00535291",
+      "path": "00535291.stl",
+      "sha256": "1dbced2cc38905b7b516b81c60a5b61176023a3cee099d4c631ace8a318debda"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00537434",
+      "path": "00537434.stl",
+      "sha256": "bd90b39778ce5b1868b5f297b270a86a0bc09b6118ba7e5e9fcb8fb4fb03fdd1"
+    },
+    {
+      "bytes": 85884,
+      "dataset": "deepcad",
+      "item_id": "00542456",
+      "path": "00542456.stl",
+      "sha256": "e40d1dc34fca0a0d6e11562c5b815d67cb819f942a576b5044a9b7be21d66cdd"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00547908",
+      "path": "00547908.stl",
+      "sha256": "df5e7f786348cbf30ac85602e9fff5ae80ca597c66d8d9238ad9014b93972d6f"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00553275",
+      "path": "00553275.stl",
+      "sha256": "5c04918555b76288d84bece6457b98d50f74464eb2db9146649aa197a59ad3bd"
+    },
+    {
+      "bytes": 2884,
+      "dataset": "deepcad",
+      "item_id": "00556004",
+      "path": "00556004.stl",
+      "sha256": "8fb6b49bb9b1c2c563b43972e13de305da73676dd86af326aa265fad28c7187b"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00561733",
+      "path": "00561733.stl",
+      "sha256": "3f95c2c94c24f4897a291643f5237951edd5e592295bfe8c0f9ab4152e690973"
+    },
+    {
+      "bytes": 13484,
+      "dataset": "deepcad",
+      "item_id": "00564624",
+      "path": "00564624.stl",
+      "sha256": "ee9be86010bb769ba6ca207b1d7b332b911fd6b03d3f46a92baace619b410cc3"
+    },
+    {
+      "bytes": 4484,
+      "dataset": "deepcad",
+      "item_id": "00567279",
+      "path": "00567279.stl",
+      "sha256": "514619aa005d51d247d589ea29238c1d63bf5265f84093eab5765b8b139910e6"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00567281",
+      "path": "00567281.stl",
+      "sha256": "fc13b7c3466faa6a8e48a83c03d2c91561ba113759de642d42a16e3876479864"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00567928",
+      "path": "00567928.stl",
+      "sha256": "4c98f4f598791fc5a0e2e13b9ce9ed4100ef9e1dede3474a634eafeb7776ce3a"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00568111",
+      "path": "00568111.stl",
+      "sha256": "9c99f918a061b0c99e48dba4024add6e5d1d54ed40d351d8d1fae16e280d98a0"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00579235",
+      "path": "00579235.stl",
+      "sha256": "e87a8d21431cf3aa6f6c409d20c137c343fe5dfb347415f95e96107a271f4340"
+    },
+    {
+      "bytes": 3084,
+      "dataset": "deepcad",
+      "item_id": "00580046",
+      "path": "00580046.stl",
+      "sha256": "94874695d3ddb8cfb91e81e27a622e27d3cd78043b8c3a9aca6be99a36847eb4"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00583114",
+      "path": "00583114.stl",
+      "sha256": "10631bc40c9439a958ef72b59a872cbfffea12ab21b75779457bd9a4fa0f619e"
+    },
+    {
+      "bytes": 56484,
+      "dataset": "deepcad",
+      "item_id": "00584247",
+      "path": "00584247.stl",
+      "sha256": "626b11567b592ba95fb4dbd9cb25996ad5bd43c6345e6f0e2057b1127c969922"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00585755",
+      "path": "00585755.stl",
+      "sha256": "00f6c31ed726bafd690c87ebe74a69505b34c2e565d7b5838c6f76cd5653fd24"
+    },
+    {
+      "bytes": 50884,
+      "dataset": "deepcad",
+      "item_id": "00585924",
+      "path": "00585924.stl",
+      "sha256": "b8caaa48ee517d1584a831802b39b160b6055d2a0f54e7377ec87a62a61fd651"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00597929",
+      "path": "00597929.stl",
+      "sha256": "53512be54e305345979f3f9c1cbf061e1ff0af232814ea6dee6c4074bcfd2ab1"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00605149",
+      "path": "00605149.stl",
+      "sha256": "820ed8112f0053a96eb08e6330f933cdc9a36a8407004898f4a4c0cca068469e"
+    },
+    {
+      "bytes": 285084,
+      "dataset": "deepcad",
+      "item_id": "00607531",
+      "path": "00607531.stl",
+      "sha256": "caec5013be056c6c7b72c01c91062afd1ee1f3f685a16f2b83e1b5138e6c00c2"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00609396",
+      "path": "00609396.stl",
+      "sha256": "c7061e2e43847ac446253b1c3d3f00db4ad8b37b9f8bf914c32176cff1d57852"
+    },
+    {
+      "bytes": 3684,
+      "dataset": "deepcad",
+      "item_id": "00610486",
+      "path": "00610486.stl",
+      "sha256": "6cf7b5caf995a70339f483ceed594f9ac72d00edba13052751b17e8a4849c79d"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00611653",
+      "path": "00611653.stl",
+      "sha256": "205dcf39cce331f6b125f3fa3346c2615268447c6c6bbb4ec5b373c99271c199"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00613506",
+      "path": "00613506.stl",
+      "sha256": "1b75aac9644be70d5702d91ee913aee50dd8866123a2a6934fd0d5167af9df59"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00613733",
+      "path": "00613733.stl",
+      "sha256": "45c308cf64bf3a0ca855ba30f8abcb335b0b87719f098781ffd090299b18eb9c"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00620693",
+      "path": "00620693.stl",
+      "sha256": "3493df78f917f046855c8b27feacc7b59dfe3ae551b321146b7f0cf48e450dd6"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00624125",
+      "path": "00624125.stl",
+      "sha256": "32d7db46180604f6c3028d93befad9b5d0269e2ee56e4171debc11221dfb894c"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00624861",
+      "path": "00624861.stl",
+      "sha256": "4ee8eba4926e1c85ed08bb03735fcfe8d70dd9b31f5462e9119c159d32a550e4"
+    },
+    {
+      "bytes": 77184,
+      "dataset": "deepcad",
+      "item_id": "00627909",
+      "path": "00627909.stl",
+      "sha256": "2e08032cfc4e5011e193f2f6d864a5f528d682c261bcff750c1859d124e071a3"
+    },
+    {
+      "bytes": 126284,
+      "dataset": "deepcad",
+      "item_id": "00641982",
+      "path": "00641982.stl",
+      "sha256": "d360dddacb6a2f429519e866b21fd5dee6604472c9fdfcd494469ab48ff3355e"
+    },
+    {
+      "bytes": 73284,
+      "dataset": "deepcad",
+      "item_id": "00646280",
+      "path": "00646280.stl",
+      "sha256": "21595aad871227075fa0bc2ec6e248f67d15ed81cd2ced2cd33fb58f5a986c81"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00648086",
+      "path": "00648086.stl",
+      "sha256": "a1d92016d5ec2dbecdcbef920205d8954001af68f7a944fc6dbeebf33ac26856"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00650843",
+      "path": "00650843.stl",
+      "sha256": "f35af95cd081c0ed9927b99c4d80057945acd7bb018e28e48c67f9b90db8a096"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "deepcad",
+      "item_id": "00652659",
+      "path": "00652659.stl",
+      "sha256": "41dde97250a09918e90d6878e25818bdc7962373a408f979256710c7f7401941"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00654726",
+      "path": "00654726.stl",
+      "sha256": "ea700a48031c1b284c3f4428506be309fae768c55aecb667d92e134c2bd9a3ed"
+    },
+    {
+      "bytes": 26784,
+      "dataset": "deepcad",
+      "item_id": "00658428",
+      "path": "00658428.stl",
+      "sha256": "53269bea5f4680adc46c71db20e6caab4a97a86967c38c98a0046ce1c3fe6e3f"
+    },
+    {
+      "bytes": 126084,
+      "dataset": "deepcad",
+      "item_id": "00658709",
+      "path": "00658709.stl",
+      "sha256": "ac721deb0cfd701f7bf3f29292dc875384e9c38c3fb784155a28034a9f0a63b5"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00659754",
+      "path": "00659754.stl",
+      "sha256": "0adaacd570236c0f22c3f5edd1256f54f60410a966addcc8223818d23b8bf21a"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00664666",
+      "path": "00664666.stl",
+      "sha256": "8789b90890efd8a9ad1bc102c6447aa36fc5f9363aca14ecba864ea25fb92500"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00675497",
+      "path": "00675497.stl",
+      "sha256": "cbefaf5ad6260d5f7602da2ae91d707322379465108599bbafd9ece782895f3d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00676105",
+      "path": "00676105.stl",
+      "sha256": "6249782c5ba04cfb353010e7d4f85798ac463ee449e8631c48d11f8a111af9ae"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00677020",
+      "path": "00677020.stl",
+      "sha256": "00613048c6675f19364b476553f39c9e3b988d7f5cf8a526fd51763d5b7fdb26"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00677275",
+      "path": "00677275.stl",
+      "sha256": "35de3e899a4add42fc221e08414f1e369562ca788973def96388ade1b9596b9f"
+    },
+    {
+      "bytes": 153884,
+      "dataset": "deepcad",
+      "item_id": "00679079",
+      "path": "00679079.stl",
+      "sha256": "6e2c8246a95e84ca22a9892d0fc1fd02ea5b35076d2ce131df185ef6c25c19cd"
+    },
+    {
+      "bytes": 2884,
+      "dataset": "deepcad",
+      "item_id": "00679628",
+      "path": "00679628.stl",
+      "sha256": "ce0f2166ec6ab636fd012f35c72b7df72751b0668fea7e96a560c5a088a7964d"
+    },
+    {
+      "bytes": 101484,
+      "dataset": "deepcad",
+      "item_id": "00683079",
+      "path": "00683079.stl",
+      "sha256": "75fff412caf77190d4c5e4a6699c967be2d1b584bab79654aa3fd759c4b590a3"
+    },
+    {
+      "bytes": 884,
+      "dataset": "deepcad",
+      "item_id": "00684537",
+      "path": "00684537.stl",
+      "sha256": "f05f23dc7938ee820bbbaea725d67a815b9b61a4eddaf35aed51d65e87e3b7a3"
+    },
+    {
+      "bytes": 79184,
+      "dataset": "deepcad",
+      "item_id": "00685289",
+      "path": "00685289.stl",
+      "sha256": "ca5761f04932c9b94f7092143d16a0d08f7971af7a392ccb2c0648bd8fda8a0f"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00691807",
+      "path": "00691807.stl",
+      "sha256": "4cc347828191d8e4432691738b4e1ce9442ff322d2ae78a78fa68e725e7d0edd"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00692808",
+      "path": "00692808.stl",
+      "sha256": "b7742cb78804fb73c0ee032499a86d9b97b2151a3d1e5cc48f881440145d598b"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00693585",
+      "path": "00693585.stl",
+      "sha256": "e182c25e19fccfc9da4f84e5ca56c22301b7335cb864d4fcca20844030e7f273"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00696172",
+      "path": "00696172.stl",
+      "sha256": "7db484b52ed7111c42512ab822e4b68585984367b0c539188fa0d7ef071d0311"
+    },
+    {
+      "bytes": 102284,
+      "dataset": "deepcad",
+      "item_id": "00699297",
+      "path": "00699297.stl",
+      "sha256": "5153e9ae89d84994e568b5a549ac7999ca2f5f062a624ffabedc3662aa0f5865"
+    },
+    {
+      "bytes": 53484,
+      "dataset": "deepcad",
+      "item_id": "00699311",
+      "path": "00699311.stl",
+      "sha256": "4799f3485381a9fd5885f8c649270aaa9e32488e1931b7d6a64753e5017cdf53"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00700252",
+      "path": "00700252.stl",
+      "sha256": "bb3b107e0b26cfe53ca928eb48935093d4928ba93d73bc2ea4cbb733e409c2d9"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00700951",
+      "path": "00700951.stl",
+      "sha256": "11d9583a33c19365468f67dc0cdcd701d5f61ab3a89039095288dfab51bcba71"
+    },
+    {
+      "bytes": 26084,
+      "dataset": "deepcad",
+      "item_id": "00705695",
+      "path": "00705695.stl",
+      "sha256": "a5f555d920d1459656197042989c766e2389f53a277c7aa1d99969096c965841"
+    },
+    {
+      "bytes": 142084,
+      "dataset": "deepcad",
+      "item_id": "00706155",
+      "path": "00706155.stl",
+      "sha256": "710190e654f22b069c3006458ea0970dfd1c2a157d1e482c471d040f423de205"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00709689",
+      "path": "00709689.stl",
+      "sha256": "380dd622a9976190f51de930ce861722109be12f698e1269bd4690293a14f5fc"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00712475",
+      "path": "00712475.stl",
+      "sha256": "379022ce703c3da61001f2813b93f407b35d9a1e11edfe29a8b293cb3b84dd62"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00713677",
+      "path": "00713677.stl",
+      "sha256": "1afd764608c3399dcb74c757eaefa0ad755e82e1da164684efba65c0a4a39557"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00714434",
+      "path": "00714434.stl",
+      "sha256": "f2b7e83d1611bd1dcf0676d40da91d26f4665969e0f4cf8d39271d58e4b6718e"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00717738",
+      "path": "00717738.stl",
+      "sha256": "dab8794f3b42754a27e03c4cd0097561c0e14a3a180a43d66377f02f41f55ff3"
+    },
+    {
+      "bytes": 3484,
+      "dataset": "deepcad",
+      "item_id": "00720898",
+      "path": "00720898.stl",
+      "sha256": "6b4b5cf53103f919fd921a57840f9bb98e17403d9e50d3c78d5c15c035b92df8"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00722082",
+      "path": "00722082.stl",
+      "sha256": "e67489e6c219f5806d585532a006b50979177c8f2026cb594a93c99887e8d492"
+    },
+    {
+      "bytes": 3884,
+      "dataset": "deepcad",
+      "item_id": "00723540",
+      "path": "00723540.stl",
+      "sha256": "e66270417a3f7f56eecec506eb35cc201343949ffcccac664becd6367fef5325"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00728135",
+      "path": "00728135.stl",
+      "sha256": "8c4b9321693d5ff227cf863725087afb59c1efbaeb8601132ea9ba56e8e903d1"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00728902",
+      "path": "00728902.stl",
+      "sha256": "771396c582e3627e34da2be1f2b7d0d008ffda0db9410780e3205b0e87043f07"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00729626",
+      "path": "00729626.stl",
+      "sha256": "427f13906d3be6271d008f9879b1a1cec09bab4084b96166b5f9b49df6367eca"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00730057",
+      "path": "00730057.stl",
+      "sha256": "0bfb7c0423118af0ee71a93f61ad943fde1bcf9238a52b0441bf5369f791583d"
+    },
+    {
+      "bytes": 70484,
+      "dataset": "deepcad",
+      "item_id": "00730444",
+      "path": "00730444.stl",
+      "sha256": "a57fc1ce2ed1e7cb2577e5507c7de1b6f454b1d0b5a602780f7e04885813c76f"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00731609",
+      "path": "00731609.stl",
+      "sha256": "2e96b83349a7c14bc111d57b5868ab27d9f75bfced34545432b1d0750af7a29a"
+    },
+    {
+      "bytes": 37684,
+      "dataset": "deepcad",
+      "item_id": "00735181",
+      "path": "00735181.stl",
+      "sha256": "cfa971de0a25a87e44b34762c9fc4c411b3584caf6f43a9972266b18843f94e2"
+    },
+    {
+      "bytes": 11684,
+      "dataset": "deepcad",
+      "item_id": "00736026",
+      "path": "00736026.stl",
+      "sha256": "c7155a619d9c5c0e48ab61436ef510025c3c246cedae4c1b12e16d562c59c27c"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00736882",
+      "path": "00736882.stl",
+      "sha256": "cd39772843a96de38f8b0b1af5fca03f478eda641d62edc46744d1ea7e09f980"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00739672",
+      "path": "00739672.stl",
+      "sha256": "fe8828ba82f99634dce1bed4731dfbc8def22dff1131abf733f83e9eef2009ca"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "deepcad",
+      "item_id": "00745786",
+      "path": "00745786.stl",
+      "sha256": "ad853fc1306268f70c236c27644ac3007d3113b5dd4ff97297a9c0f67c5eaa7f"
+    },
+    {
+      "bytes": 102684,
+      "dataset": "deepcad",
+      "item_id": "00747106",
+      "path": "00747106.stl",
+      "sha256": "4e99e573e4d8c2ee1cd4f32750842a7c63831ef5611720886238a81622a6aefb"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00748531",
+      "path": "00748531.stl",
+      "sha256": "6b60921baa10b03a133cde7ebd055f4f7e396991f7fee8367a5a32c6b6ec797a"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00752986",
+      "path": "00752986.stl",
+      "sha256": "9c8a815924c1ba7ee91697e4bcd8da3c4b48d921198bea9557907e06a75f971d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00755534",
+      "path": "00755534.stl",
+      "sha256": "80265a7c256718f052af5eeb40ac7b1f0b288a45337b9092c673e097ae44c87a"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "deepcad",
+      "item_id": "00755610",
+      "path": "00755610.stl",
+      "sha256": "eefca9e14056d9ed1a346327c8a7e29776e4b512600ffda1b285f927ebc62b0e"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "deepcad",
+      "item_id": "00756346",
+      "path": "00756346.stl",
+      "sha256": "3b23955418f35a6e8cd80ec3ab0450282bac1944bd386b56f18bdc3eb8cb263d"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00758712",
+      "path": "00758712.stl",
+      "sha256": "2b65aab47c3c51942e24ff383ee95b4a347f351105c6bb48df1fe09957f85e88"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "deepcad",
+      "item_id": "00760512",
+      "path": "00760512.stl",
+      "sha256": "16ec85a91582bda257ee28a30fea632c7dca2738f9b41d6f93592f8b57b450ec"
+    },
+    {
+      "bytes": 123284,
+      "dataset": "deepcad",
+      "item_id": "00764196",
+      "path": "00764196.stl",
+      "sha256": "189c15398d387b42309e9420e5524e9b74f5b4eb872dd8cd5f96ffcedab62dd9"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00765098",
+      "path": "00765098.stl",
+      "sha256": "8355feb1efcb25e226ec68104bf196455cb8468b5c46d0aab4580191e1e7bdda"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00778197",
+      "path": "00778197.stl",
+      "sha256": "5ef39aaab355dcd1a05cbb5ae257f7cb1a1adb67d465091013ed3ae18f7f901f"
+    },
+    {
+      "bytes": 26884,
+      "dataset": "deepcad",
+      "item_id": "00779330",
+      "path": "00779330.stl",
+      "sha256": "6af2155ca95c4e11c7a1475125d510d301746b0bb3424386095caa00384b48da"
+    },
+    {
+      "bytes": 21884,
+      "dataset": "deepcad",
+      "item_id": "00789836",
+      "path": "00789836.stl",
+      "sha256": "1e2fa2a848e6db8d1bb5b49621df2d1181a510061e8cb1ffcef6b4b760528a79"
+    },
+    {
+      "bytes": 3684,
+      "dataset": "deepcad",
+      "item_id": "00791223",
+      "path": "00791223.stl",
+      "sha256": "b9ee68e7ccfa5a018e0149fe7c0c589066d6a61cc82299ad076908619a8adaa4"
+    },
+    {
+      "bytes": 484,
+      "dataset": "deepcad",
+      "item_id": "00793143",
+      "path": "00793143.stl",
+      "sha256": "4e2e5d214f8a4c63e8d97f4873f306eb14cabd0d61c52792c043a087913c684e"
+    },
+    {
+      "bytes": 59284,
+      "dataset": "deepcad",
+      "item_id": "00793648",
+      "path": "00793648.stl",
+      "sha256": "21c5d7df2842eb321d612baaa33fca4ddeac65ce822a33242f1feb3e0f974ae2"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00794360",
+      "path": "00794360.stl",
+      "sha256": "fd25c53151b141028557de3d60b16d455923293778eb6a0bae25ee9bdd91f031"
+    },
+    {
+      "bytes": 85884,
+      "dataset": "deepcad",
+      "item_id": "00797964",
+      "path": "00797964.stl",
+      "sha256": "e40d1dc34fca0a0d6e11562c5b815d67cb819f942a576b5044a9b7be21d66cdd"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00801283",
+      "path": "00801283.stl",
+      "sha256": "60f298ed9bc9c28bd44cedfd2f026cdb422034eec303d72afa799e21d4ac325d"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00806446",
+      "path": "00806446.stl",
+      "sha256": "577edf8cc46bb86c1ed2b205094a8ab5f1ce87b336c22b4cd60a5fb0c0a2edee"
+    },
+    {
+      "bytes": 3084,
+      "dataset": "deepcad",
+      "item_id": "00809812",
+      "path": "00809812.stl",
+      "sha256": "72f6bccd40f9e763e19ab77ff2380e21e059c5972b43a01d02ac43c9079dda54"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00815930",
+      "path": "00815930.stl",
+      "sha256": "0dbcbfaac19269de1396bdd37ef870176ccf4efade9414e3f5948d8231d54640"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00816669",
+      "path": "00816669.stl",
+      "sha256": "a14c28c3597981ff45d383f24d9584447906bd91490ebd741db0b9274500fd1f"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00819348",
+      "path": "00819348.stl",
+      "sha256": "ec3425892fc3cdc0fb4a88a37a510b66f363c01f30aa790f41ce254ebddf50b5"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00824043",
+      "path": "00824043.stl",
+      "sha256": "0cd5aa15aaa729c9483d94334a3a0a00ac9129b2cb2a3f39a13c7a701c8014b0"
+    },
+    {
+      "bytes": 138484,
+      "dataset": "deepcad",
+      "item_id": "00824838",
+      "path": "00824838.stl",
+      "sha256": "3d431a2c49ccd4e7ddfe11e2c65f7263f71bb3dae0d4fa045cffa698b487eeee"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "deepcad",
+      "item_id": "00827408",
+      "path": "00827408.stl",
+      "sha256": "016d01db8842cecb634079300449a3d2ab6008d65c5dc5418f43beb9f9d9c6c8"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00831914",
+      "path": "00831914.stl",
+      "sha256": "4cc347828191d8e4432691738b4e1ce9442ff322d2ae78a78fa68e725e7d0edd"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00838424",
+      "path": "00838424.stl",
+      "sha256": "f010454f9358c86a6bb01a196024398f5b66dcac88d2a02c3ba60c663c413054"
+    },
+    {
+      "bytes": 61884,
+      "dataset": "deepcad",
+      "item_id": "00838581",
+      "path": "00838581.stl",
+      "sha256": "ddc4496a406f0952acf3b5e7f42b73110df2b4e8d24286e4cc89038344d5ea4f"
+    },
+    {
+      "bytes": 3284,
+      "dataset": "deepcad",
+      "item_id": "00839687",
+      "path": "00839687.stl",
+      "sha256": "be672d56c7451b9f0baef2cce80baaf6359d4f1616011e4f26d5a4ac5449f429"
+    },
+    {
+      "bytes": 79484,
+      "dataset": "deepcad",
+      "item_id": "00840120",
+      "path": "00840120.stl",
+      "sha256": "ecb52c5d1ff4b8092283e58d71f2b0ef397ee858e17054062206cbd947ed0d21"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00842985",
+      "path": "00842985.stl",
+      "sha256": "d798b06f2540862cf32d2d5cf3cd50923469f3e14c7cca9fd9fdae2b7d8c14d6"
+    },
+    {
+      "bytes": 77284,
+      "dataset": "deepcad",
+      "item_id": "00844974",
+      "path": "00844974.stl",
+      "sha256": "9734f74030c3d0a91e0026ef957b39143fe58c81f16d8fc610339d6afa8a3131"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "deepcad",
+      "item_id": "00851435",
+      "path": "00851435.stl",
+      "sha256": "25b95bc99fea30a7a7d0661886b0a985848dc7b6c4088b1db1e2165fae987b40"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "deepcad",
+      "item_id": "00851780",
+      "path": "00851780.stl",
+      "sha256": "81bd1a73a8cc77021db660fd15bb772d7247704fcebb0187a6a32da28a37937f"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00868218",
+      "path": "00868218.stl",
+      "sha256": "f783171d4fcf98b0208a1ef856de9be5c66f83041e6b9712a0e761a2837e8df3"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00870274",
+      "path": "00870274.stl",
+      "sha256": "9643c39bf1ca639f97022a7573f9b562ad5dc0ece403288d38367a4303aa8e3e"
+    },
+    {
+      "bytes": 1884,
+      "dataset": "deepcad",
+      "item_id": "00870398",
+      "path": "00870398.stl",
+      "sha256": "b267c9c67ca05b9c4699f4605834b7c9ca632d25dfa3fa11c3fb2a6652f52fa8"
+    },
+    {
+      "bytes": 4684,
+      "dataset": "deepcad",
+      "item_id": "00871155",
+      "path": "00871155.stl",
+      "sha256": "314fda5c8870c3e7473788e89a25179f2f08a22e7f8190230b8455dae405d306"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00879983",
+      "path": "00879983.stl",
+      "sha256": "40a6e88dc1488fd2a574aea4cc87b8e1a527f7ceaf3ddc6038e7f9cf926279fb"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00883187",
+      "path": "00883187.stl",
+      "sha256": "a90ef2a29f3fce27843d4af45aa92272b1058c50c84e1ee2a5be687c9e1a98b0"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00892776",
+      "path": "00892776.stl",
+      "sha256": "ad8af7c8e294aa816e55647ffd297e3be93d7d3a151854e203cacd2159d719a8"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00893660",
+      "path": "00893660.stl",
+      "sha256": "8b542a3d4d17f821923aaa95add43ed73f701b18c961dcd720509f8ad14181b0"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "deepcad",
+      "item_id": "00894542",
+      "path": "00894542.stl",
+      "sha256": "a3601547b59f6faa723a367f6eaf4e9ead702fea68f26908cf87bf6689646a7f"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00896571",
+      "path": "00896571.stl",
+      "sha256": "517275ed39206587b7f19299329b3ad9cee31c4673a7c9e58b239531c05f7fa0"
+    },
+    {
+      "bytes": 7284,
+      "dataset": "deepcad",
+      "item_id": "00902529",
+      "path": "00902529.stl",
+      "sha256": "a5f83780972cabc60f135acbe24c0fbef293edc51d9b42f4e29b64fc8f70b2aa"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "deepcad",
+      "item_id": "00903796",
+      "path": "00903796.stl",
+      "sha256": "7310850faa62e2130e95fa5167192e3c4547c843e446d586741841e17ede56e6"
+    },
+    {
+      "bytes": 109084,
+      "dataset": "deepcad",
+      "item_id": "00904179",
+      "path": "00904179.stl",
+      "sha256": "f91e877aebe720e6dd75d2dfd5444f07633a8861b91750777864183b3dde8323"
+    },
+    {
+      "bytes": 3684,
+      "dataset": "deepcad",
+      "item_id": "00907205",
+      "path": "00907205.stl",
+      "sha256": "2b9b074341b1b5cd93d86984d76f55d70195174f3aa4143bf48f462c4f54ebf0"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00914132",
+      "path": "00914132.stl",
+      "sha256": "4a8aebadb8388709aea8f408c28e6190a0d0217de85a18e6ed9359c87e8dd7b3"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00915180",
+      "path": "00915180.stl",
+      "sha256": "c719e2aaf0991b32f9ba4c2bf431b84336b1ad78fc3f744d6bdca97b84cbda64"
+    },
+    {
+      "bytes": 82884,
+      "dataset": "deepcad",
+      "item_id": "00921370",
+      "path": "00921370.stl",
+      "sha256": "6ec43e4d8c77b8df0b4742906a9b05ecbeb23c271b6af4deccf17294f2ad655e"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00923533",
+      "path": "00923533.stl",
+      "sha256": "3432f24332f8c40e9e9b3b23e655f39dcedd27015e7e0274426016dfefbeeefb"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "deepcad",
+      "item_id": "00924921",
+      "path": "00924921.stl",
+      "sha256": "60263794acc5b45b12c5bfbd8ee81af6c77f4d73849eb1f6fe748f749462f1bc"
+    },
+    {
+      "bytes": 39884,
+      "dataset": "deepcad",
+      "item_id": "00936617",
+      "path": "00936617.stl",
+      "sha256": "069ea613c6073d4766d91c6dc3a3a43404df7f7f389556da5b2dc5824240d0b9"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00939079",
+      "path": "00939079.stl",
+      "sha256": "4b45f2a9e5155a73207267ebe76e41e3f8171f3aba19780eb4136d9343745aaa"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00940215",
+      "path": "00940215.stl",
+      "sha256": "c06303c5936ad0ba20eee3243f410fe33c905cb1bfd215964c98cc7e1a352117"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00940593",
+      "path": "00940593.stl",
+      "sha256": "a49c547b853d0f77fcd95bbda970b03774f8b09fa03e79bf401de1c903ae816b"
+    },
+    {
+      "bytes": 145484,
+      "dataset": "deepcad",
+      "item_id": "00940597",
+      "path": "00940597.stl",
+      "sha256": "18a8ef15737258890533ab1d18916a65f60acc194c1ed5af20a222b674644ffe"
+    },
+    {
+      "bytes": 5284,
+      "dataset": "deepcad",
+      "item_id": "00943815",
+      "path": "00943815.stl",
+      "sha256": "209399d917f66e3365ab1c07137a59b9bf402f34e211cae0cfb8d0cf040a89d5"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00949278",
+      "path": "00949278.stl",
+      "sha256": "b7742cb78804fb73c0ee032499a86d9b97b2151a3d1e5cc48f881440145d598b"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "deepcad",
+      "item_id": "00951839",
+      "path": "00951839.stl",
+      "sha256": "1579710cb311113f37927d49f8de534eaeaae94d1bf8c9a72b21249c476483af"
+    },
+    {
+      "bytes": 130384,
+      "dataset": "deepcad",
+      "item_id": "00953096",
+      "path": "00953096.stl",
+      "sha256": "7f4e06325be9c94a9045d277b32e72b16150565c1ba6c120054f19bebc4a32a7"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00953824",
+      "path": "00953824.stl",
+      "sha256": "6d42536fb790d39c70c03000a831637bfc2bf565cd1d58db831b5683e5439a37"
+    },
+    {
+      "bytes": 27084,
+      "dataset": "deepcad",
+      "item_id": "00954582",
+      "path": "00954582.stl",
+      "sha256": "ce2b641bcb3e79f45330934455475ded05f91afadedc1e53c3a167f6ef76767f"
+    },
+    {
+      "bytes": 9684,
+      "dataset": "deepcad",
+      "item_id": "00955637",
+      "path": "00955637.stl",
+      "sha256": "3c56ad85774a998ad276bcadf4bd031e6d0fb12274f36e02a1754da9afae75bc"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "deepcad",
+      "item_id": "00960492",
+      "path": "00960492.stl",
+      "sha256": "2edca1fd180e2ac953f52cce8d6c250855baa39bdcf3d86e21f1fcf67337d373"
+    },
+    {
+      "bytes": 154484,
+      "dataset": "deepcad",
+      "item_id": "00962888",
+      "path": "00962888.stl",
+      "sha256": "b57dd5ae87ed50075515c9500200e598f94c18f3a94606cdaca7f03689573eb3"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00964733",
+      "path": "00964733.stl",
+      "sha256": "4be2b5b39641a8e55ee9a909049e860f85100f8dc42f57f5a90482766db50c5c"
+    },
+    {
+      "bytes": 102484,
+      "dataset": "deepcad",
+      "item_id": "00964767",
+      "path": "00964767.stl",
+      "sha256": "cef5ff36a320d4a33b0129beafae104e7c057f0b9325286b0b92142cf64c6fec"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00965887",
+      "path": "00965887.stl",
+      "sha256": "5c1de0bccc40f8b87a5d7c6b42c07f3273a5e22b54b3b553a8bab9511e02032d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00968592",
+      "path": "00968592.stl",
+      "sha256": "9c03ac9bf89cceb662acf68819eceb1419705d5c28d9421c75078cff8f88db42"
+    },
+    {
+      "bytes": 684,
+      "dataset": "deepcad",
+      "item_id": "00971059",
+      "path": "00971059.stl",
+      "sha256": "7bf79b426c3609c0bafbdf4470748b88f5a3cd26694d296e46dfcab8aa9ac31d"
+    },
+    {
+      "bytes": 38284,
+      "dataset": "deepcad",
+      "item_id": "00971439",
+      "path": "00971439.stl",
+      "sha256": "79cb896567f87818ae537713b5820c9edc60542d6c53f142c7c2e0c19747ac3e"
+    },
+    {
+      "bytes": 155884,
+      "dataset": "deepcad",
+      "item_id": "00989092",
+      "path": "00989092.stl",
+      "sha256": "edd0ccb8acd315a9b35f35dce931457b758e056e470f7c4f0d7b8bef80efc028"
+    },
+    {
+      "bytes": 103884,
+      "dataset": "deepcad",
+      "item_id": "00992691",
+      "path": "00992691.stl",
+      "sha256": "48ca74f0f8988054111e70a115a82cba19297637a4ed3a880985c9724c813c93"
+    },
+    {
+      "bytes": 97684,
+      "dataset": "fusion360",
+      "item_id": "100229_aa33a237_0002",
+      "path": "100229_aa33a237_0002.stl",
+      "sha256": "f18aa31fa86b6f431136a09453140f9762da20f9945e8bcfa8c4c2d111f25180"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "108852_fed54702_0004",
+      "path": "108852_fed54702_0004.stl",
+      "sha256": "8fd365c88c94d7a98ce0634e0ca082c92eb0da0dbe7289b74279b1c22e895909"
+    },
+    {
+      "bytes": 103884,
+      "dataset": "fusion360",
+      "item_id": "113177_e0a0fba7_0000",
+      "path": "113177_e0a0fba7_0000.stl",
+      "sha256": "2e4ed7bddb896976fbfa240dbbdc088df371630c2774cbbb557f72860d329224"
+    },
+    {
+      "bytes": 938284,
+      "dataset": "fusion360",
+      "item_id": "115533_da81d57e_0000",
+      "path": "115533_da81d57e_0000.stl",
+      "sha256": "7b720af49be4aacfdb7c734f298f8f1177ecf98375cc9a213b0b798157e86a61"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "fusion360",
+      "item_id": "115535_a171c715_0000",
+      "path": "115535_a171c715_0000.stl",
+      "sha256": "37de8fd85766f2b5cc9a46b88988e3aee342760994ecde55c0532008541824a5"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "116416_b2565d0a_0001",
+      "path": "116416_b2565d0a_0001.stl",
+      "sha256": "b831687d5517d86be34e5e6c351ae601dddf46c97ffbf3f962b88e8cfef0c061"
+    },
+    {
+      "bytes": 52684,
+      "dataset": "fusion360",
+      "item_id": "116842_501e9f74_0000",
+      "path": "116842_501e9f74_0000.stl",
+      "sha256": "2cc85e5a616591478b4744d869fc1429883fe84d274111b422fb40c11b15690b"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "118269_fa4b08d7_0000",
+      "path": "118269_fa4b08d7_0000.stl",
+      "sha256": "8f8a5d5d664c3e81493bc4609f723e36b86a2471f2938dd0f90bc3f79dd4f11a"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "119883_01aadf20_0000",
+      "path": "119883_01aadf20_0000.stl",
+      "sha256": "6df0e5ba919f0f96b2b6ce5f5e3f2c14c8092ecc052f53fb960dac9bd7ddccab"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "120700_d818883a_0005",
+      "path": "120700_d818883a_0005.stl",
+      "sha256": "bb1297449fffef326de2e7b88d4ef67856002d3ae1d5ac40289d30b29155b1c8"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "121187_d1994db6_0000",
+      "path": "121187_d1994db6_0000.stl",
+      "sha256": "f8ac80aafee06968ba937a5dc273808c342742143c91bc21d68464562717e504"
+    },
+    {
+      "bytes": 11084,
+      "dataset": "fusion360",
+      "item_id": "122579_2663ded3_0000",
+      "path": "122579_2663ded3_0000.stl",
+      "sha256": "3dca91974a800ad404b1c79ba6302a595f9eca19313fcce58e30c028cea5b802"
+    },
+    {
+      "bytes": 88084,
+      "dataset": "fusion360",
+      "item_id": "125821_16752287_0001",
+      "path": "125821_16752287_0001.stl",
+      "sha256": "1d658a9871f8a20ff8faa9b91e3eea3a55413ac378c19572681c20b360f8703e"
+    },
+    {
+      "bytes": 204884,
+      "dataset": "fusion360",
+      "item_id": "127293_4fc0d060_0001",
+      "path": "127293_4fc0d060_0001.stl",
+      "sha256": "e0a425357a78f71254bc8426f231e27312233b35796303ad4e1308743f7bdc83"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "128355_739c5ce0_0001",
+      "path": "128355_739c5ce0_0001.stl",
+      "sha256": "4294c5cf37be74573174e1417cd2fd3c60a892c5e2ea5d11ce37249589feff45"
+    },
+    {
+      "bytes": 256084,
+      "dataset": "fusion360",
+      "item_id": "128996_35f2006e_0000",
+      "path": "128996_35f2006e_0000.stl",
+      "sha256": "e3de6744c6459636a8a4456b53dc67080a2677b007550561aebd69f0863a2cfa"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "128996_decf48a5_0000",
+      "path": "128996_decf48a5_0000.stl",
+      "sha256": "7a5327cd9438a9181bae5e443471d9ecac3e7ce71ddb449b911f23353e598631"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "131065_c82633e9_0000",
+      "path": "131065_c82633e9_0000.stl",
+      "sha256": "32a7731694622eac857baacd156a546fb45584175d50dc7ee8478c317b45650f"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "132464_8dc52066_0000",
+      "path": "132464_8dc52066_0000.stl",
+      "sha256": "8eee17b8ff7e766a426cacd1fcd27c989eaa97dcf6711368916a2f388b1e0262"
+    },
+    {
+      "bytes": 76884,
+      "dataset": "fusion360",
+      "item_id": "133402_47273d61_0008",
+      "path": "133402_47273d61_0008.stl",
+      "sha256": "0991319ac472c40ae173035b882d0019cc2f8e144c17fda35dcde4301973e137"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "133402_47273d61_0020",
+      "path": "133402_47273d61_0020.stl",
+      "sha256": "1f0d9e31caf18a9879a865fe18ba2c3cd8668437cd32876b3678e10d4323404d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "133402_47273d61_0029",
+      "path": "133402_47273d61_0029.stl",
+      "sha256": "0d371d1a50f161af8ec4d710fdddfc8914eea61b3274aca209794e61a058089e"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "133768_6787114d_0029",
+      "path": "133768_6787114d_0029.stl",
+      "sha256": "17c419ff9816fbf183d0f18046593b92bd71dcbc266fa5ef58c700409843382b"
+    },
+    {
+      "bytes": 1484,
+      "dataset": "fusion360",
+      "item_id": "134123_e3bfe65c_0000",
+      "path": "134123_e3bfe65c_0000.stl",
+      "sha256": "b137ce3c6734b4b4104adfe18130294fdba200134d2730337e34322ceb373875"
+    },
+    {
+      "bytes": 27084,
+      "dataset": "fusion360",
+      "item_id": "134408_8183bf58_0000",
+      "path": "134408_8183bf58_0000.stl",
+      "sha256": "e01b001db8dcb36f886b0996f529cfab4628cc33c791b7d977e631e78c895c30"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "135445_77b4ac77_0000",
+      "path": "135445_77b4ac77_0000.stl",
+      "sha256": "351eb3e4123e3be9c5d81435de13e075fa6176a4b547414b6dfc37793e063931"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "fusion360",
+      "item_id": "136343_567984b9_0000",
+      "path": "136343_567984b9_0000.stl",
+      "sha256": "dc08a23a2971d75bb209fbfa7a2be82a4ea38c3e7d918568cd70db37fa69100f"
+    },
+    {
+      "bytes": 77884,
+      "dataset": "fusion360",
+      "item_id": "136804_fc7723ee_0000",
+      "path": "136804_fc7723ee_0000.stl",
+      "sha256": "cc69b99ff7da9c49e50b4f8f65b793efb6eade58fd15b8391f32c326980fc0e5"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "136900_4fe212e6_0002",
+      "path": "136900_4fe212e6_0002.stl",
+      "sha256": "2d49f4ada5fe4570b6ed2e57bd207e70462857464fff70fb1a64edbdaf6214c2"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "136994_a3a2f50f_0008",
+      "path": "136994_a3a2f50f_0008.stl",
+      "sha256": "ac35645e874fcbf7ff08a23e48acf8348cdf3f9bbb16d8687bf18e9794c3d502"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "137098_0a45d1c8_0013",
+      "path": "137098_0a45d1c8_0013.stl",
+      "sha256": "0578c0b900d68b41a99ba9c3b6f2f7095560eea5ccc39f2095d50ab6b1e1f753"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "138186_5b1b2266_0000",
+      "path": "138186_5b1b2266_0000.stl",
+      "sha256": "cf2f28eb669ee0bf80bd38a9d3ac48ca2d14a052bf29f5695a73424916f387bb"
+    },
+    {
+      "bytes": 44484,
+      "dataset": "fusion360",
+      "item_id": "138535_c0da19b3_0013",
+      "path": "138535_c0da19b3_0013.stl",
+      "sha256": "f545d55563b408a123e7722ac951187f892d24638f2f13b6f72f2583c253246a"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "138724_99a5d09c_0000",
+      "path": "138724_99a5d09c_0000.stl",
+      "sha256": "f5824d6420918f58f1393cacd2035fa9dd40909c79844f2e25c28282917ac904"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "fusion360",
+      "item_id": "138888_857538fd_0000",
+      "path": "138888_857538fd_0000.stl",
+      "sha256": "7b77eeb174e29b75379fc355878a40e7b7ead3d1728cec57b6b4b62944cfbe0c"
+    },
+    {
+      "bytes": 283284,
+      "dataset": "fusion360",
+      "item_id": "140192_eaef8e46_0004",
+      "path": "140192_eaef8e46_0004.stl",
+      "sha256": "34e8a749176c4338eb51075b4c9da166c6fdfc828e7e2aa416a76eb013932675"
+    },
+    {
+      "bytes": 88284,
+      "dataset": "fusion360",
+      "item_id": "140600_a065e504_0001",
+      "path": "140600_a065e504_0001.stl",
+      "sha256": "75e4fe690c425073f5e370abdaa592d4b2c414ca7928b6a17dac5e36ca8d230a"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "141032_6b0fa18c_0000",
+      "path": "141032_6b0fa18c_0000.stl",
+      "sha256": "e07024889f808665312792df7f0f6464aab71833f5dc933ac99626b2ff636693"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "142680_cd829f9e_0006",
+      "path": "142680_cd829f9e_0006.stl",
+      "sha256": "d9beb3148a0fd4be36d7b2b85569ae02e2da709aaad9efe2980f36539a393891"
+    },
+    {
+      "bytes": 107884,
+      "dataset": "fusion360",
+      "item_id": "144279_136348c1_0000",
+      "path": "144279_136348c1_0000.stl",
+      "sha256": "7ba0471c1efd6943ecc0bd06dcf8768cb5e4520cff7ee14cedb3e47e202c337b"
+    },
+    {
+      "bytes": 179284,
+      "dataset": "fusion360",
+      "item_id": "144780_918f74e1_0000",
+      "path": "144780_918f74e1_0000.stl",
+      "sha256": "dbc91cb620de7b0ba64b5ba328f2358a48c5128419a815e9f3a35b8ac8d6ae1d"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "146102_93e433ac_0004",
+      "path": "146102_93e433ac_0004.stl",
+      "sha256": "7f61674ecd7219879d7252c4c6a75c141c382b854950a5a385a7750d3be3804a"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "146580_daeba71e_0000",
+      "path": "146580_daeba71e_0000.stl",
+      "sha256": "9b89a0aa55f62b2722e52aaf6bdc5986e05626e1008be5204159a24ce222e624"
+    },
+    {
+      "bytes": 444584,
+      "dataset": "fusion360",
+      "item_id": "146721_3ef6ff2c_0000",
+      "path": "146721_3ef6ff2c_0000.stl",
+      "sha256": "d0877040da48af13d93f309d591ec6ca132d591b29683cb797fe702f8784309c"
+    },
+    {
+      "bytes": 58184,
+      "dataset": "fusion360",
+      "item_id": "147022_9b03d096_0001",
+      "path": "147022_9b03d096_0001.stl",
+      "sha256": "62d12402bf7d84f0f683c3ef3553d754c7cad7e72dd39dfed9f58d7ebb54f0ce"
+    },
+    {
+      "bytes": 27084,
+      "dataset": "fusion360",
+      "item_id": "148051_66cb4858_0023",
+      "path": "148051_66cb4858_0023.stl",
+      "sha256": "59b6f7d11f9f68552d27dcc419c6db5cc0ee42b8d780c0d075d3055245faf313"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "148051_66cb4858_0042",
+      "path": "148051_66cb4858_0042.stl",
+      "sha256": "ae8ebf322aba10614de44aaa8e40ade373a2414e4dd699856562d2c1e195c1bc"
+    },
+    {
+      "bytes": 196684,
+      "dataset": "fusion360",
+      "item_id": "21242_6c2af7c2_0007",
+      "path": "21242_6c2af7c2_0007.stl",
+      "sha256": "b25a6fb33a267f817d538747614f4d36af9c6edc82e2fcb6a4cdf299c901cd21"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "21246_c66f2b12_0031",
+      "path": "21246_c66f2b12_0031.stl",
+      "sha256": "c3f28150d1939a21f0fa610ee30c405c1dfa1e20da8a074e9fb1ce8f20051887"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "21385_601444ba_0007",
+      "path": "21385_601444ba_0007.stl",
+      "sha256": "99da514ae08eb1f55f1d2f18b05cedb7098ae9fdafafc695fa60738367e47bc6"
+    },
+    {
+      "bytes": 230084,
+      "dataset": "fusion360",
+      "item_id": "21492_8bd34fc1_0008",
+      "path": "21492_8bd34fc1_0008.stl",
+      "sha256": "16cd2498e3599279fbee44ed1a05ab71daed02531c2c6fa74fca30226bd050c3"
+    },
+    {
+      "bytes": 127284,
+      "dataset": "fusion360",
+      "item_id": "21557_53eafe15_0031",
+      "path": "21557_53eafe15_0031.stl",
+      "sha256": "d17c6f58680769aaab29abdd797ac86120d15639c99ec52b233de144a673fb57"
+    },
+    {
+      "bytes": 129484,
+      "dataset": "fusion360",
+      "item_id": "21557_53eafe15_0039",
+      "path": "21557_53eafe15_0039.stl",
+      "sha256": "155fa905139790cc3b8f59c52fdcd53b5a3ca86bbba0a48c166871a3c661bff6"
+    },
+    {
+      "bytes": 76284,
+      "dataset": "fusion360",
+      "item_id": "21604_520e1ae2_0001",
+      "path": "21604_520e1ae2_0001.stl",
+      "sha256": "426a2c81f6da5b01d0ee8ebeda82cdbd78794699425aa3010845b3ef62408f63"
+    },
+    {
+      "bytes": 76284,
+      "dataset": "fusion360",
+      "item_id": "21644_aa203dc5_0007",
+      "path": "21644_aa203dc5_0007.stl",
+      "sha256": "56369dec285391be0400054c5a8871f766f85ca23dfc8edc09d2a2b2507930e6"
+    },
+    {
+      "bytes": 63684,
+      "dataset": "fusion360",
+      "item_id": "21646_a2dd0d00_0027",
+      "path": "21646_a2dd0d00_0027.stl",
+      "sha256": "e2ddd54ae8e3d77af9c0b71a33f9e7d2c44ce537d34c9d168ab97cd54f80631f"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "21647_6b6cca6f_0001",
+      "path": "21647_6b6cca6f_0001.stl",
+      "sha256": "29f05f470a52af9662d4d8f6ff34aa3ea5563ef633ef1e394ad66befbcd1b49b"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "21680_360ba5c7_0000",
+      "path": "21680_360ba5c7_0000.stl",
+      "sha256": "3d838f8352471deb2d3fb4ebb4e6f51c45bd4c7c637b94a52cb4a9fd9c7453a0"
+    },
+    {
+      "bytes": 145684,
+      "dataset": "fusion360",
+      "item_id": "21732_adaf1650_0007",
+      "path": "21732_adaf1650_0007.stl",
+      "sha256": "33b85598956ad9f1e2730ea1ccac4a22b9b4fcb86edd281248db87a3c4aa84a5"
+    },
+    {
+      "bytes": 203884,
+      "dataset": "fusion360",
+      "item_id": "21734_7cf58bd0_0011",
+      "path": "21734_7cf58bd0_0011.stl",
+      "sha256": "85f7f81e032c87cc833f694d4c48ea34a278cc2d6b562dc83384c273c48eb3ab"
+    },
+    {
+      "bytes": 100884,
+      "dataset": "fusion360",
+      "item_id": "21740_6f0c9bdb_0007",
+      "path": "21740_6f0c9bdb_0007.stl",
+      "sha256": "e7a915b238c431857e7a8ad9d69ca86f2a035d9cc67c2cac4b00f7ddd27ff903"
+    },
+    {
+      "bytes": 20884,
+      "dataset": "fusion360",
+      "item_id": "21899_d55d6c08_0012",
+      "path": "21899_d55d6c08_0012.stl",
+      "sha256": "0610bbd5854b2a98b653cbfd2af5793d7cd652e5d601449a83fcefb56ad33ecc"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "21908_385686ec_0015",
+      "path": "21908_385686ec_0015.stl",
+      "sha256": "ad71ea6b3c5cd4f7ecf9ba21d672c62ffd778197a2464ad9defad3ab0953d16a"
+    },
+    {
+      "bytes": 75884,
+      "dataset": "fusion360",
+      "item_id": "21941_1a683ec2_0009",
+      "path": "21941_1a683ec2_0009.stl",
+      "sha256": "fd8fe33ecab46c33f5cfff5af78b0a40779fe6cfc92df42f10ca1c987c302049"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "21979_29f59427_0004",
+      "path": "21979_29f59427_0004.stl",
+      "sha256": "6146d3c3e148ab6b02e52a5ea0756ea706be3901a3c7eda1efab89882f98b1f3"
+    },
+    {
+      "bytes": 101484,
+      "dataset": "fusion360",
+      "item_id": "22011_0832eefe_0006",
+      "path": "22011_0832eefe_0006.stl",
+      "sha256": "d2a0e103ef5786785b39817febefa0535205b5497e3b8157df67b0543af536c6"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "22011_0832eefe_0013",
+      "path": "22011_0832eefe_0013.stl",
+      "sha256": "f92bb3f631ae60471e314da57d1a11f4e3ba0cfbfbd2c4ca83ee550847fc42c9"
+    },
+    {
+      "bytes": 51084,
+      "dataset": "fusion360",
+      "item_id": "22019_0ef07114_0001",
+      "path": "22019_0ef07114_0001.stl",
+      "sha256": "4e380b8e19d08b561badd8dfe57e517a2270b4316ee6dc2ea5af4e184a609674"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "22254_539990c2_0007",
+      "path": "22254_539990c2_0007.stl",
+      "sha256": "df5ac2c8744f4b357a65acecfdcfc0318ace6289d30a1e02e92940c7f0e49c29"
+    },
+    {
+      "bytes": 51884,
+      "dataset": "fusion360",
+      "item_id": "22276_69c5036b_0001",
+      "path": "22276_69c5036b_0001.stl",
+      "sha256": "e1507f994af2adea6291a8aaf752e7f3d16fad99bb9e35d3c8bc151dee23b374"
+    },
+    {
+      "bytes": 15484,
+      "dataset": "fusion360",
+      "item_id": "22305_5b45cdb3_0012",
+      "path": "22305_5b45cdb3_0012.stl",
+      "sha256": "1a7be222e87622fee79263d65218f577eb087ec76119690b2b3492cdfd586731"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "fusion360",
+      "item_id": "22340_ec24cd79_0011",
+      "path": "22340_ec24cd79_0011.stl",
+      "sha256": "5bb4f82cb4a31299b55a8a1ef8156d6c68f780a0d9a5a3dffa6a9e195591a099"
+    },
+    {
+      "bytes": 24484,
+      "dataset": "fusion360",
+      "item_id": "22340_ec24cd79_0037",
+      "path": "22340_ec24cd79_0037.stl",
+      "sha256": "2b61aca79066ff0702bd2eb0f98b1292b94fd5634734b883dc0d59e74c853f69"
+    },
+    {
+      "bytes": 88084,
+      "dataset": "fusion360",
+      "item_id": "22357_e2f7b060_0012",
+      "path": "22357_e2f7b060_0012.stl",
+      "sha256": "ce5dfa8d84068781fe45629f0fa3662a02050bcf1e9a69ed8bccd49a50887a6d"
+    },
+    {
+      "bytes": 75484,
+      "dataset": "fusion360",
+      "item_id": "22447_4062c6cb_0011",
+      "path": "22447_4062c6cb_0011.stl",
+      "sha256": "9883b34e6118b574c8f9b4afb0b00da4073c467ecf174f2d7f87adcefa8faaff"
+    },
+    {
+      "bytes": 204684,
+      "dataset": "fusion360",
+      "item_id": "22457_a6c2776f_0002",
+      "path": "22457_a6c2776f_0002.stl",
+      "sha256": "6c00e502d2ad8bb0fe90f351912ec46b3bbb22c2d16183178c3712b6dac35f9c"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "22524_0be3da8a_0007",
+      "path": "22524_0be3da8a_0007.stl",
+      "sha256": "0f67932f007fbef807186dded34ddc0fe40d358f0c6ef0c5fa299dc80fce2118"
+    },
+    {
+      "bytes": 51684,
+      "dataset": "fusion360",
+      "item_id": "22524_0be3da8a_0016",
+      "path": "22524_0be3da8a_0016.stl",
+      "sha256": "1c2d54a65a7155a567f5e3e3bb7114cd939d930330977950a261f407d5a25a62"
+    },
+    {
+      "bytes": 230184,
+      "dataset": "fusion360",
+      "item_id": "22543_684108ff_0006",
+      "path": "22543_684108ff_0006.stl",
+      "sha256": "417fbe9c13db405f9f65f5b21ae07229ffd5dee6d6fa8848b23e90dba5dbd856"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "22606_f1813fe7_0006",
+      "path": "22606_f1813fe7_0006.stl",
+      "sha256": "ba0f2288808d2d09fff432883a6e87572cd7e4571b90c9f66963dbaf3b582141"
+    },
+    {
+      "bytes": 21084,
+      "dataset": "fusion360",
+      "item_id": "22743_64aefcb6_0000",
+      "path": "22743_64aefcb6_0000.stl",
+      "sha256": "d1d4584c8e1824dc5a709507aac24dea9cf0030fa62460b0359bbd20b2814649"
+    },
+    {
+      "bytes": 82684,
+      "dataset": "fusion360",
+      "item_id": "22891_b8c84495_0000",
+      "path": "22891_b8c84495_0000.stl",
+      "sha256": "6af9cbbdbfc54ed2b1e06f2652ccd72052a38524367269e51047a4421d7a0dec"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "23001_234eee16_0003",
+      "path": "23001_234eee16_0003.stl",
+      "sha256": "c656df2225092315209855b00504c5ca70495c7f4d4c55e19f51f35840ae093c"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "23001_234eee16_0006",
+      "path": "23001_234eee16_0006.stl",
+      "sha256": "1a0ad0a1e99385ae654453324eb058425e7d2d3ffb0ceb51ef5bffa955ef0592"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "23137_e55b73cb_0005",
+      "path": "23137_e55b73cb_0005.stl",
+      "sha256": "cb274deeef5af0685d79684935a8a3ce834887b24f287b89444b3481f83d8a8c"
+    },
+    {
+      "bytes": 142684,
+      "dataset": "fusion360",
+      "item_id": "23231_efe613bb_0019",
+      "path": "23231_efe613bb_0019.stl",
+      "sha256": "92f953362719f728230df3f9c1f33f0287f47cd2a1bfb3c32b7f7ce1e82c8bf5"
+    },
+    {
+      "bytes": 75684,
+      "dataset": "fusion360",
+      "item_id": "23231_efe613bb_0021",
+      "path": "23231_efe613bb_0021.stl",
+      "sha256": "bbf92bd42e01ea133b18b454390dcdb15d8c1678a2d4c9b634db248f72ad11a9"
+    },
+    {
+      "bytes": 40084,
+      "dataset": "fusion360",
+      "item_id": "23258_87a2ba81_0005",
+      "path": "23258_87a2ba81_0005.stl",
+      "sha256": "d5a16d939b338f21a77f1077888e31a4adb65847e87f838892784816380d8eca"
+    },
+    {
+      "bytes": 84284,
+      "dataset": "fusion360",
+      "item_id": "23365_696893ff_0000",
+      "path": "23365_696893ff_0000.stl",
+      "sha256": "20b08efead10e14799eb765ae82db1af8ae63674e861f90e9845025c529e5657"
+    },
+    {
+      "bytes": 25684,
+      "dataset": "fusion360",
+      "item_id": "23393_d47067ad_0005",
+      "path": "23393_d47067ad_0005.stl",
+      "sha256": "c1529cc0ed3242efa5be9b1746c24f220ddc92490e7a89e5208b7975e68e0ef1"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "23410_0163b27d_0000",
+      "path": "23410_0163b27d_0000.stl",
+      "sha256": "0ebfcc38ade1896a6713e0621c3d78e20d8af1e6aa8d58ec798a151b97d859db"
+    },
+    {
+      "bytes": 291184,
+      "dataset": "fusion360",
+      "item_id": "23637_32cddf1d_0000",
+      "path": "23637_32cddf1d_0000.stl",
+      "sha256": "bf51a4f142290e9c8a051f2ef87196d0e2e5aa87b591a09a7f1cf7499ca39b10"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "23706_ef15ef9c_0000",
+      "path": "23706_ef15ef9c_0000.stl",
+      "sha256": "af0b627a3184ae28f12b4322754ffc7542b7c6dafa3b788590987bba765ac186"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "fusion360",
+      "item_id": "23790_2abde9b6_0007",
+      "path": "23790_2abde9b6_0007.stl",
+      "sha256": "472fc2b91f0ff8103f0a59955f2e954877b9724e4dd65cf996eb243537c0f0e0"
+    },
+    {
+      "bytes": 47284,
+      "dataset": "fusion360",
+      "item_id": "23792_5b4c1ce0_0002",
+      "path": "23792_5b4c1ce0_0002.stl",
+      "sha256": "18543e0162b21febb5fe61bac3ad85c7307effba82eec04a1d2a6ba631720e9f"
+    },
+    {
+      "bytes": 52684,
+      "dataset": "fusion360",
+      "item_id": "23876_74957d38_0002",
+      "path": "23876_74957d38_0002.stl",
+      "sha256": "90ef202ccee71e54dbcf41aae17417968efbdadd20b69bc7de1cd878dbfe3389"
+    },
+    {
+      "bytes": 84684,
+      "dataset": "fusion360",
+      "item_id": "24047_9eb475f0_0004",
+      "path": "24047_9eb475f0_0004.stl",
+      "sha256": "97f7f290df4182467b8801a2339cad60541e632966660bbac94cd96caf308451"
+    },
+    {
+      "bytes": 93884,
+      "dataset": "fusion360",
+      "item_id": "24131_3ea7d5a8_0009",
+      "path": "24131_3ea7d5a8_0009.stl",
+      "sha256": "5c3d1744f74f74b8f516ed04df0bc16dc807ac457dec59ad28554a0adbd341a7"
+    },
+    {
+      "bytes": 100484,
+      "dataset": "fusion360",
+      "item_id": "24248_1cfc202d_0005",
+      "path": "24248_1cfc202d_0005.stl",
+      "sha256": "a9b7354483ac828176d2a7ea183405b6586079891779eb7888d90d785f81d72d"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "24412_a8e106be_0008",
+      "path": "24412_a8e106be_0008.stl",
+      "sha256": "ca2774e6f17de5698b2e8bedab8ef810a506e8997fa985cca345603f86bbe7cf"
+    },
+    {
+      "bytes": 91484,
+      "dataset": "fusion360",
+      "item_id": "24425_0dc4b306_0000",
+      "path": "24425_0dc4b306_0000.stl",
+      "sha256": "99d4699dafa6ea28823ca745d6839d70120fb03823a0bac734ab36351ff0ddf5"
+    },
+    {
+      "bytes": 26684,
+      "dataset": "fusion360",
+      "item_id": "24603_a4021250_0008",
+      "path": "24603_a4021250_0008.stl",
+      "sha256": "846e1fa400159ab61245fadd4c4061bd3a818339e134b3575c3f8e5aa8994ff1"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "24890_5f8a67df_0013",
+      "path": "24890_5f8a67df_0013.stl",
+      "sha256": "ef9a140299396e168a887e6472d2f6db7ec09b7f6835a75827c8a7686d21f95c"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "24907_c72322ea_0010",
+      "path": "24907_c72322ea_0010.stl",
+      "sha256": "a4ecbe41b72f2bb67888c046f46b15474ef925b44f31f2ff5ed56499b6d94dad"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "fusion360",
+      "item_id": "24916_42eacca3_0001",
+      "path": "24916_42eacca3_0001.stl",
+      "sha256": "cba8f74d68f40d468d1dc113ec92f7fac1805c685828959ba9b7b33619a7e2ff"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "25199_b2422c18_0010",
+      "path": "25199_b2422c18_0010.stl",
+      "sha256": "45c12053fabb0b4caaf2a88d96d7757d6291fbbaace6906c77e7044c6f9d1f75"
+    },
+    {
+      "bytes": 51884,
+      "dataset": "fusion360",
+      "item_id": "25203_1cc0cb3c_0007",
+      "path": "25203_1cc0cb3c_0007.stl",
+      "sha256": "540e63c478cbdc6cfd7ff935f03fcad28f67b0326b318741f693f648fde53cce"
+    },
+    {
+      "bytes": 258184,
+      "dataset": "fusion360",
+      "item_id": "25211_336c083f_0001",
+      "path": "25211_336c083f_0001.stl",
+      "sha256": "b5b2b715ea04ae8db538ad21f206c427b66c89f76e683aafc6043d18818adb54"
+    },
+    {
+      "bytes": 53684,
+      "dataset": "fusion360",
+      "item_id": "25285_31ea8727_0002",
+      "path": "25285_31ea8727_0002.stl",
+      "sha256": "e4de92b57d86325acd4a4a0aa6f35b03dc3255dc56e36873207efba877786081"
+    },
+    {
+      "bytes": 25984,
+      "dataset": "fusion360",
+      "item_id": "25335_491efa81_0009",
+      "path": "25335_491efa81_0009.stl",
+      "sha256": "dd69c2a23470749556dbe170e67a456e5cab0112f939ac7dec6118607571f172"
+    },
+    {
+      "bytes": 96884,
+      "dataset": "fusion360",
+      "item_id": "25338_b3f9f319_0000",
+      "path": "25338_b3f9f319_0000.stl",
+      "sha256": "0af924ce46b3b0e9d0454143c52c11583b8b429b593a2751f5702edddc7ba030"
+    },
+    {
+      "bytes": 253484,
+      "dataset": "fusion360",
+      "item_id": "25365_60f03255_0000",
+      "path": "25365_60f03255_0000.stl",
+      "sha256": "0fa4259e44311ef946eb19f82e1a6b74850044b0c18517f1d9ef84cfbe22e629"
+    },
+    {
+      "bytes": 7884,
+      "dataset": "fusion360",
+      "item_id": "25484_9b17990a_0000",
+      "path": "25484_9b17990a_0000.stl",
+      "sha256": "c12d44f7e6a8d62985a3e43a4f4e0043be0e61faa4cf586b4991f2ffcdec57da"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "26384_83eddf22_0015",
+      "path": "26384_83eddf22_0015.stl",
+      "sha256": "fdc57720715cd8181d1aab4ef1491ccadfc72d7b0e3a8384608b9a2d3b4c724d"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "26766_1aaa348c_0000",
+      "path": "26766_1aaa348c_0000.stl",
+      "sha256": "ea5cf9c41205bf0c8bea70ed20bfa59314ac084b6fdbcf8c28526d049c8c7b2d"
+    },
+    {
+      "bytes": 51484,
+      "dataset": "fusion360",
+      "item_id": "26768_c4df841f_0004",
+      "path": "26768_c4df841f_0004.stl",
+      "sha256": "c903bd7a54ae519794b060e2ed6b05966b47eb31ac101f61bfb9a77b8ebd18e2"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "fusion360",
+      "item_id": "26768_c4df841f_0011",
+      "path": "26768_c4df841f_0011.stl",
+      "sha256": "3cceaf2aa3bf446221d7df3a964385e6daac3d463dcc3b730aafa13cec072ded"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "27577_8520e14a_0005",
+      "path": "27577_8520e14a_0005.stl",
+      "sha256": "d1c14ecef9b336a88fdb7df88a9e5eb7688013834744fd7ececd1286025a5885"
+    },
+    {
+      "bytes": 101684,
+      "dataset": "fusion360",
+      "item_id": "27688_65b3c0dc_0004",
+      "path": "27688_65b3c0dc_0004.stl",
+      "sha256": "a8cc028c4b5a11383c57ea08d0d66dcb5aeb27bd2cc3796eaf3690810229063a"
+    },
+    {
+      "bytes": 100684,
+      "dataset": "fusion360",
+      "item_id": "27694_7801dc67_0017",
+      "path": "27694_7801dc67_0017.stl",
+      "sha256": "907ea99d486d4bef9b8ba46793f2c8ea34d1d2762ac1e43dd1a951cc674c0f23"
+    },
+    {
+      "bytes": 38684,
+      "dataset": "fusion360",
+      "item_id": "27725_5cceaeb7_0013",
+      "path": "27725_5cceaeb7_0013.stl",
+      "sha256": "55a001d6946906e7e1cc6f237fa336c4cf895281ee0e59bb8afbf81eb582cccb"
+    },
+    {
+      "bytes": 75684,
+      "dataset": "fusion360",
+      "item_id": "28300_b3a6ab79_0010",
+      "path": "28300_b3a6ab79_0010.stl",
+      "sha256": "e1a090bd2339a8f2074fd7e64922379d0faef5c5a1d4f63d6844c03c4e59deac"
+    },
+    {
+      "bytes": 88684,
+      "dataset": "fusion360",
+      "item_id": "30246_6e835e6d_0001",
+      "path": "30246_6e835e6d_0001.stl",
+      "sha256": "26fc894a7dd1e696641f2690c4e81ca777c0e5abb9abce9fd0cf06b8b0ba0421"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "30379_f1d5e193_0013",
+      "path": "30379_f1d5e193_0013.stl",
+      "sha256": "a42bc13161299ff50240a0a8304a3f88e22ba3eccffb94b3abc11abb93a8e632"
+    },
+    {
+      "bytes": 103284,
+      "dataset": "fusion360",
+      "item_id": "30400_8824ce97_0015",
+      "path": "30400_8824ce97_0015.stl",
+      "sha256": "ea661a9a884b2adeb1b765972dcbda2e27ab56fb4aa5a2395c81ea09d057c23f"
+    },
+    {
+      "bytes": 40684,
+      "dataset": "fusion360",
+      "item_id": "30447_4ed3b778_0021",
+      "path": "30447_4ed3b778_0021.stl",
+      "sha256": "565db3f44b68fffa4b00933303412c1fb60d147a88943e69aca064990f2aa0d6"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "31280_c8bd4b11_0002",
+      "path": "31280_c8bd4b11_0002.stl",
+      "sha256": "a61b11b495b5a6760744d9f888d562213b31fcd43caaa0f88bb9fa0a58fa3283"
+    },
+    {
+      "bytes": 125684,
+      "dataset": "fusion360",
+      "item_id": "31360_a1accb4b_0007",
+      "path": "31360_a1accb4b_0007.stl",
+      "sha256": "8c620bb4bc643277b65332572b2b196e953e95bc6db641a5a12489f789559d9d"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "31360_a1accb4b_0011",
+      "path": "31360_a1accb4b_0011.stl",
+      "sha256": "5aac50c15fd7c6d598aa93fc278ef9a843105be6f56d0a61f6bf15e22d54aacb"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "31391_df3562f8_0002",
+      "path": "31391_df3562f8_0002.stl",
+      "sha256": "2d2fa236f5419207d7f42386d5a04429f8083a41d950ad4d1fd9b55ac850a807"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "31615_bab70c5e_0000",
+      "path": "31615_bab70c5e_0000.stl",
+      "sha256": "418d67fa7d39c46603380ea6a8c4b8c540312a35a7a552271ddbb9c46902406d"
+    },
+    {
+      "bytes": 71284,
+      "dataset": "fusion360",
+      "item_id": "31866_a5b1db64_0006",
+      "path": "31866_a5b1db64_0006.stl",
+      "sha256": "91bdde37d358e8e9cf758cb60cc96d3981e3b149ae11e1c9561372cb7f633722"
+    },
+    {
+      "bytes": 100884,
+      "dataset": "fusion360",
+      "item_id": "31866_a5b1db64_0008",
+      "path": "31866_a5b1db64_0008.stl",
+      "sha256": "339d0d7df9b0e2c18d06f8007755e3259a0f10f48f80645160167dff4b860cc9"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "32169_c6811fb2_0001",
+      "path": "32169_c6811fb2_0001.stl",
+      "sha256": "1799622e639e49694baa82c85b6c2719c7634b1a4b6dae76324c6ebabf25fabe"
+    },
+    {
+      "bytes": 117484,
+      "dataset": "fusion360",
+      "item_id": "32871_04ff3d41_0002",
+      "path": "32871_04ff3d41_0002.stl",
+      "sha256": "38e2d973f50158db726e30c3c63df6098a6423af14b0cca982f0afc8bcf65283"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "32879_49552f2f_0012",
+      "path": "32879_49552f2f_0012.stl",
+      "sha256": "6f23655b1fb5c7498c0b9f6da2458e6c63bd87a602cdc5ba3fd41664ddb0c8b6"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "33625_c9ff9be8_0010",
+      "path": "33625_c9ff9be8_0010.stl",
+      "sha256": "514ccc8b39e0ff0823ece0cfa870142e26b00f0722ab54566b81e85c355b6973"
+    },
+    {
+      "bytes": 55684,
+      "dataset": "fusion360",
+      "item_id": "34063_0ca1585e_0002",
+      "path": "34063_0ca1585e_0002.stl",
+      "sha256": "84a1bb6212cc4f8548bb071ea9372543b167098cf0f88944535de47c34af3602"
+    },
+    {
+      "bytes": 31484,
+      "dataset": "fusion360",
+      "item_id": "34225_638d4d19_0000",
+      "path": "34225_638d4d19_0000.stl",
+      "sha256": "a08020f7ae549a36f2e23a098a480778252e60b7df291dc397feca22b32020a1"
+    },
+    {
+      "bytes": 4284,
+      "dataset": "fusion360",
+      "item_id": "34227_48203345_0008",
+      "path": "34227_48203345_0008.stl",
+      "sha256": "1fd0744f3a0cc10bde1f9e2b04746cf530ad228cdb12b2537df82215a001cc09"
+    },
+    {
+      "bytes": 11284,
+      "dataset": "fusion360",
+      "item_id": "34781_4f8a4759_0017",
+      "path": "34781_4f8a4759_0017.stl",
+      "sha256": "7122d3c8202b72d0219c223e313582bc67ebd8e6c4d8607e518d4bbe9264836b"
+    },
+    {
+      "bytes": 125884,
+      "dataset": "fusion360",
+      "item_id": "36088_1ea9c8a9_0008",
+      "path": "36088_1ea9c8a9_0008.stl",
+      "sha256": "489030be56f6248ad908b3a16cb5c614fe289e35eed36560dea9ea25fe2bd9b6"
+    },
+    {
+      "bytes": 2484,
+      "dataset": "fusion360",
+      "item_id": "36268_3c96c142_0005",
+      "path": "36268_3c96c142_0005.stl",
+      "sha256": "a57191ffc92e3835d9d32a0766c6ed5235c26e40d8dee86dd8242d2825af7ade"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "36303_82ed629e_0001",
+      "path": "36303_82ed629e_0001.stl",
+      "sha256": "1d1af855033ce96fcb4de1f9a4804a5d6999b84249f212f3e48852d326682575"
+    },
+    {
+      "bytes": 76484,
+      "dataset": "fusion360",
+      "item_id": "36918_2dee90be_0008",
+      "path": "36918_2dee90be_0008.stl",
+      "sha256": "711548e98b1e56a22f6f0f33fd0e42567c7c4feee195eaf0882e9a8d2d29d59d"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "37267_b2be4b50_0026",
+      "path": "37267_b2be4b50_0026.stl",
+      "sha256": "911752f584d1dc891511867284c97367f147f505c637cf06f37f82616571606b"
+    },
+    {
+      "bytes": 100884,
+      "dataset": "fusion360",
+      "item_id": "37377_90529181_0005",
+      "path": "37377_90529181_0005.stl",
+      "sha256": "f78b2bcceeba88781ddf2b88b6cc3b17625d0c0bf2c4501ca12b89c4f1d6c0d2"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "38454_24787d99_0002",
+      "path": "38454_24787d99_0002.stl",
+      "sha256": "bd5fbc8073ee0e13402cd8c743c56d7e3e9bf5d05fab0e0d4c11c99b61e54edf"
+    },
+    {
+      "bytes": 3084,
+      "dataset": "fusion360",
+      "item_id": "38675_6e07d74b_0005",
+      "path": "38675_6e07d74b_0005.stl",
+      "sha256": "7b1ec28cb603531984f9c45f019fc57d93814676cb1bb3f17d1eac56719cfc7d"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "38740_c9ed5246_0000",
+      "path": "38740_c9ed5246_0000.stl",
+      "sha256": "cc02cba9fdc3bdbe3964eb1df77dc06750e9157ae070a8c4a8e1de27ae2cfb5c"
+    },
+    {
+      "bytes": 26884,
+      "dataset": "fusion360",
+      "item_id": "39637_ca6a9a60_0003",
+      "path": "39637_ca6a9a60_0003.stl",
+      "sha256": "f8ddf5d745efc87281eddd993a64291e474eab58e362fbfc67f63485eab9ef8d"
+    },
+    {
+      "bytes": 104684,
+      "dataset": "fusion360",
+      "item_id": "39850_b2aa4f1e_0011",
+      "path": "39850_b2aa4f1e_0011.stl",
+      "sha256": "5f834e8727d80a5a59d2c2d776d3c290fe29f0a917d017eaa258638b150dc11e"
+    },
+    {
+      "bytes": 27884,
+      "dataset": "fusion360",
+      "item_id": "40061_d07e8764_0004",
+      "path": "40061_d07e8764_0004.stl",
+      "sha256": "be72699a09cad5019f5262f20d6f82f63696854e0435d1afdc70c24df59daf72"
+    },
+    {
+      "bytes": 100684,
+      "dataset": "fusion360",
+      "item_id": "40061_d07e8764_0009",
+      "path": "40061_d07e8764_0009.stl",
+      "sha256": "69ecea32538b92bf354bb909e66098d82d87c599189bfb6222af6c4e2b64e683"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "40074_4615c9d1_0001",
+      "path": "40074_4615c9d1_0001.stl",
+      "sha256": "3ee9ed99d2563f7c2394ce882433a5f09293d0a885281da5a10a2f1311d24f40"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "40500_6055e3d7_0011",
+      "path": "40500_6055e3d7_0011.stl",
+      "sha256": "62e61a6c67c5ea1a47386cbf07c0ca185c9982e4ed43e80354aba1edb8828c9d"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "40887_454ffc48_0014",
+      "path": "40887_454ffc48_0014.stl",
+      "sha256": "523efefcb042313c8802d2b81833c9c0cb876cfcae5c82dac81432ec6fba18db"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "40999_cad6be09_0005",
+      "path": "40999_cad6be09_0005.stl",
+      "sha256": "4627d3cd0e995e79b7de8a9591dc2674ff2326ac35c9fcd28ea8c1aa88ea9a49"
+    },
+    {
+      "bytes": 81484,
+      "dataset": "fusion360",
+      "item_id": "41010_212b5129_0007",
+      "path": "41010_212b5129_0007.stl",
+      "sha256": "bf765d0aef27cf96717a262461f1dccdf46a21aab172622c9718532beded7c94"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "41026_295d1dc8_0003",
+      "path": "41026_295d1dc8_0003.stl",
+      "sha256": "df1e22bcacf7418c43fe2600b939441e44e52be637d415a9b4daa40f5d38bd3e"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "41234_74275eb0_0009",
+      "path": "41234_74275eb0_0009.stl",
+      "sha256": "2d2c9dd34d1ea5f76f119918f8cfe3d23a47be541b72c77ea286f5e37ef57bad"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "41234_74275eb0_0013",
+      "path": "41234_74275eb0_0013.stl",
+      "sha256": "cdd6ba4193c5008cc1aca8fc65f95ff74903d28a3331fc0071f5168808a8b9ef"
+    },
+    {
+      "bytes": 23684,
+      "dataset": "fusion360",
+      "item_id": "41648_577daf16_0002",
+      "path": "41648_577daf16_0002.stl",
+      "sha256": "8354ac0acdf263d44d17f082ad4db68e8145ad52c568cfe7aba6040099596908"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "41672_d9512d5c_0000",
+      "path": "41672_d9512d5c_0000.stl",
+      "sha256": "85a850d8e4734582bbd1043470143b535d60a4867f0bcb7ff093adb0f5e9c214"
+    },
+    {
+      "bytes": 1284,
+      "dataset": "fusion360",
+      "item_id": "41680_49185107_0001",
+      "path": "41680_49185107_0001.stl",
+      "sha256": "4d6bcb46e6bc24198d48995fb40aaeff2c9e7a578611c440cd382be6b35912d9"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "41685_df8ac866_0004",
+      "path": "41685_df8ac866_0004.stl",
+      "sha256": "b3295cd1f734b074f86e9e3dacbb70a77ff9c342cff28054e54b713e95a688f3"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "41691_96d262e4_0000",
+      "path": "41691_96d262e4_0000.stl",
+      "sha256": "b89cf844f865bb853d69cc8c6310fb832dbc6210b08f292cdb0359e77094ca3d"
+    },
+    {
+      "bytes": 484,
+      "dataset": "fusion360",
+      "item_id": "41912_72d5af56_0000",
+      "path": "41912_72d5af56_0000.stl",
+      "sha256": "f836616dd259c1f933f2b7889b2965b51688971f0ec83a65d57203abc3faa894"
+    },
+    {
+      "bytes": 484,
+      "dataset": "fusion360",
+      "item_id": "41912_7334aba9_0000",
+      "path": "41912_7334aba9_0000.stl",
+      "sha256": "ca1f06ab924c701e840caae1a93f4720f2a913f31e24284efd6e4cf78dc80ee2"
+    },
+    {
+      "bytes": 45884,
+      "dataset": "fusion360",
+      "item_id": "42005_166cd78a_0000",
+      "path": "42005_166cd78a_0000.stl",
+      "sha256": "f50f53234dc123083b8283dc37e9544c3bf3ea5435950031128f4d74655c5aad"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "fusion360",
+      "item_id": "42230_4b89c7e8_0000",
+      "path": "42230_4b89c7e8_0000.stl",
+      "sha256": "d692773b1692aab72dd04935b41efcc069490048079e300cddf1545e338bacca"
+    },
+    {
+      "bytes": 154484,
+      "dataset": "fusion360",
+      "item_id": "42329_df7f540f_0058",
+      "path": "42329_df7f540f_0058.stl",
+      "sha256": "0a0c5039b6e4a1f6244a6c75907acc412ed846bdc00cdf1cd8a36b7fdf0ead68"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "42429_78ffab1b_0000",
+      "path": "42429_78ffab1b_0000.stl",
+      "sha256": "b4e15afd0a3edea82d9865aa7f66b0180f680abd694a6ff80a10713f24f362a0"
+    },
+    {
+      "bytes": 340284,
+      "dataset": "fusion360",
+      "item_id": "43010_31eceafd_0006",
+      "path": "43010_31eceafd_0006.stl",
+      "sha256": "4bff71f29aa99559fb20120361d41e81e9ea72c4e2b00f5a51f6a6eca5bd7311"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "43628_a95b7e66_0029",
+      "path": "43628_a95b7e66_0029.stl",
+      "sha256": "f0e61e2afb3328e838d6f04a3717be9904c2f79d071440799d509eba58a71bd9"
+    },
+    {
+      "bytes": 138434,
+      "dataset": "fusion360",
+      "item_id": "43932_4bfdfe7b_0009",
+      "path": "43932_4bfdfe7b_0009.stl",
+      "sha256": "1e3fe4cad97c7c78499df9435266036dd167f70391df76000c91b08f7ab842c7"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "43934_912ff891_0027",
+      "path": "43934_912ff891_0027.stl",
+      "sha256": "a84572664fe50c19fe2b10eb12a7b5c20a75dcb90d996aee9ef1f26c0e5ce557"
+    },
+    {
+      "bytes": 77284,
+      "dataset": "fusion360",
+      "item_id": "44021_f141414b_0006",
+      "path": "44021_f141414b_0006.stl",
+      "sha256": "d18d26b20970b3b20df9539b45bbe684c603a1eb2da8d0c399acd992f9e59d47"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "45307_b9b4bca0_0008",
+      "path": "45307_b9b4bca0_0008.stl",
+      "sha256": "023afd54296ccaf9c14ce15d23fe5f1204e4828db1645ef097c18d110b3188a8"
+    },
+    {
+      "bytes": 126084,
+      "dataset": "fusion360",
+      "item_id": "45359_1768ab3f_0021",
+      "path": "45359_1768ab3f_0021.stl",
+      "sha256": "cf34b4f857f26db24875812175f5edbf86c84eef0abbb09a14cd56b3270a7798"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "45359_1768ab3f_0045",
+      "path": "45359_1768ab3f_0045.stl",
+      "sha256": "a9621f635f1fc90b2967baebbda72db14890ba2b36a3a958b27317c1ea8ca93a"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "45798_b573e9da_0001",
+      "path": "45798_b573e9da_0001.stl",
+      "sha256": "f8a7c271f9c374b1c0afce95239d632b938986e6d1d33ae553fab1721101147b"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "45922_26941172_0006",
+      "path": "45922_26941172_0006.stl",
+      "sha256": "f4e36f1aa08a8d071da46e01bfb30b8ff5b74c64ad60d82135406332e7e73668"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "48475_02526608_0004",
+      "path": "48475_02526608_0004.stl",
+      "sha256": "f6b450fc214192752b57ca2e17c809f66edb574abcf562421a5bcf6daa901d6d"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "49017_b6231068_0011",
+      "path": "49017_b6231068_0011.stl",
+      "sha256": "b974413771e760f96ac64af65e0811edb39667181f678835dd6c60ceae0331e9"
+    },
+    {
+      "bytes": 15684,
+      "dataset": "fusion360",
+      "item_id": "49116_4bd17b23_0000",
+      "path": "49116_4bd17b23_0000.stl",
+      "sha256": "a7605309d832e8c6254f4711086c95e6f730a16175dcee33ec3ffc9432b1b6ca"
+    },
+    {
+      "bytes": 228884,
+      "dataset": "fusion360",
+      "item_id": "49412_1f199584_0000",
+      "path": "49412_1f199584_0000.stl",
+      "sha256": "32deff609c7337f5001faf36346dfd2b8d2bf4778e8de40adf40a1c5c84136fb"
+    },
+    {
+      "bytes": 323484,
+      "dataset": "fusion360",
+      "item_id": "49593_0a8627c9_0000",
+      "path": "49593_0a8627c9_0000.stl",
+      "sha256": "96584fe8737b6dab9f3f26e8a44d61a13f218508b1abbac11df785d373d7f7a4"
+    },
+    {
+      "bytes": 14884,
+      "dataset": "fusion360",
+      "item_id": "49694_ffdd43fe_0000",
+      "path": "49694_ffdd43fe_0000.stl",
+      "sha256": "063fd22b640b513fdb76c4832398fa4e96135fa7890c3fb1385f339070be7f91"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "50019_a59a348f_0000",
+      "path": "50019_a59a348f_0000.stl",
+      "sha256": "341fc89391c8bf9ab501f156729894a41f7f72adfd2040acd31a419953690d41"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "50681_eb7a9f92_0000",
+      "path": "50681_eb7a9f92_0000.stl",
+      "sha256": "11b4d55c00af64b23d064813ed3c7c1abfb409fe55e5842a68284aa651510e39"
+    },
+    {
+      "bytes": 62084,
+      "dataset": "fusion360",
+      "item_id": "50777_2934de55_0002",
+      "path": "50777_2934de55_0002.stl",
+      "sha256": "3e268c020480fb89575f4c73735b97879dc2d2ed99769216b4f148fc3cfeae61"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "51736_e8b2b138_0010",
+      "path": "51736_e8b2b138_0010.stl",
+      "sha256": "44224ece9f43bef3f0e9dd2da4974382328619493f0ccb76216946e53e650953"
+    },
+    {
+      "bytes": 2284,
+      "dataset": "fusion360",
+      "item_id": "51777_87ff5835_0004",
+      "path": "51777_87ff5835_0004.stl",
+      "sha256": "1c164cf4ceec053d139918d431cf3132a837ddbcd311c2b17964414f2356eb6a"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "51877_0032e502_0015",
+      "path": "51877_0032e502_0015.stl",
+      "sha256": "5ef9b00565a275e94cf7264c3f5f81eb04b47c8be9e0bede8a167bc65ef8ca4a"
+    },
+    {
+      "bytes": 103884,
+      "dataset": "fusion360",
+      "item_id": "52557_e6a00b06_0001",
+      "path": "52557_e6a00b06_0001.stl",
+      "sha256": "4f7be199f45ec1c0a64c0d367c7500fc84f574b753abfe93566f6d8638206269"
+    },
+    {
+      "bytes": 3284,
+      "dataset": "fusion360",
+      "item_id": "53470_39f2e9dc_0002",
+      "path": "53470_39f2e9dc_0002.stl",
+      "sha256": "6d3e5acf43a30675c4b6e4c465ae1fab375c8ee92ac72fc1e4705d5e68d6a311"
+    },
+    {
+      "bytes": 50984,
+      "dataset": "fusion360",
+      "item_id": "53831_de0554da_0001",
+      "path": "53831_de0554da_0001.stl",
+      "sha256": "8b62023e365aca7e5eee69ba27eaa5f3d9dd7414b2bac076a34ab863654542af"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "54273_21c2b38f_0055",
+      "path": "54273_21c2b38f_0055.stl",
+      "sha256": "f4e36f1aa08a8d071da46e01bfb30b8ff5b74c64ad60d82135406332e7e73668"
+    },
+    {
+      "bytes": 81984,
+      "dataset": "fusion360",
+      "item_id": "54285_76f37095_0003",
+      "path": "54285_76f37095_0003.stl",
+      "sha256": "74ef4c34ee81499461e3cd4de4d71b4b6e15ccdeb7a5278f198550fdea797fde"
+    },
+    {
+      "bytes": 122484,
+      "dataset": "fusion360",
+      "item_id": "54976_69951f7f_0000",
+      "path": "54976_69951f7f_0000.stl",
+      "sha256": "ba28aa511994b71e1741ac5f7b169f56abf2dc5fe12b4928dd8e075ce222b70a"
+    },
+    {
+      "bytes": 2984,
+      "dataset": "fusion360",
+      "item_id": "55378_c922404e_0000",
+      "path": "55378_c922404e_0000.stl",
+      "sha256": "eff5c9e63449cfc6501baccedc88818e4a67a94dc58a9933d2db1fc739fad5eb"
+    },
+    {
+      "bytes": 25884,
+      "dataset": "fusion360",
+      "item_id": "55460_998dd656_0000",
+      "path": "55460_998dd656_0000.stl",
+      "sha256": "e973f20b272d0f585957c049ffd5f82fbd0ed513c0c3ad3affcfcf2e42400722"
+    },
+    {
+      "bytes": 56884,
+      "dataset": "fusion360",
+      "item_id": "55636_6180bfce_0006",
+      "path": "55636_6180bfce_0006.stl",
+      "sha256": "1b7a5a717cea5bccb2c692fff94c1f0158207b5b027f2614f751c1672a118bcb"
+    },
+    {
+      "bytes": 41384,
+      "dataset": "fusion360",
+      "item_id": "55749_6526b76b_0000",
+      "path": "55749_6526b76b_0000.stl",
+      "sha256": "35cc9bb4e5273db48f92d043c673a9316b13ba2952bce217202bc998e642723b"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "55779_eb7520c9_0000",
+      "path": "55779_eb7520c9_0000.stl",
+      "sha256": "4f3db679ba9c173aece4c7358e420bc2dd7ed2d94830c06609380cbdb0b85a39"
+    },
+    {
+      "bytes": 1084,
+      "dataset": "fusion360",
+      "item_id": "55857_7a543429_0000",
+      "path": "55857_7a543429_0000.stl",
+      "sha256": "535c51d2433ff53be3258a0ebb7f8e9b361f81953d8a59b638e25c7bef68100b"
+    },
+    {
+      "bytes": 34284,
+      "dataset": "fusion360",
+      "item_id": "56250_3b6024e3_0020",
+      "path": "56250_3b6024e3_0020.stl",
+      "sha256": "8ee0c0c6f83cba11054a340d3af157f1b9d8bf6fb2e6744829dac29d7b488f5a"
+    },
+    {
+      "bytes": 50284,
+      "dataset": "fusion360",
+      "item_id": "56344_3a89f085_0023",
+      "path": "56344_3a89f085_0023.stl",
+      "sha256": "a10af9796b38ea919f5d0abaa3995d7fd412b899e94e51da3d5a1244c28ff29a"
+    },
+    {
+      "bytes": 80884,
+      "dataset": "fusion360",
+      "item_id": "56345_80dc7bcc_0000",
+      "path": "56345_80dc7bcc_0000.stl",
+      "sha256": "763a5a816b3f39e9929e23d79aa82662527a0a63bd71bc0ad3e25c2ae7786867"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "56477_620f7fc8_0009",
+      "path": "56477_620f7fc8_0009.stl",
+      "sha256": "d93450afb9a6d268228e12fabffd0090e01ab8c78f489291808eb9c09f3c5ffa"
+    },
+    {
+      "bytes": 75684,
+      "dataset": "fusion360",
+      "item_id": "56489_241ed182_0014",
+      "path": "56489_241ed182_0014.stl",
+      "sha256": "234ef1abdfe2cb9b77c108e97c665425ee1966d023545164fd35430faa57ab37"
+    },
+    {
+      "bytes": 191684,
+      "dataset": "fusion360",
+      "item_id": "56719_6e59eeff_0000",
+      "path": "56719_6e59eeff_0000.stl",
+      "sha256": "7fcbfc0e4c8f6547790dbcd01268025b572cc12c0369ff7a24f301061d9d5081"
+    },
+    {
+      "bytes": 178284,
+      "dataset": "fusion360",
+      "item_id": "57152_368e7c40_0000",
+      "path": "57152_368e7c40_0000.stl",
+      "sha256": "5370ebe183fc5d77a18248bd87cefc229e86fe67656b9de9d8319687e602232a"
+    },
+    {
+      "bytes": 50484,
+      "dataset": "fusion360",
+      "item_id": "57153_2ec8170f_0000",
+      "path": "57153_2ec8170f_0000.stl",
+      "sha256": "9c7311941e1273bca1660ad23045e6c72b779eaa175f314c01b40116cd1810d3"
+    },
+    {
+      "bytes": 214484,
+      "dataset": "fusion360",
+      "item_id": "57629_0877c022_0000",
+      "path": "57629_0877c022_0000.stl",
+      "sha256": "585cb3eb0bc092188a48347d63f38a1e458b39a8ae193c8aefea30ec4f06aefa"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "60709_e245ebbb_0006",
+      "path": "60709_e245ebbb_0006.stl",
+      "sha256": "cd227998e68fc3f2b9ec0aa47c618fd2d17a1372995706c7d432cff30bee5fa3"
+    },
+    {
+      "bytes": 75884,
+      "dataset": "fusion360",
+      "item_id": "60738_365811c2_0001",
+      "path": "60738_365811c2_0001.stl",
+      "sha256": "925b5d2929410d58a2ff47fc6f718f169233f41f0af481309a20b6baf17f09eb"
+    },
+    {
+      "bytes": 134884,
+      "dataset": "fusion360",
+      "item_id": "61469_c09267fc_0000",
+      "path": "61469_c09267fc_0000.stl",
+      "sha256": "f0312adb9826a42bfe8b317e2525aa17b9eaf67d9331a89641266b92da9907dc"
+    },
+    {
+      "bytes": 101084,
+      "dataset": "fusion360",
+      "item_id": "64392_407be6eb_0000",
+      "path": "64392_407be6eb_0000.stl",
+      "sha256": "abbf463d7e750d8c2cc07d070c7ad97781abfab0acc5f130b816cf4182943b08"
+    },
+    {
+      "bytes": 483584,
+      "dataset": "fusion360",
+      "item_id": "69057_8b7468bb_0000",
+      "path": "69057_8b7468bb_0000.stl",
+      "sha256": "f266d665eda018b543481f76af352482563a16c191a16c08cb6426c6e25b80f0"
+    },
+    {
+      "bytes": 40284,
+      "dataset": "fusion360",
+      "item_id": "69648_e2f48460_0000",
+      "path": "69648_e2f48460_0000.stl",
+      "sha256": "472534be3b72eaf0763717841b96ad7ce5ba8ce2942c38a362c9473bfc2ad050"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "73091_ce795f51_0000",
+      "path": "73091_ce795f51_0000.stl",
+      "sha256": "da9cda4052b686b7056f66dda8f840eeb902c6f4fc6f7672f98bfc958f8ecd44"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "77211_d46ae17d_0000",
+      "path": "77211_d46ae17d_0000.stl",
+      "sha256": "0100e4bcccae054e41a4adfa96a2890f480de0211db300d82f558a40335f01a3"
+    },
+    {
+      "bytes": 52684,
+      "dataset": "fusion360",
+      "item_id": "77976_300b479c_0000",
+      "path": "77976_300b479c_0000.stl",
+      "sha256": "8f3869d3c7765e72e0ddda7693422318348aff86e904f9a0103c12354221cb3c"
+    },
+    {
+      "bytes": 110084,
+      "dataset": "fusion360",
+      "item_id": "79424_5ac55435_0000",
+      "path": "79424_5ac55435_0000.stl",
+      "sha256": "89559d9d903e0ef768af625125b58c18eb4aad355fa77f1e82d9f0d7f44d7de5"
+    },
+    {
+      "bytes": 51784,
+      "dataset": "fusion360",
+      "item_id": "79530_946fa2d1_0000",
+      "path": "79530_946fa2d1_0000.stl",
+      "sha256": "78472309a04fddc1bbb7b751e28e7cf6d13d76f21e7a8988b373674c08b3cd24"
+    },
+    {
+      "bytes": 26484,
+      "dataset": "fusion360",
+      "item_id": "79906_052c7eb4_0000",
+      "path": "79906_052c7eb4_0000.stl",
+      "sha256": "ee714367dd9be750a4c3fe59d5edc37d165ca99068c702fa41cefcd08102abbe"
+    },
+    {
+      "bytes": 26284,
+      "dataset": "fusion360",
+      "item_id": "80497_abe71aa5_0001",
+      "path": "80497_abe71aa5_0001.stl",
+      "sha256": "b6084d1443fd64217523d280686ce65105155896f8da3dc5a62fee354c5b7263"
+    },
+    {
+      "bytes": 2484,
+      "dataset": "fusion360",
+      "item_id": "81982_15d4566d_0000",
+      "path": "81982_15d4566d_0000.stl",
+      "sha256": "ea26a58f832b0c5816761620a6770edff592de71303b2287f2c41f921a8cf1c8"
+    },
+    {
+      "bytes": 38684,
+      "dataset": "fusion360",
+      "item_id": "82177_11e98151_0000",
+      "path": "82177_11e98151_0000.stl",
+      "sha256": "48d6a9b7b871081cf0c1376c21e06673a7cae0e28172736cf358d44c414476a8"
+    },
+    {
+      "bytes": 670584,
+      "dataset": "fusion360",
+      "item_id": "82614_a8ef3280_0015",
+      "path": "82614_a8ef3280_0015.stl",
+      "sha256": "2ed3f0a42f3e21a385c60dd87f2dcb462849746d7bfff705e38acea9f7ea72d0"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "83411_51aa29e1_0000",
+      "path": "83411_51aa29e1_0000.stl",
+      "sha256": "7c86b1d7c928e63ee0461c23b18242235372f23a464e62bb07613ad499cdb502"
+    },
+    {
+      "bytes": 4284,
+      "dataset": "fusion360",
+      "item_id": "86381_dcef1ea4_0000",
+      "path": "86381_dcef1ea4_0000.stl",
+      "sha256": "bdd1e9e0def59e7de577b5837600616dec57057ce36c942825583152bcf75c72"
+    },
+    {
+      "bytes": 684,
+      "dataset": "fusion360",
+      "item_id": "87757_eb92dadf_0015",
+      "path": "87757_eb92dadf_0015.stl",
+      "sha256": "5b8722d04b24a9c5b8bf89700beca5f2d8acd72b60009b7c7d4023795a7cfadf"
+    },
+    {
+      "bytes": 1684,
+      "dataset": "fusion360",
+      "item_id": "88300_ac762961_0003",
+      "path": "88300_ac762961_0003.stl",
+      "sha256": "4dd0ade59d596458f73660f9a02261cac6474744fc854602214a4ff6fbc3015c"
+    },
+    {
+      "bytes": 75484,
+      "dataset": "fusion360",
+      "item_id": "89253_e57586a5_0000",
+      "path": "89253_e57586a5_0000.stl",
+      "sha256": "23de534f8189565bc30bc7b8fda3ea549b2b0a9a63d6938da0793bd873851d0a"
+    },
+    {
+      "bytes": 25084,
+      "dataset": "fusion360",
+      "item_id": "89790_a9620602_0032",
+      "path": "89790_a9620602_0032.stl",
+      "sha256": "ca3bf010548e05b9da269121e830f5de436334ad0b009d38a88c6651a5256590"
+    },
+    {
+      "bytes": 52684,
+      "dataset": "fusion360",
+      "item_id": "98397_d10953a3_0000",
+      "path": "98397_d10953a3_0000.stl",
+      "sha256": "34edb372fa7d34c355c14331fc3ee14ecaa83461bb1c2911a06ec4cfde986b21"
+    },
+    {
+      "bytes": 43484,
+      "dataset": "fusion360",
+      "item_id": "99732_6f03d7fc_0000",
+      "path": "99732_6f03d7fc_0000.stl",
+      "sha256": "483f41680e7b41249baa9f2985cb80aedb762ec3c77e9e9aca037c7380096c07"
+    }
+  ],
+  "protocol": "da3-cad-render-benchmark-v1",
+  "schema_version": "1.0",
+  "terms_acceptance": "--accept-noncommercial-terms"
+}

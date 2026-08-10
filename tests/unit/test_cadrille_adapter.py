@@ -43,11 +43,12 @@ class _FakeTokenizer:
         }
 
     def batch_decode(self, _ids: Any, **_kwargs: Any) -> list[str]:
-        return [_SOURCE]
+        return [_SOURCE for _ in range(len(_ids))]
 
 
 class _FakeModel(torch.nn.Module):
     load_kwargs: dict[str, object] = {}
+    load_count = 0
 
     def __init__(self) -> None:
         super().__init__()
@@ -56,6 +57,7 @@ class _FakeModel(torch.nn.Module):
 
     @classmethod
     def from_pretrained(cls, _model_id: str, **kwargs: object) -> _FakeModel:
+        cls.load_count += 1
         cls.load_kwargs = kwargs
         return cls()
 
@@ -65,8 +67,9 @@ class _FakeModel(torch.nn.Module):
 
     def generate(self, **kwargs: Any) -> Any:
         assert kwargs["do_sample"] is False
-        assert kwargs["point_clouds"].shape == (1, 256, 3)
-        suffix = torch.tensor([[42]], device=self.device)
+        batch_size = kwargs["point_clouds"].shape[0]
+        assert kwargs["point_clouds"].shape[1:] == (256, 3)
+        suffix = torch.full((batch_size, 1), 42, device=self.device)
         return torch.cat((kwargs["input_ids"], suffix), dim=1)
 
 
@@ -133,3 +136,45 @@ def test_backend_uses_sdpa_greedy_generation_and_cpu_unload(tmp_path) -> None:
     assert backend.last_lifecycle.resolved_device == "cpu"
     assert backend.last_runtime_report is not None
     assert backend.last_runtime_report["generation"]["strategy"] == "greedy"  # type: ignore[index]
+
+
+def test_backend_generates_candidate_batch_with_one_model_lifecycle(tmp_path) -> None:
+    first_points = np.linspace(-1.0, 1.0, 256 * 3, dtype=np.float32).reshape(256, 3)
+    second_points = first_points[::-1].copy()
+    canonicals = (
+        SimpleNamespace(decoder_points=first_points),
+        SimpleNamespace(decoder_points=second_points),
+    )
+    backend = CadrilleBackend(
+        CadrilleConfig(
+            checkpoint="sft",
+            cache_dir=tmp_path,
+            local_files_only=True,
+            max_new_tokens=32,
+        ),
+        accepted_license=CADRILLE_LICENSE_ACCEPTANCE,
+        device="cpu",
+        model_class_loader=lambda: _FakeModel,
+        tokenizer_loader=lambda _cache, _local: _FakeTokenizer(),
+        checkpoint_verifier=lambda *_args, **_kwargs: {
+            "sha256": get_cadrille_model_spec("sft").weight_sha256,
+            "sha256_verified": True,
+        },
+    )
+    _FakeModel.load_count = 0
+
+    programs = backend.generate_many(
+        canonicals,  # type: ignore[arg-type]
+        seeds=(101, 202),
+    )
+
+    assert len(programs) == 2
+    assert _FakeModel.load_count == 1
+    assert len(backend.last_raw_texts) == 2
+    assert len(backend.last_clean_sources) == 2
+    assert len(backend.last_parameterization_reports) == 2
+    assert backend.last_runtime_report is not None
+    generation = backend.last_runtime_report["generation"]
+    assert isinstance(generation, dict)
+    assert generation["candidate_count"] == 2
+    assert len(generation["candidates"]) == 2  # type: ignore[arg-type]

@@ -1,0 +1,104 @@
+{
+  "candidate_rows": {
+    "best-of-10-input-CD": {
+      "candidate_0_shared": true,
+      "candidate_count": 10,
+      "gt_visible_to_selector": false,
+      "invalid_selection_cost": "infinity",
+      "selection": "minimum symmetric squared CD to canonical input cloud",
+      "selection_surface_points": 8192
+    },
+    "single-decode": {
+      "candidate_count": 1,
+      "selected_candidate": 0
+    }
+  },
+  "global_seed": 20260810,
+  "nesting": {
+    "canonicalizer_ablation_within_headline": true,
+    "hard_disjoint_from_headline": true,
+    "pilot_within_view": true,
+    "view_within_headline": true
+  },
+  "protocol": "da3-cad-render-benchmark-v1",
+  "schema_version": "1.0",
+  "splits": [
+    {
+      "count": 300,
+      "dataset": "deepcad",
+      "ids_sha256": "e79805012ee24f13b3ecd94dd724cd69afe261b626c0f4e9cd4bfe17228f1fe5",
+      "path": "benchmarks/splits/deepcad_headline.txt",
+      "purpose": "headline"
+    },
+    {
+      "count": 200,
+      "dataset": "fusion360",
+      "ids_sha256": "a17664617b521d2f9515a27e91fc09675de52341f1d08a5adc754c69234f5176",
+      "path": "benchmarks/splits/fusion360_headline.txt",
+      "purpose": "headline"
+    },
+    {
+      "count": 90,
+      "dataset": "deepcad",
+      "ids_sha256": "b38382021c50da2937d04bda7ebe4f0a677bffb005751846c657ec61855966bf",
+      "path": "benchmarks/splits/deepcad_view.txt",
+      "purpose": "view"
+    },
+    {
+      "count": 60,
+      "dataset": "fusion360",
+      "ids_sha256": "b5ce16bd1d34251b7587ad11cf571ad1ef2d8bb4cf2eecde68ef3d2a4e969d83",
+      "path": "benchmarks/splits/fusion360_view.txt",
+      "purpose": "view"
+    },
+    {
+      "count": 60,
+      "dataset": "deepcad",
+      "ids_sha256": "aa0f7730bc41059392bbf01347f402aca2b363b71157753565131fc36a1fce69",
+      "path": "benchmarks/splits/deepcad_hard.txt",
+      "purpose": "hard"
+    },
+    {
+      "count": 40,
+      "dataset": "fusion360",
+      "ids_sha256": "67d5fc05cd2d63e5a98fd77ba9588c588328847cfaba9ed97cd204d0b738b0dc",
+      "path": "benchmarks/splits/fusion360_hard.txt",
+      "purpose": "hard"
+    },
+    {
+      "count": 60,
+      "dataset": "deepcad",
+      "ids_sha256": "fa7d47616026dc7375331acb3538347c0fa1fecb4ca30c18181f522ede2ebc90",
+      "path": "benchmarks/splits/deepcad_canonicalizer_ablation.txt",
+      "purpose": "canonicalizer_ablation"
+    },
+    {
+      "count": 40,
+      "dataset": "fusion360",
+      "ids_sha256": "2306b3e5c19b1b6f73628489e3624997cca11b0f76191696e8d127f3567b639d",
+      "path": "benchmarks/splits/fusion360_canonicalizer_ablation.txt",
+      "purpose": "canonicalizer_ablation"
+    },
+    {
+      "count": 12,
+      "dataset": "deepcad",
+      "ids_sha256": "2c3e0ced98b6ff1bf915cf09958ca26da8243789d5b793a84e408f4a421626f8",
+      "path": "benchmarks/splits/deepcad_pilot.txt",
+      "purpose": "pilot"
+    },
+    {
+      "count": 8,
+      "dataset": "fusion360",
+      "ids_sha256": "ae5f1b0a1f335e91fd8f4d60b42c6ca5db53da25999aa9daca6ceec1a71fe7f5",
+      "path": "benchmarks/splits/fusion360_pilot.txt",
+      "purpose": "pilot"
+    }
+  ],
+  "view_counts": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ]
+}
