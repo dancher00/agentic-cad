@@ -112,6 +112,10 @@ def test_paired_harness_aggregates_from_atomic_records_without_inference(tmp_pat
         selection={"selected_index": None, "ground_truth_access": False},
         stage_timings={"total": {"wall_seconds": 2.0}},
     )
+    valid_payload = json.loads(
+        (tmp_path / "results" / "items" / "valid.json").read_text(encoding="utf-8")
+    )
+    assert valid_payload["stage_timings"]["evaluation_and_upstream_audit"]["wall_seconds"] > 0
     aggregate = harness.aggregate()
     assert aggregate["normative"]["valid_over_total"] == "1/2"
     assert aggregate["normative"]["invalidity_ratio_percent"] == pytest.approx(50.0)

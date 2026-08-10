@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -254,6 +255,7 @@ class PairedEvaluatorHarness:
         selection: dict[str, object],
         stage_timings: dict[str, object],
     ) -> Path:
+        evaluation_started = time.perf_counter()
         normative = self.evaluator.evaluate(
             item_id,
             prediction,
@@ -289,13 +291,19 @@ class PairedEvaluatorHarness:
                 ),
                 "swallowed_error": repeats[0].swallowed_error,
             }
+        timed_stages = dict(stage_timings)
+        timed_stages["evaluation_and_upstream_audit"] = {
+            "wall_seconds": time.perf_counter() - evaluation_started,
+            "peak_vram_allocated_bytes": None,
+            "peak_vram_reserved_bytes": None,
+        }
         return self.store.write(
             item_id,
             {
                 "normative": normative.as_dict(),
                 "upstream_reference": reference,
                 "selection": selection,
-                "stage_timings": stage_timings,
+                "stage_timings": timed_stages,
             },
         )
 

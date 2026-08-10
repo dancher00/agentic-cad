@@ -12,6 +12,7 @@ import time
 import types
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -155,6 +156,12 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+@lru_cache(maxsize=8)
+def _sha256_for_stat(path: Path, size: int, mtime_ns: int) -> str:
+    del size, mtime_ns
+    return _sha256(path)
+
+
 def verified_da3_checkpoint(
     spec: Da3ModelSpec,
     cache_dir: Path,
@@ -175,7 +182,9 @@ def verified_da3_checkpoint(
             local_files_only=local_files_only,
         )
     )
-    actual_sha256 = _sha256(path)
+    resolved = path.resolve()
+    stat = resolved.stat()
+    actual_sha256 = _sha256_for_stat(resolved, stat.st_size, stat.st_mtime_ns)
     if actual_sha256 != spec.weight_sha256:
         raise RuntimeError(
             f"checkpoint SHA-256 mismatch for {spec.model_id}: "
@@ -183,7 +192,7 @@ def verified_da3_checkpoint(
         )
     return {
         "filename": "model.safetensors",
-        "bytes": path.stat().st_size,
+        "bytes": stat.st_size,
         "sha256": actual_sha256,
         "sha256_verified": True,
         "acquisition_and_hash_seconds": time.perf_counter() - started,
