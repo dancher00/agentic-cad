@@ -194,7 +194,7 @@ def select_by_input_chamfer(
                 reason = f"candidate load/selection failed: {type(error).__name__}: {error}"
         elif reason is None:
             reason = "candidate mesh is missing"
-        valid = cost is not None and np.isfinite(cost)
+        valid = bool(cost is not None and np.isfinite(cost))
         if cost is not None and np.isfinite(cost):
             finite_costs.append((float(cost), candidate.index))
         records.append(

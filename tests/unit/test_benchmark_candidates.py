@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -67,6 +68,7 @@ def test_input_cd_selector_has_no_gt_argument_and_uses_one_candidate_for_all_met
     assert selection.records[2].invalid_selection_cost == "infinity"
     assert selection.records[2].input_cd_squared is None
     assert selection.as_dict()["ground_truth_access"] is False
+    json.dumps(selection.as_dict())
     assert selection.records[1].input_cd_squared is not None
     assert selection.records[0].input_cd_squared is not None
     assert selection.records[1].input_cd_squared < selection.records[0].input_cd_squared
