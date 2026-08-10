@@ -595,6 +595,24 @@ and one N=16 border-mask failure must be diagnosed. N=8 is the provisional
 safe point (20/20 best-10 valid in the pilot), while the 150-object view curve
 must make the actual headline-N decision.
 
+### 7.3 Precision-first canonicalizer stop after cross-view rays
+
+The ordered precision ablation stopped at its first step. On the same 74 frozen
+clouds, a GT-blind two-view z-depth ray gate (2% of fused bbox extent) replaced
+the old spatial support heuristic. It produced only 71/74 valid decoder inputs.
+On those paired valid records the GT-axis-oracle median precision @.05 changed
+from 33.20% to 29.69%, coverage from 5.83% to 3.75%, and absolute normal
+residual from 0.0805 to 0.0957. The frozen stop values are -3.52 precision
+points, 64.23% coverage retention, and a 1.189x normal-residual ratio; all
+mandatory checks fail.
+
+Therefore local plane projection, area-uniform resampling and GT-blind axis
+hypotheses remain unexecuted under this ordered protocol. No pilot rerun, long
+campaign or README quality update is permitted from this result. The full
+contract, view curve and three invalid records are documented in
+`docs/CANONICALIZER_PRECISION_ABLATION.md` and
+`benchmarks/canonicalizer_precision_ablation/step1_ray.json`.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
