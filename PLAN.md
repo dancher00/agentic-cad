@@ -637,6 +637,38 @@ The next registered hypothesis must be surface fitting rather than another
 filter. See `docs/CANONICALIZER_SCORING_ABLATION.md` and
 `benchmarks/canonicalizer_precision_ablation/step1b_scoring.json`.
 
+### 7.5 Object distribution and displacement scale
+
+The 74-record mean hides a narrow working class. At emitted precision @.05
+greater than or equal to 0.60, only 5/74 records and 3/20 unique objects
+qualify. All five use the planar-dominance orientation branch and have thin
+predicted bbox ratios from 0.0838 to 0.1659. At N=1, 15/20 emitted records are
+below 0.20 while three are above 0.70. The axis oracle expands the diagnostic
+working set to 14/74 records and eight objects, so orientation remains a
+separate limitation rather than part of the surface-fitting claim.
+
+Upstream GT-cloud precision is 1.0 at every frozen input-to-surface threshold.
+The scoring axis-oracle median curve is 0.0684/0.3008/0.6211/0.9219 at
+0.02/0.05/0.10/0.20. The upstream disadvantage therefore collapses from
+14.63x to 3.32x, 1.61x and 1.085x. The preregistered rule classifies the overall
+gap as small-scale-dominant. Forty individual records are small-scale, 30
+mixed, and four large-scale; all four large-scale records are two objects at
+N=8/N=16.
+
+Within every fixed N, the planar orientation branch has higher oracle median
+precision than PCA, though several groups are small. At N=1 the observable
+smallest/largest bbox ratio has Spearman rho -0.679 with oracle precision
+(n=20, uncorrected p=0.001). Active-mask fraction is constant at 1.0 and
+cross-view support is not a useful predictor. These associations are
+descriptive, not causal or a trained product gate.
+
+The measurement routes the next preregistered step to local surface fitting.
+The first method is a 16-neighbor local plane estimated from the raw fused cloud
+and applied only to the already selected 256 points. It runs on all records;
+GT-derived per-record scale classes are never used at inference. See
+docs/PRECISION_DISTRIBUTION.md and
+benchmarks/canonicalizer_precision_ablation/distribution.json.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
