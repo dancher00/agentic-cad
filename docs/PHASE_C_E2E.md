@@ -67,16 +67,18 @@ unstable smallest PCA eigenvector.
 
 The Cadrille input is finite float32 with shape `(1,256,3)` and SHA-256
 `8f56b9153e9131dd3ce1a011eddb1ba9c32d0de368e30ddb1aa9f9c6ca66d89c`.
-The generated RL program exposes 59 editable parameters. Its raw and
-parameterized forms both produced volume 9,849.125 and bbox
+The generated RL program contains 59 AST-lifted numeric operands. Its raw and
+literal-lifted forms both produced volume 9,849.125 and decoder-native bbox
 `[-100,-42,-12,100,42.00000000000001,13]`; both recorded parity differences
 are zero. The exported STEP is valid under the pinned CadQuery runtime, and no
 geometric fallback ran.
 
-A real AST edit of `box_1_length` from 4 to 8 preserved the
-`cadrille-point-cloud-rl` backend, unresolved normalized scale and
-`fallback_used=false`. It produced another valid STEP with volume 10,305.125.
-Only that named parameter changed.
+A historical diagnostic AST edit of `box_1_length` from 4 to 8 produced
+another valid STEP with volume 10,305.125, only 4.6% above the original. That
+experiment demonstrates why literal lifting is insufficient: the name did not
+identify a main body dimension. Current schema 2 classifies all 59 operands as
+non-editable implementation details and reports zero primary engineering
+parameters. See `docs/UNITS_AND_PARAMETERS.md`.
 
 ## GPU lifecycle
 
@@ -94,9 +96,15 @@ times in the report are compatibility observations, not throughput claims.
 ## Scale, licenses and scope
 
 Scale remains explicitly unresolved:
-`units=normalized-cad-training-units`. The neural path refuses
-`--known-dimension` until generated parameters carry length-role metadata, so
-an angle or topology operand cannot be scaled silently.
+`units=decoder-native-training-unit`. Those bbox values are the decoder's
+training coordinates, not a normalized cube and not millimetres. Validated
+solids map to the evaluation cube with
+`u=(x_native-bbox_center)/largest_bbox_extent+0.5`; for this result the
+largest extent is 200, so the normalized bbox is
+`[0,0.29,0.4375]..[1,0.71,0.5625]`. Millimetres require a separate proven
+factor. The neural path refuses `--known-dimension` until an editable primary
+length carries explicit feature ownership, so a local primitive, angle or
+topology operand cannot set global scale silently.
 
 Project code and the minimal adapted cadrille source are Apache-2.0. DA3-LARGE,
 Cadrille SFT and Cadrille RL weights are CC BY-NC 4.0, are not redistributed,

@@ -7,6 +7,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from da3_cad.backends.cadrille import (
     CadrilleBackend,
@@ -14,13 +15,21 @@ from da3_cad.backends.cadrille import (
 )
 from da3_cad.backends.geometric_fitter import GeometricCadBackend
 from da3_cad.cad.equivalence import compare_validation_geometry
+from da3_cad.cad.parameter_semantics import (
+    ParameterizationMode,
+    classify_parameters,
+)
 from da3_cad.cad.sandbox import validate_and_export
 from da3_cad.config import AppConfig
 from da3_cad.geometry.canonicalizer import (
     PointCloudCanonicalizer,
     write_canonicalizer_artifacts,
 )
-from da3_cad.geometry.scale import KnownDimension, ScaleDecision
+from da3_cad.geometry.scale import (
+    KnownDimension,
+    ScaleDecision,
+    cad_coordinate_contract,
+)
 from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.models import CadProgram, ValidationResult
 from da3_cad.observations import load_observations
@@ -42,18 +51,42 @@ def _write_json(path: Path, payload: object) -> None:
 def _parameter_payload(
     program: CadProgram,
     scale: ScaleDecision,
+    validation: ValidationResult,
+    parameterization_mode: ParameterizationMode,
 ) -> dict[str, object]:
-    units = "mm" if scale.status == "known" else "normalized-cad-training-units"
-    warning = scale.warning or "scale resolved from explicit evidence"
+    semantics = classify_parameters(
+        program.parameters,
+        backend=program.backend,
+        mode=parameterization_mode,
+    )
+    if program.backend.startswith("cadrille-point-cloud-"):
+        units = "decoder-native-training-unit"
+    elif scale.status == "known":
+        units = "mm"
+    else:
+        units = "canonical-model-unit"
+    if validation.bbox is None:
+        coordinate_spaces: dict[str, object] = {
+            "status": "unavailable-invalid-solid",
+            "reason": "a coordinate transform requires a finite nondegenerate solid bbox",
+        }
+    else:
+        coordinate_spaces = cad_coordinate_contract(
+            validation.bbox,
+            backend=program.backend,
+            scale=scale,
+        ).as_dict()
+    warnings = [warning for warning in (scale.warning, semantics.warning) if warning is not None]
     return {
+        "schema_version": "2.0",
         "backend": program.backend,
         "units": units,
-        "warning": warning,
+        "warnings": warnings,
         "scale": scale.as_dict(),
-        "parameters": [
-            {"name": name, "value": value, "editable": True}
-            for name, value in sorted(program.parameters.items())
-        ],
+        "coordinate_spaces": coordinate_spaces,
+        "parameter_semantics": semantics.as_dict(),
+        "primary_parameters": list(semantics.primary),
+        "implementation_parameters": list(semantics.implementation),
     }
 
 
@@ -78,18 +111,26 @@ def _write_report(
     program: CadProgram,
     validation: ValidationResult,
     scale: ScaleDecision,
+    parameters: dict[str, object],
     warnings: list[str],
 ) -> None:
+    semantics = parameters["parameter_semantics"]
+    if not isinstance(semantics, dict):
+        raise TypeError("parameter semantics payload must be a mapping")
     lines = [
         "# DA3-CAD quality report",
         "",
         f"- Status: **{'valid' if validation.valid else 'invalid'}**",
         f"- Backend: **{program.backend}**",
         "- Fallback used: **no**",
-        f"- Scale: **{scale.status}** ({scale.units})",
+        f"- Native units: **{parameters['units']}**",
+        "- Normalized evaluation space: **isotropic bbox-centered [0,1]^3**",
+        f"- Metric scale: **{scale.status}**",
+        f"- Primary engineering parameters: **{semantics['primary_count']}**",
+        f"- Implementation operands: **{semantics['implementation_count']}**",
         f"- Volume: {validation.volume if validation.volume is not None else 'n/a'}",
         f"- Bounds: {validation.bbox if validation.bbox is not None else 'n/a'}",
-        "- Benchmark result: **no** (single Phase C integration validation)",
+        "- Benchmark result: **no** (single integration validation)",
         "",
         "## Warnings",
         "",
@@ -124,8 +165,8 @@ def reconstruct_full(
     )
     if known_dimension is not None and config.cad_backend.startswith("cadrille-"):
         raise ValueError(
-            "--known-dimension on neural output requires length-role metadata and is not "
-            "silently applied to angles/topology; use the geometric backend for this Phase C path"
+            "--known-dimension requires an editable primary length parameter backed by explicit "
+            "feature metadata; Cadrille AST/model operands have no such engineering semantics"
         )
 
     observations = load_observations(input_dir)
@@ -187,7 +228,7 @@ def reconstruct_full(
     started = time.monotonic()
     raw_transport_text: str
     clean_decoder_source: str
-    parameterization_mode: str | None = None
+    parameterization_mode: ParameterizationMode = "explicit-template"
     decoder_details: dict[str, object]
     if config.cad_backend == "geometric-fitter":
         geometric_backend = GeometricCadBackend(config.geometric_fitter)
@@ -233,7 +274,7 @@ def reconstruct_full(
         mode_value = cadrille_backend.last_parameterization_report.get("mode")
         if mode_value not in {"ast-literal-lift", "model-emitted"}:
             raise RuntimeError("Cadrille backend returned an invalid parameterization mode")
-        parameterization_mode = str(mode_value)
+        parameterization_mode = cast(ParameterizationMode, mode_value)
         decoder_details = {
             "mode": "neural",
             "license_notice": cadrille_license_notice(cadrille_backend.spec),
@@ -298,7 +339,7 @@ def reconstruct_full(
         validation = validate_and_export(program.source, output_dir, config.sandbox)
         validation_seconds = time.monotonic() - started
         decoder_details["parameterization_validation"] = {
-            "mode": parameterization_mode or "already-parameterized",
+            "mode": parameterization_mode,
             "status": "identical-source",
             "equivalent": True,
             "parameterized_validation": validation.as_dict(),
@@ -334,15 +375,33 @@ def reconstruct_full(
         )
     )
 
+    parameter_payload = _parameter_payload(
+        program,
+        scale,
+        validation,
+        parameterization_mode,
+    )
+    semantics_payload = parameter_payload["parameter_semantics"]
+    if not isinstance(semantics_payload, dict):
+        raise TypeError("parameter semantics payload must be a mapping")
+    semantics_warning = semantics_payload.get("warning")
     warnings = [
         *geometry.prediction.warnings,
         *canonical.warnings,
         *program.warnings,
+        *([str(semantics_warning)] if semantics_warning is not None else []),
     ]
     provenance.warnings.extend(warnings)
-    _write_json(output_dir / "parameters.json", _parameter_payload(program, scale))
+    _write_json(output_dir / "parameters.json", parameter_payload)
     _write_json(output_dir / "quality.json", _quality_payload(program, validation, warnings))
-    _write_report(output_dir / "report.md", program, validation, scale, warnings)
+    _write_report(
+        output_dir / "report.md",
+        program,
+        validation,
+        scale,
+        parameter_payload,
+        warnings,
+    )
     provenance.write(output_dir / "provenance.json")
 
     report: dict[str, object] = {
@@ -360,6 +419,8 @@ def reconstruct_full(
         "canonicalizer": canonical.as_dict(),
         "decoder": decoder_details,
         "scale": scale.as_dict(),
+        "coordinate_spaces": parameter_payload["coordinate_spaces"],
+        "parameter_semantics": semantics_payload,
         "validation": validation.as_dict(),
         "warnings": warnings,
     }

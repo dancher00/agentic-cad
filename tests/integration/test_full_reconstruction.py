@@ -126,7 +126,9 @@ def test_full_permissive_pipeline_writes_valid_parameterized_step(
     ]
 
     parameter_payload = json.loads((output / "parameters.json").read_text(encoding="utf-8"))
-    parameters = {item["name"]: item["value"] for item in parameter_payload["parameters"]}
+    assert parameter_payload["schema_version"] == "2.0"
+    assert parameter_payload["parameter_semantics"]["status"] == ("explicit-engineering-schema")
+    parameters = {item["name"]: item["value"] for item in parameter_payload["primary_parameters"]}
     edited_output = tmp_path / "edited"
     edited_width = parameters["body_width"] * 1.1
     edited = edit_run(output, edited_output, {"body_width": edited_width}, config)
@@ -141,7 +143,9 @@ def test_full_permissive_pipeline_writes_valid_parameterized_step(
     edited_quality = json.loads((edited_output / "quality.json").read_text(encoding="utf-8"))
     edited_provenance = json.loads((edited_output / "provenance.json").read_text(encoding="utf-8"))
     assert edited_parameters["backend"] == "geometric-fitter-v1"
-    assert edited_parameters["units"] == "normalized-cad-training-units"
+    assert edited_parameters["units"] == "canonical-model-unit"
+    assert edited_parameters["coordinate_spaces"]["normalized_cube"]["container"] == ("[0,1]^3")
+    assert edited_parameters["primary_parameters"]
     assert edited_quality["backend"] == "geometric-fitter-v1"
     assert edited_quality["fallback_used"] is False
     assert edited_provenance["stages"][0]["details"]["source_backend"] == ("geometric-fitter-v1")
@@ -163,7 +167,7 @@ def test_neural_known_dimension_refuses_unsafe_blanket_scaling(tmp_path: Path) -
         cad_backend="cadrille-rl",
         da3=Da3Config(checkpoint="large"),
     )
-    with pytest.raises(ValueError, match="length-role metadata"):
+    with pytest.raises(ValueError, match="primary length parameter"):
         reconstruct_full(
             Path("sample_data/plate/views"),
             tmp_path / "run",

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+
+from da3_cad.models import FloatArray
 
 _SCALE_PATTERN = re.compile(
     r"^(?P<name>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>(?:\d+(?:\.\d*)?|\.\d+))"
@@ -66,6 +68,171 @@ class ScaleDecision:
             "reference": self.reference,
             "warning": self.warning,
         }
+
+
+NativeSpaceKind = Literal[
+    "decoder-native-training-space",
+    "canonical-model-space",
+    "metric-mm-space",
+    "stub-test-space",
+]
+
+
+@dataclass(frozen=True, slots=True)
+class CadCoordinateContract:
+    """Explicit map from generated CAD coordinates to a unit cube and metric space.
+
+    The normalized representation is isotropic: the largest bbox extent spans one
+    unit and every bbox axis is centred at 0.5. Short axes are never stretched.
+    """
+
+    native_kind: NativeSpaceKind
+    native_units: str
+    native_bbox: tuple[float, float, float, float, float, float]
+    native_center: tuple[float, float, float]
+    native_largest_extent: float
+    normalized_bbox: tuple[float, float, float, float, float, float]
+    millimeters_per_native_unit: float | None
+    scale_evidence: dict[str, object]
+
+    @classmethod
+    def from_bbox(
+        cls,
+        bbox: Sequence[float],
+        *,
+        native_kind: NativeSpaceKind,
+        native_units: str,
+        millimeters_per_native_unit: float | None,
+        scale_evidence: dict[str, object],
+    ) -> CadCoordinateContract:
+        values = np.asarray(tuple(bbox), dtype=np.float64)
+        if values.shape != (6,) or not np.isfinite(values).all():
+            raise ValueError("CAD bbox must contain six finite coordinates")
+        minimum = values[:3]
+        maximum = values[3:]
+        extents = maximum - minimum
+        largest = float(extents.max())
+        if np.any(extents <= 0.0) or not np.isfinite(largest):
+            raise ValueError("CAD bbox must be nondegenerate on all three axes")
+        if millimeters_per_native_unit is not None and (
+            not np.isfinite(millimeters_per_native_unit) or millimeters_per_native_unit <= 0.0
+        ):
+            raise ValueError("millimeters_per_native_unit must be finite and positive")
+        center = (minimum + maximum) / 2.0
+        normalized_minimum = (minimum - center) / largest + 0.5
+        normalized_maximum = (maximum - center) / largest + 0.5
+        normalized = np.concatenate((normalized_minimum, normalized_maximum))
+        return cls(
+            native_kind=native_kind,
+            native_units=native_units,
+            native_bbox=tuple(float(item) for item in values),  # type: ignore[arg-type]
+            native_center=tuple(float(item) for item in center),  # type: ignore[arg-type]
+            native_largest_extent=largest,
+            normalized_bbox=tuple(float(item) for item in normalized),  # type: ignore[arg-type]
+            millimeters_per_native_unit=millimeters_per_native_unit,
+            scale_evidence=scale_evidence,
+        )
+
+    @property
+    def millimeters_per_normalized_unit(self) -> float | None:
+        if self.millimeters_per_native_unit is None:
+            return None
+        return self.native_largest_extent * self.millimeters_per_native_unit
+
+    def native_points_to_normalized(self, points: FloatArray) -> FloatArray:
+        values = np.asarray(points, dtype=np.float64)
+        if values.ndim != 2 or values.shape[1] != 3 or not np.isfinite(values).all():
+            raise ValueError("native CAD points must have finite shape (N,3)")
+        center = np.asarray(self.native_center, dtype=np.float64)
+        return (values - center) / self.native_largest_extent + 0.5
+
+    def native_length_to_normalized(self, length: float) -> float:
+        if not np.isfinite(length):
+            raise ValueError("native length must be finite")
+        return float(length / self.native_largest_extent)
+
+    def normalized_length_to_millimeters(self, length: float) -> float:
+        factor = self.millimeters_per_normalized_unit
+        if factor is None:
+            raise ValueError("metric scale is unresolved")
+        if not np.isfinite(length):
+            raise ValueError("normalized length must be finite")
+        return float(length * factor)
+
+    def as_dict(self) -> dict[str, object]:
+        metric_status = "known" if self.millimeters_per_native_unit is not None else "unresolved"
+        return {
+            "schema_version": "1.0",
+            "native_space": {
+                "kind": self.native_kind,
+                "units": self.native_units,
+                "bbox": list(self.native_bbox),
+                "bbox_center": list(self.native_center),
+                "largest_bbox_extent": self.native_largest_extent,
+            },
+            "normalized_cube": {
+                "units": "normalized-cube-unit",
+                "container": "[0,1]^3",
+                "bbox": list(self.normalized_bbox),
+                "transform": "u = (x_native - bbox_center) / largest_bbox_extent + 0.5",
+                "isotropic": True,
+                "short_axes_centered": True,
+                "per_axis_scaling": False,
+                "native_units_per_normalized_unit": self.native_largest_extent,
+            },
+            "metric_space": {
+                "status": metric_status,
+                "units": "mm",
+                "millimeters_per_native_unit": self.millimeters_per_native_unit,
+                "millimeters_per_normalized_unit": self.millimeters_per_normalized_unit,
+                "transform": (
+                    "x_mm = x_native * millimeters_per_native_unit"
+                    if metric_status == "known"
+                    else None
+                ),
+                "evidence": self.scale_evidence,
+                "no_evidence_policy": (
+                    None
+                    if metric_status == "known"
+                    else "do not label decoder-native or normalized-cube values as millimetres"
+                ),
+            },
+        }
+
+
+def cad_coordinate_contract(
+    bbox: Sequence[float],
+    *,
+    backend: str,
+    scale: ScaleDecision,
+) -> CadCoordinateContract:
+    """Build a backend-aware output-space contract after solid validation."""
+
+    if backend.startswith("cadrille-") or backend.startswith("cadrille-point-cloud-"):
+        kind: NativeSpaceKind = "decoder-native-training-space"
+        units = "decoder-native-training-unit"
+        mm_per_native = scale.millimeters_per_unit if scale.status == "known" else None
+    elif backend == "geometric-fitter-v1" and scale.status == "known":
+        kind = "metric-mm-space"
+        units = "mm"
+        mm_per_native = 1.0
+    elif backend == "geometric-fitter-v1":
+        kind = "canonical-model-space"
+        units = "canonical-model-unit"
+        mm_per_native = None
+    elif backend == "stub":
+        kind = "stub-test-space"
+        units = "stub-test-unit"
+        mm_per_native = None
+    else:
+        raise ValueError(f"cannot assign coordinate semantics to backend {backend!r}")
+    return CadCoordinateContract.from_bbox(
+        bbox,
+        native_kind=kind,
+        native_units=units,
+        millimeters_per_native_unit=mm_per_native,
+        scale_evidence=scale.as_dict(),
+    )
 
 
 def unresolved_scale(known_dimension: KnownDimension | None = None) -> ScaleDecision:

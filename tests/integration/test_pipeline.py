@@ -56,3 +56,39 @@ def test_edit_changes_only_requested_plate_dimension(sample_case: Path, tmp_path
 
     assert after.xlen == pytest.approx(before.xlen + 7.0)
     assert after.ylen == pytest.approx(before.ylen)
+
+
+def test_edit_rejects_implementation_operand_not_primary(sample_case: Path, tmp_path: Path) -> None:
+    config = load_config(Path("configs/stub.yaml"), device="cpu", seed=3)
+    source_dir = tmp_path / "source"
+    reconstruct(sample_case / "views", source_dir, config)
+    metadata_path = source_dir / "parameters.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    implementation = []
+    for item in metadata["primary_parameters"]:
+        implementation.append(
+            {
+                **item,
+                "category": "implementation-detail",
+                "editable": False,
+                "evidence": "synthetic regression fixture",
+            }
+        )
+    metadata["primary_parameters"] = []
+    metadata["implementation_parameters"] = implementation
+    metadata["parameter_semantics"] = {
+        "status": "engineering-semantics-unavailable",
+        "primary_count": 0,
+        "implementation_count": len(implementation),
+        "warning": "regression fixture",
+    }
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="not editable primary"):
+        edit_run(
+            source_dir,
+            tmp_path / "rejected",
+            {"plate_width": 30.0},
+            config,
+        )
+    assert not (tmp_path / "rejected").exists()

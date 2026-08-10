@@ -5,7 +5,12 @@ import pytest
 
 from da3_cad.geometry.normalization import normalize_bbox_for_decoder
 from da3_cad.geometry.sampling import farthest_point_indices, farthest_point_sample
-from da3_cad.geometry.scale import KnownDimension, resolve_known_dimension, unresolved_scale
+from da3_cad.geometry.scale import (
+    KnownDimension,
+    cad_coordinate_contract,
+    resolve_known_dimension,
+    unresolved_scale,
+)
 
 
 def test_fps_is_seeded_and_similarity_invariant() -> None:
@@ -59,6 +64,30 @@ def test_known_dimension_parser_and_resolution(raw: str, millimeters: float) -> 
     assert resolved.status == "known"
     assert resolved.units == "mm"
     assert resolved.millimeters_per_unit == pytest.approx(2.0 * millimeters)
+
+
+def test_decoder_native_to_normalized_cube_to_millimeters_chain() -> None:
+    known = KnownDimension.parse("box_1_length=20mm")
+    scale = resolve_known_dimension(known, {"box_1_length": 4.0})
+    contract = cad_coordinate_contract(
+        (-100.0, -42.0, -12.0, 100.0, 42.0, 13.0),
+        backend="cadrille-point-cloud-rl",
+        scale=scale,
+    )
+
+    assert contract.native_kind == "decoder-native-training-space"
+    assert contract.native_largest_extent == pytest.approx(200.0)
+    assert contract.native_length_to_normalized(4.0) == pytest.approx(0.02)
+    assert contract.millimeters_per_native_unit == pytest.approx(5.0)
+    assert contract.millimeters_per_normalized_unit == pytest.approx(1000.0)
+    assert contract.normalized_length_to_millimeters(0.02) == pytest.approx(20.0)
+    np.testing.assert_allclose(
+        contract.normalized_bbox,
+        [0.0, 0.29, 0.4375, 1.0, 0.71, 0.5625],
+    )
+    payload = contract.as_dict()
+    assert payload["normalized_cube"]["per_axis_scaling"] is False
+    assert payload["metric_space"]["millimeters_per_normalized_unit"] == pytest.approx(1000.0)
 
 
 def test_known_dimension_never_guesses_parameter_correspondence() -> None:

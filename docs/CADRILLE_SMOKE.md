@@ -21,7 +21,7 @@ Qwen2-VL tokenizer revision
 generation and Transformers SDPA. No FlashAttention, PyTorch3D, Open3D,
 qwen-vl-utils or accelerate is in the inference path.
 
-| Checkpoint | Revision | Weight SHA-256 | Editable parameters | Sandbox result | Peak allocated / reserved | Post-unload allocated / reserved |
+| Checkpoint | Revision | Weight SHA-256 | AST numeric operands | Sandbox result | Peak allocated / reserved | Post-unload allocated / reserved |
 |---|---|---|---:|---|---:|---:|
 | SFT | `2f422d11...e0f9` | `234480bd...f16a4` | 79 | invalid solid | 4.237 / 4.566 GiB | 32 / 32 MiB |
 | RL | `712489b5...c02a` | `f4e9e887...753f` | 59 | valid solid | 4.237 / 4.564 GiB | 32 / 32 MiB |
@@ -48,16 +48,19 @@ form both failed with the same validation error. Their geometry is therefore
 marked `both-invalid-not-comparable`; no equivalence is claimed and no
 geometric fallback was substituted.
 
-The RL raw program and 59-parameter editable form both produced a valid solid.
+The RL raw program and 59-operand AST-lifted form both produced a valid solid.
 Their volume and all six bbox coordinates were identical; the recorded maximum
 bbox and volume differences are exactly zero under the predeclared `1e-9`
 comparison tolerance. A second standalone RL run reproduced the full
 pipeline's raw-text hash, parameterized-source hash, bbox and volume exactly.
 
-A real edit changed only `box_1_length` from 4 to 8. The edited program
-remained a valid solid, preserved backend, normalized-unit and no-fallback
-metadata, and changed volume from 9,849.125 to 10,305.125 normalized cubed
-units. The decoder was not rerun.
+The historical smoke also changed only `box_1_length` from 4 to 8. The solid
+remained valid and its decoder-native volume changed from 9,849.125 to
+10,305.125, but this small 4.6% response proved that the generated name was not
+evidence of a main dimension. It is now recorded only as an
+implementation-level diagnostic. Current output exposes zero primary
+engineering parameters for this program and ordinary `edit` rejects all 59
+operands. The decoder was not rerun.
 
 ## Unload interpretation
 
