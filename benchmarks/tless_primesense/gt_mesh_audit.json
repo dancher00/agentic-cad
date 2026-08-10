@@ -1,0 +1,892 @@
+{
+  "object_count": 30,
+  "protocol": "da3-cad-tless-cad-gt-repair-v1",
+  "records": [
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -17.495800018310547,
+          -17.495800018310547,
+          -30.600000381469727,
+          17.495800018310547,
+          17.495800018310547,
+          30.600000381469727
+        ],
+        "faces": 84260,
+        "reason": null,
+        "valid": true,
+        "vertices": 42134,
+        "volume": 26601.271059404335,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 1,
+      "output_path": "data/tless/gt_cad/obj_000001.ply",
+      "output_sha256": "630a743d841285cdf9d94b1ad30b45c99b13e2d92bb7726e7f50b811844d9675",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000001.ply",
+      "source_sha256": "630a743d841285cdf9d94b1ad30b45c99b13e2d92bb7726e7f50b811844d9675"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -21.644800186157227,
+          -21.644800186157227,
+          -30.85110092163086,
+          21.644800186157227,
+          21.644800186157227,
+          30.85110092163086
+        ],
+        "faces": 82114,
+        "reason": null,
+        "valid": true,
+        "vertices": 41063,
+        "volume": 40714.77714372901,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 2,
+      "output_path": "data/tless/gt_cad/obj_000002.ply",
+      "output_sha256": "354d8969694176aa65d4d470badd304532bead5aa8e96bdecaa0ae41620f81b2",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000002.ply",
+      "source_sha256": "354d8969694176aa65d4d470badd304532bead5aa8e96bdecaa0ae41620f81b2"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -23.883699417114258,
+          -23.884199142456055,
+          -30.835100173950195,
+          23.878999710083008,
+          23.877399444580078,
+          30.835100173950195
+        ],
+        "faces": 94992,
+        "reason": null,
+        "valid": true,
+        "vertices": 47498,
+        "volume": 43659.15648388099,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 3,
+      "output_path": "data/tless/gt_cad/obj_000003.ply",
+      "output_sha256": "78d21e87331aa242355c6d8b7cd461923013150a2f0d8853e776ee70ec9dc113",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000003.ply",
+      "source_sha256": "78d21e87331aa242355c6d8b7cd461923013150a2f0d8853e776ee70ec9dc113"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -19.997800827026367,
+          -19.992900848388672,
+          -39.0,
+          19.997800827026367,
+          19.992900848388672,
+          39.0
+        ],
+        "faces": 7374,
+        "reason": null,
+        "valid": true,
+        "vertices": 3689,
+        "volume": 58780.95771489628,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 4,
+      "output_path": "data/tless/gt_cad/obj_000004.ply",
+      "output_sha256": "9df646dc55914891d342a7ef3810e3197e5ec66d26679be87e00f2d916a41fbd",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000004.ply",
+      "source_sha256": "9df646dc55914891d342a7ef3810e3197e5ec66d26679be87e00f2d916a41fbd"
+    },
+    {
+      "dropped_area_fraction_of_original": 0.0,
+      "dropped_components": [],
+      "final_validation": {
+        "bbox": [
+          -47.5,
+          -26.75,
+          -29.5,
+          47.5,
+          26.75,
+          29.5
+        ],
+        "faces": 25616,
+        "reason": null,
+        "valid": true,
+        "vertices": 12806,
+        "volume": 206238.26103163036,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "initial_validation": {
+        "bbox": [
+          -47.5,
+          -26.75,
+          -29.5,
+          47.5,
+          26.75,
+          29.5
+        ],
+        "faces": 25614,
+        "reason": "mesh is not watertight",
+        "valid": false,
+        "vertices": 12806,
+        "volume": 206238.2609183834,
+        "watertight": false,
+        "winding_consistent": true
+      },
+      "method": "trimesh-process-validate-plus-fill-holes",
+      "object_id": 5,
+      "output_path": "data/tless/gt_cad/obj_000005.ply",
+      "output_sha256": "675627a417d1681a81ee7f11118bdb7728b3f93181b3f5c54fbd4ab0a8c055b8",
+      "repair_applied": true,
+      "simple_holes_filled": true,
+      "source_path": "models_cad/obj_000005.ply",
+      "source_sha256": "cbe7ccaa74c74ba40fe64bfac62808a391f6e389a93e8c4f5d8b00157b9930ab",
+      "trimesh_process_validate": true
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -44.70000076293945,
+          -25.0,
+          -27.75,
+          44.70000076293945,
+          25.0,
+          27.75
+        ],
+        "faces": 5700,
+        "reason": null,
+        "valid": true,
+        "vertices": 2840,
+        "volume": 151519.51492596694,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 6,
+      "output_path": "data/tless/gt_cad/obj_000006.ply",
+      "output_sha256": "f1227fe15e046bc18c1686bd5fb3b849a9996c2de2ca3fc16d34b9ec348f94df",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000006.ply",
+      "source_sha256": "f1227fe15e046bc18c1686bd5fb3b849a9996c2de2ca3fc16d34b9ec348f94df"
+    },
+    {
+      "dropped_area_fraction_of_original": 0.009358444898612728,
+      "dropped_components": [
+        {
+          "area": 640.0,
+          "faces": 2,
+          "reason": "mesh has fewer than four triangular faces",
+          "vertices": 4
+        },
+        {
+          "area": 640.0,
+          "faces": 2,
+          "reason": "mesh has fewer than four triangular faces",
+          "vertices": 4
+        }
+      ],
+      "final_validation": {
+        "bbox": [
+          -75.0,
+          -44.70000076293945,
+          -30.75,
+          75.0,
+          44.70000076293945,
+          30.75
+        ],
+        "faces": 17186,
+        "reason": null,
+        "valid": true,
+        "vertices": 8555,
+        "volume": 532076.0088559452,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "initial_validation": {
+        "bbox": [
+          -75.0,
+          -44.70000076293945,
+          -30.75,
+          75.0,
+          44.70000076293945,
+          30.75
+        ],
+        "faces": 17106,
+        "reason": "mesh is not watertight",
+        "valid": false,
+        "vertices": 8517,
+        "volume": 532076.008866661,
+        "watertight": false,
+        "winding_consistent": true
+      },
+      "method": "component-validation-plus-manifold-union",
+      "object_id": 7,
+      "output_path": "data/tless/gt_cad/obj_000007.ply",
+      "output_sha256": "4710411aca3e71765df159d2071142f9b71bb86f53c6a91d716c7819d066cf75",
+      "repair_applied": true,
+      "simple_holes_filled": false,
+      "source_path": "models_cad/obj_000007.ply",
+      "source_sha256": "da526fe974d4184986022ad353c559019cb4bd98a0b20b3219d59b9e8b2935c7",
+      "trimesh_process_validate": true
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -93.03929901123047,
+          -52.667198181152344,
+          -30.007299423217773,
+          93.03929901123047,
+          52.667198181152344,
+          30.007299423217773
+        ],
+        "faces": 22812,
+        "reason": null,
+        "valid": true,
+        "vertices": 11368,
+        "volume": 691598.0908615706,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 8,
+      "output_path": "data/tless/gt_cad/obj_000008.ply",
+      "output_sha256": "bc08c26acebb0cf6623c54444cf5c2bcbd93d81444dcdbe502769e9e149a8943",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000008.ply",
+      "source_sha256": "bc08c26acebb0cf6623c54444cf5c2bcbd93d81444dcdbe502769e9e149a8943"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -60.625,
+          -39.25,
+          -31.349000930786133,
+          60.625,
+          39.25,
+          31.349000930786133
+        ],
+        "faces": 14120,
+        "reason": null,
+        "valid": true,
+        "vertices": 7046,
+        "volume": 190077.65208802721,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 9,
+      "output_path": "data/tless/gt_cad/obj_000009.ply",
+      "output_sha256": "70ae1591eb1ed458f337dae12086049d8ead6d9225057df39947325deeb7bdf8",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000009.ply",
+      "source_sha256": "70ae1591eb1ed458f337dae12086049d8ead6d9225057df39947325deeb7bdf8"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -40.329898834228516,
+          -21.003599166870117,
+          -31.751300811767578,
+          40.329898834228516,
+          21.003599166870117,
+          31.751300811767578
+        ],
+        "faces": 18434,
+        "reason": null,
+        "valid": true,
+        "vertices": 9193,
+        "volume": 50230.396013875725,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 10,
+      "output_path": "data/tless/gt_cad/obj_000010.ply",
+      "output_sha256": "ba2560a7221e71485672f7886539ecbbfdd5b712df4e53041d8957221072ad42",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000010.ply",
+      "source_sha256": "ba2560a7221e71485672f7886539ecbbfdd5b712df4e53041d8957221072ad42"
+    },
+    {
+      "dropped_area_fraction_of_original": 0.0,
+      "dropped_components": [],
+      "final_validation": {
+        "bbox": [
+          -33.145599365234375,
+          -24.121000289916992,
+          -27.649999618530273,
+          33.145599365234375,
+          24.121000289916992,
+          27.649999618530273
+        ],
+        "faces": 41890,
+        "reason": null,
+        "valid": true,
+        "vertices": 20927,
+        "volume": 47207.142657950935,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "initial_validation": {
+        "bbox": [
+          -33.145599365234375,
+          -24.121000289916992,
+          -27.649999618530273,
+          33.145599365234375,
+          24.121000289916992,
+          27.649999618530273
+        ],
+        "faces": 42622,
+        "reason": "mesh contains zero-area faces",
+        "valid": false,
+        "vertices": 21284,
+        "volume": null,
+        "watertight": false,
+        "winding_consistent": false
+      },
+      "method": "component-validation-plus-manifold-union",
+      "object_id": 11,
+      "output_path": "data/tless/gt_cad/obj_000011.ply",
+      "output_sha256": "bf90334ebc4b9496e5263191f94b0ba2b2e1aa3877b15a086f901d5b9bec94d2",
+      "repair_applied": true,
+      "simple_holes_filled": false,
+      "source_path": "models_cad/obj_000011.ply",
+      "source_sha256": "621e99803ecee9c8490f1b880f32addd2dc387adb914187359ee0d3cf353fd0f",
+      "trimesh_process_validate": true
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -39.16559982299805,
+          -28.813499450683594,
+          -28.299999237060547,
+          39.16559982299805,
+          28.813499450683594,
+          28.299999237060547
+        ],
+        "faces": 44154,
+        "reason": null,
+        "valid": true,
+        "vertices": 22069,
+        "volume": 81502.30584459117,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 12,
+      "output_path": "data/tless/gt_cad/obj_000012.ply",
+      "output_sha256": "39dee96298a44a5148cbe608f67843b613d1f62738f5f3586ed44adfdf48971e",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000012.ply",
+      "source_sha256": "39dee96298a44a5148cbe608f67843b613d1f62738f5f3586ed44adfdf48971e"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -19.997100830078125,
+          -19.994300842285156,
+          -23.0,
+          19.997100830078125,
+          19.994300842285156,
+          23.0
+        ],
+        "faces": 12774,
+        "reason": null,
+        "valid": true,
+        "vertices": 6385,
+        "volume": 18840.300382002242,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 13,
+      "output_path": "data/tless/gt_cad/obj_000013.ply",
+      "output_sha256": "9d7e25f992ef7e5d10f151c0fe57f8f21452b24f69b8abe7043643fe2aa05d0e",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000013.ply",
+      "source_sha256": "9d7e25f992ef7e5d10f151c0fe57f8f21452b24f69b8abe7043643fe2aa05d0e"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -22.06730079650879,
+          -22.06730079650879,
+          -32.54999923706055,
+          22.06730079650879,
+          22.06730079650879,
+          32.54999923706055
+        ],
+        "faces": 13788,
+        "reason": null,
+        "valid": true,
+        "vertices": 6896,
+        "volume": 39248.543009090594,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 14,
+      "output_path": "data/tless/gt_cad/obj_000014.ply",
+      "output_sha256": "f9155cd450c4a87163cbf6ea0752a3dae770abfbf87a77fab7ebbc7029dabc83",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000014.ply",
+      "source_sha256": "f9155cd450c4a87163cbf6ea0752a3dae770abfbf87a77fab7ebbc7029dabc83"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -22.273799896240234,
+          -22.277099609375,
+          -27.5,
+          22.273799896240234,
+          22.277099609375,
+          27.5
+        ],
+        "faces": 13654,
+        "reason": null,
+        "valid": true,
+        "vertices": 6817,
+        "volume": 44323.07493281084,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 15,
+      "output_path": "data/tless/gt_cad/obj_000015.ply",
+      "output_sha256": "880c1a72fa6e3590dfc765a51417d6183cdddd8fea67f89f25c9b324d8b1cbe1",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000015.ply",
+      "source_sha256": "880c1a72fa6e3590dfc765a51417d6183cdddd8fea67f89f25c9b324d8b1cbe1"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -27.633800506591797,
+          -27.63170051574707,
+          -23.5,
+          27.633800506591797,
+          27.63170051574707,
+          23.5
+        ],
+        "faces": 18738,
+        "reason": null,
+        "valid": true,
+        "vertices": 9363,
+        "volume": 62099.8557559438,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 16,
+      "output_path": "data/tless/gt_cad/obj_000016.ply",
+      "output_sha256": "f9f6b0dd45424e5495343b86e856317a339c3ef211258d0c41020987d77f05a8",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000016.ply",
+      "source_sha256": "f9f6b0dd45424e5495343b86e856317a339c3ef211258d0c41020987d77f05a8"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -53.88710021972656,
+          -53.88159942626953,
+          -30.049999237060547,
+          53.88710021972656,
+          53.88159942626953,
+          30.049999237060547
+        ],
+        "faces": 25868,
+        "reason": null,
+        "valid": true,
+        "vertices": 12932,
+        "volume": 188407.99610125867,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 17,
+      "output_path": "data/tless/gt_cad/obj_000017.ply",
+      "output_sha256": "b326cea914f098a59572a163b0dee57ba9903c08b7dac71ed2494cfea9e4adc3",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000017.ply",
+      "source_sha256": "b326cea914f098a59572a163b0dee57ba9903c08b7dac71ed2494cfea9e4adc3"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -49.36050033569336,
+          -49.36940002441406,
+          -31.886899948120117,
+          49.36050033569336,
+          49.36940002441406,
+          31.886899948120117
+        ],
+        "faces": 36210,
+        "reason": null,
+        "valid": true,
+        "vertices": 18095,
+        "volume": 62872.3084805641,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 18,
+      "output_path": "data/tless/gt_cad/obj_000018.ply",
+      "output_sha256": "c1cddeec2c10fb5131d312a4655c37b88bc9b51ffdc330bb500b6bab1cf20257",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000018.ply",
+      "source_sha256": "c1cddeec2c10fb5131d312a4655c37b88bc9b51ffdc330bb500b6bab1cf20257"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -32.75,
+          -38.25,
+          -23.5,
+          32.75,
+          38.25,
+          23.5
+        ],
+        "faces": 4692,
+        "reason": null,
+        "valid": true,
+        "vertices": 2348,
+        "volume": 113119.19789173304,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 19,
+      "output_path": "data/tless/gt_cad/obj_000019.ply",
+      "output_sha256": "4f3aba5a945e004ea8129c2a7796747e8b2140ccd41bb8fc2f39bb09f90d9567",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000019.ply",
+      "source_sha256": "4f3aba5a945e004ea8129c2a7796747e8b2140ccd41bb8fc2f39bb09f90d9567"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -41.5,
+          -37.75,
+          -23.5,
+          41.5,
+          37.75,
+          23.5
+        ],
+        "faces": 4692,
+        "reason": null,
+        "valid": true,
+        "vertices": 2348,
+        "volume": 133492.27184638308,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 20,
+      "output_path": "data/tless/gt_cad/obj_000020.ply",
+      "output_sha256": "c9244eabd0e2e79c616425643cff81d7054192c704e29c63fa951fbb5cf5769a",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000020.ply",
+      "source_sha256": "c9244eabd0e2e79c616425643cff81d7054192c704e29c63fa951fbb5cf5769a"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -38.45000076293945,
+          -39.48910140991211,
+          -21.5,
+          38.45000076293945,
+          39.48910140991211,
+          21.5
+        ],
+        "faces": 20508,
+        "reason": null,
+        "valid": true,
+        "vertices": 10248,
+        "volume": 97178.03737346582,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 21,
+      "output_path": "data/tless/gt_cad/obj_000021.ply",
+      "output_sha256": "7c4b7cdf0a4c990d4e886deac3dfe2bf71706b19918afbe034c847e2b4d14b00",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000021.ply",
+      "source_sha256": "7c4b7cdf0a4c990d4e886deac3dfe2bf71706b19918afbe034c847e2b4d14b00"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -38.45000076293945,
+          -39.48910140991211,
+          -21.993499755859375,
+          38.45000076293945,
+          39.48910140991211,
+          21.993499755859375
+        ],
+        "faces": 21210,
+        "reason": null,
+        "valid": true,
+        "vertices": 10599,
+        "volume": 88453.00951759853,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 22,
+      "output_path": "data/tless/gt_cad/obj_000022.ply",
+      "output_sha256": "33af876f137296342f6e9e45d24b2940bac953b6782826dc54d6b1b3c1446128",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000022.ply",
+      "source_sha256": "33af876f137296342f6e9e45d24b2940bac953b6782826dc54d6b1b3c1446128"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -68.97419738769531,
+          -36.75,
+          -26.03260040283203,
+          68.97419738769531,
+          36.75,
+          26.03260040283203
+        ],
+        "faces": 5890,
+        "reason": null,
+        "valid": true,
+        "vertices": 2947,
+        "volume": 191969.32273604177,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 23,
+      "output_path": "data/tless/gt_cad/obj_000023.ply",
+      "output_sha256": "d15d444c3de2849671d95bb2f19277a8d63208d30bdaf485f8e2254c10c31c54",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000023.ply",
+      "source_sha256": "d15d444c3de2849671d95bb2f19277a8d63208d30bdaf485f8e2254c10c31c54"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -21.497699737548828,
+          -21.49850082397461,
+          -40.29999923706055,
+          21.497699737548828,
+          21.49850082397461,
+          40.29999923706055
+        ],
+        "faces": 21946,
+        "reason": null,
+        "valid": true,
+        "vertices": 10973,
+        "volume": 72914.54035639361,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 24,
+      "output_path": "data/tless/gt_cad/obj_000024.ply",
+      "output_sha256": "18b1ade78ff39b5311fc7842f0fcdec0aeb9d6c4bc52d27fe15ca65577f5ba70",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000024.ply",
+      "source_sha256": "18b1ade78ff39b5311fc7842f0fcdec0aeb9d6c4bc52d27fe15ca65577f5ba70"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -48.0,
+          -30.75,
+          -30.40060043334961,
+          48.0,
+          30.75,
+          30.40060043334961
+        ],
+        "faces": 8846,
+        "reason": null,
+        "valid": true,
+        "vertices": 4423,
+        "volume": 257027.413079793,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 25,
+      "output_path": "data/tless/gt_cad/obj_000025.ply",
+      "output_sha256": "e4e7dc7ea5793b52ccbf6dcdef6e2014b1099b2b2202986310b7a71fd7ece145",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000025.ply",
+      "source_sha256": "e4e7dc7ea5793b52ccbf6dcdef6e2014b1099b2b2202986310b7a71fd7ece145"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -48.0,
+          -30.75,
+          -30.3927001953125,
+          48.0,
+          30.75,
+          30.3927001953125
+        ],
+        "faces": 8792,
+        "reason": null,
+        "valid": true,
+        "vertices": 4396,
+        "volume": 256889.8664036096,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 26,
+      "output_path": "data/tless/gt_cad/obj_000026.ply",
+      "output_sha256": "4a56f6bb8e7da90d7fb4649fbbdc5a93e5889c68ae9ffa2d15859735d565164f",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000026.ply",
+      "source_sha256": "4a56f6bb8e7da90d7fb4649fbbdc5a93e5889c68ae9ffa2d15859735d565164f"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -54.25,
+          -54.25,
+          -28.0,
+          54.25,
+          54.25,
+          28.0
+        ],
+        "faces": 7490,
+        "reason": null,
+        "valid": true,
+        "vertices": 3747,
+        "volume": 571436.6520473673,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 27,
+      "output_path": "data/tless/gt_cad/obj_000027.ply",
+      "output_sha256": "b20f274c3bc6ddb66b5b386a6f08d6d5f5483b272ffa02402d09dfe77e43738a",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000027.ply",
+      "source_sha256": "b20f274c3bc6ddb66b5b386a6f08d6d5f5483b272ffa02402d09dfe77e43738a"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -49.75,
+          -49.75,
+          -24.200000762939453,
+          49.75,
+          49.75,
+          24.200000762939453
+        ],
+        "faces": 26884,
+        "reason": null,
+        "valid": true,
+        "vertices": 13444,
+        "volume": 337857.76672752574,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 28,
+      "output_path": "data/tless/gt_cad/obj_000028.ply",
+      "output_sha256": "33ca7661ae0b1eb6096d3df58a4060ae9dcf92143907b46a9960f44c5a151ab5",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000028.ply",
+      "source_sha256": "33ca7661ae0b1eb6096d3df58a4060ae9dcf92143907b46a9960f44c5a151ab5"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -56.5,
+          -39.0,
+          -28.399999618530273,
+          56.5,
+          39.0,
+          28.399999618530273
+        ],
+        "faces": 5736,
+        "reason": null,
+        "valid": true,
+        "vertices": 2870,
+        "volume": 438527.3798157047,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 29,
+      "output_path": "data/tless/gt_cad/obj_000029.ply",
+      "output_sha256": "df03e55cf223b9dae258b27fa69101b4784a257b3ca7b95fe46dda4dc2429a87",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000029.ply",
+      "source_sha256": "df03e55cf223b9dae258b27fa69101b4784a257b3ca7b95fe46dda4dc2429a87"
+    },
+    {
+      "dropped_components": [],
+      "initial_validation": {
+        "bbox": [
+          -40.0,
+          -40.0,
+          -25.299999237060547,
+          40.0,
+          40.0,
+          25.299999237060547
+        ],
+        "faces": 12184,
+        "reason": null,
+        "valid": true,
+        "vertices": 6094,
+        "volume": 210631.87516038437,
+        "watertight": true,
+        "winding_consistent": true
+      },
+      "method": "byte-equivalent-original-mesh",
+      "object_id": 30,
+      "output_path": "data/tless/gt_cad/obj_000030.ply",
+      "output_sha256": "8dcadee5bcd50ea97bc9dd00a611e7758c4eeba3d5ac55f27a6a9c88ee951556",
+      "repair_applied": false,
+      "source_path": "models_cad/obj_000030.ply",
+      "source_sha256": "8dcadee5bcd50ea97bc9dd00a611e7758c4eeba3d5ac55f27a6a9c88ee951556"
+    }
+  ],
+  "repair_count": 3,
+  "schema_version": "1.0",
+  "source": "official T-LESS models_cad"
+}

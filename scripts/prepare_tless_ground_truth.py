@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 
 import trimesh
 
 from da3_cad.benchmark.tless import sha256_file
 from da3_cad.benchmark.tless_protocol import repair_official_cad
+from da3_cad.evaluation.mesh import TessellationConfig, load_mesh
 
 
 def main() -> int:
@@ -28,11 +30,14 @@ def main() -> int:
     for object_id in range(1, 31):
         source = args.data_root / f"models_cad/obj_{object_id:06d}.ply"
         destination = args.output_root / f"obj_{object_id:06d}.ply"
-        mesh = trimesh.load_mesh(source, process=False)
+        mesh = load_mesh(source, TessellationConfig())
         if not isinstance(mesh, trimesh.Trimesh):
             raise ValueError(f"official T-LESS CAD is not one mesh: {source}")
         repaired, repair = repair_official_cad(mesh)
-        repaired.export(destination, file_type="ply", encoding="binary_little_endian")
+        if repair["repair_applied"]:
+            repaired.export(destination, file_type="ply", encoding="binary_little_endian")
+        else:
+            shutil.copyfile(source, destination)
         records.append(
             {
                 "object_id": object_id,
