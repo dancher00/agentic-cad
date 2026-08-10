@@ -11,6 +11,8 @@ import numpy.typing as npt
 
 FloatArray = npt.NDArray[np.floating[Any]]
 UInt8Array = npt.NDArray[np.uint8]
+BoolArray = npt.NDArray[np.bool_]
+IntArray = npt.NDArray[np.integer[Any]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,7 +66,7 @@ class DepthPrediction:
     """Backend-neutral depth prediction contract."""
 
     depth: FloatArray
-    confidence: FloatArray
+    confidence: FloatArray | None
     intrinsics: FloatArray
     extrinsics: FloatArray
     processed_images: tuple[UInt8Array, ...]
@@ -75,7 +77,7 @@ class DepthPrediction:
         count = len(self.processed_images)
         if self.depth.ndim != 3 or self.depth.shape[0] != count:
             raise ValueError("depth must have shape (N,H,W) matching processed_images")
-        if self.confidence.shape != self.depth.shape:
+        if self.confidence is not None and self.confidence.shape != self.depth.shape:
             raise ValueError("confidence must match depth shape")
         if self.intrinsics.shape != (count, 3, 3):
             raise ValueError("intrinsics must have shape (N,3,3)")
@@ -88,7 +90,9 @@ class DepthPrediction:
             "backend": self.backend,
             "shape": list(self.depth.shape),
             "finite_depth_fraction": float(finite.mean()),
-            "mean_confidence": float(self.confidence.mean()),
+            "mean_confidence": (
+                float(self.confidence.mean()) if self.confidence is not None else None
+            ),
             "intrinsics_shape": list(self.intrinsics.shape),
             "extrinsics_shape": list(self.extrinsics.shape),
             "warnings": list(self.warnings),

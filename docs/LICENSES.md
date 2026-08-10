@@ -10,11 +10,13 @@ with this repository.
 | DA3-BASE | weights | Apache-2.0 | no; downloaded from upstream |
 | cadrille | source | Apache-2.0 | minimum adapter may be vendored with provenance |
 | cadrille / cadrille-RL | weights | CC BY-NC 4.0 | no; future explicit opt-in downloader |
-| DeepCAD test mesh mirror | dataset | labelled CC BY-NC 4.0; upstream provenance remains distinct | no |
-| Fusion 360 Gallery | dataset | Autodesk non-commercial/custom terms | no |
+| [DeepCAD test mesh mirror](https://huggingface.co/datasets/maksimko123/deepcad_test_mesh) | dataset at `ee4999c749fbb6a726df6284abb1a949ec7548c1` | labelled CC BY-NC 4.0; upstream provenance remains distinct | no |
+| [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion360GalleryDataset/blob/master/LICENSE.md) | test-mesh mirror at `af9643d11bdae5512020bfba024cb4d609b893e1` | Autodesk non-commercial and redistribution terms | no |
 | T-LESS BOP/HF | dataset | CC BY 4.0 | no; attribution retained in reports |
 
 Exact URLs, immutable revisions and acquisition behavior are recorded in
-`PLAN.md` and will be mirrored here when the downloaders land. Package dependency
+`PLAN.md`. The normalization audit downloader displays the dataset URLs, pinned
+revisions and terms before requiring `--accept-noncommercial-terms`; downloaded
+files stay in ignored `data/`. Package dependency
 licenses will be audited before release.
 

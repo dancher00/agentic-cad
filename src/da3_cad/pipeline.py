@@ -94,10 +94,13 @@ def reconstruct(input_dir: Path, output_dir: Path, config: AppConfig) -> Validat
     )
     _json_write(artefacts / "depth_summary.json", prediction.summary())
     if config.debug_artefacts:
+        confidence = prediction.confidence
+        if confidence is None:
+            raise RuntimeError("stub depth backend did not return confidence")
         np.savez_compressed(
             artefacts / "stub_depth.npz",
             depth=prediction.depth,
-            confidence=prediction.confidence,
+            confidence=confidence,
             intrinsics=prediction.intrinsics,
             extrinsics=prediction.extrinsics,
         )

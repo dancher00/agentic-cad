@@ -1,6 +1,6 @@
 # DA3-CAD implementation plan
 
-Status: **approved with the 2026-08-10 protocol amendments; Phase A in progress**. This document is a plan, not
+Status: **approved with the 2026-08-10 protocol amendments; Phase A accepted at `6927712`, Phase B in progress**. This document is a plan, not
 an implementation report. Runtime numbers below are planning estimates and must
 not be copied into the README as measured results.
 
@@ -329,25 +329,25 @@ manifests, schemas, and traceable summary results belong in git.
    shapes and explicit world-to-camera/camera-to-world conversion.
 2. Implement mask/confidence-gated fusion, observation accounting and scale
    separation.
-3. Select the segmentation default only after a Python 3.12 install/license/VRAM
+3. Complete the decoder-normalization parity gate on real pinned DeepCAD and
+   Fusion360 meshes before canonicalizer implementation.
+4. Select the segmentation default only after a Python 3.12 install/license/VRAM
    smoke test. Depth-based and user-mask paths remain available, but no silent
    segmentation fallback is allowed.
-4. Integrate pinned DA3 source/API and both checkpoint profiles. Run actual
+5. Integrate pinned DA3 source/API and both checkpoint profiles. Run actual
    multi-view inference for DA3-BASE and DA3-LARGE, verify pose/intrinsics shape,
    depth/confidence semantics, VRAM, unload behavior and deterministic limits.
-5. Stop after real DA3 point clouds and diagnostic artefacts exist, before
+6. Stop after real DA3 point clouds and diagnostic artefacts exist, before
    finalizing canonical axes (stop point 4).
 
 ### Phase C — canonicalizer and CAD backends
 
-Before writing any canonicalizer transform, run a normalization parity gate on
-real downloaded meshes from both pinned DeepCAD and Fusion360 test mirrors.
-Measure vertex bounds and test the competing hypotheses explicitly: isotropic
-largest-extent scaling versus per-axis scaling, centered short axes versus
-corner anchoring, and the final `[0,1]^3 -> [-1,1]^3` map. Commit the sampled
-mesh IDs, raw bounds, derived transforms and parity tests. If the two datasets
-or upstream code disagree, stop and resolve the decoder contract rather than
-silently applying the formula assumed in section 2.2.
+The normalization parity gate was completed early in Phase B on five pinned
+DeepCAD and five pinned Fusion360 test meshes. The committed SHA-256 manifest,
+raw bounds and derived values show isotropic largest-extent scaling with short
+axes centered at `0.5`; they reject per-axis scaling and corner anchoring. The
+canonicalizer must preserve that verified contract. See
+`docs/NORMALIZATION_AUDIT.md`.
 
 Implement the canonicalizer as individually switchable, serializable stages:
 
@@ -556,7 +556,7 @@ assumptions before stop point 6.
 The complete DeepCAD+Fusion split is 9,771 items. To meet the prompt's 24-hour
 limit, the measured sustained end-to-end throughput must be at most
 `86,400 / 9,771 = 8.84 seconds/item`, including decode and validation. The
-The ten-candidate published protocol makes a full-split best-of-10 run still
+ten-candidate published protocol makes a full-split best-of-10 run still
 less likely to fit: its measured sustained total must also remain below the same
 19.2-hour safety gate. The fixed 500-item best-N headline and 150-item view curve
 therefore remain the expected release scope unless pilot evidence proves the
@@ -655,8 +655,9 @@ the ordering and stop-point gates will not be bypassed.
 - The safest available hard execution sandbox on the target host.
 - Robust mesh boolean behavior and the exact root cause/reproduction range of
   cadrille issue #19.
-- Decoder normalization parity on actual downloaded DeepCAD and Fusion test
-  meshes, beyond the verified source contract.
+- Broader normalization validation beyond the committed five DeepCAD and five
+  Fusion360 real-mesh parity samples; the source contract and sampled gate are
+  verified.
 - DA3 pose/frame behavior and T-LESS coordinate alignment end to end.
 - Segmentation quality without GT assistance, particularly target ambiguity in
   cluttered T-LESS scenes.

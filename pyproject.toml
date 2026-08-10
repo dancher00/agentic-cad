@@ -57,6 +57,7 @@ markers = [
   "gpu: requires a CUDA GPU",
   "weights: requires downloaded third-party weights",
   "benchmark: long-running benchmark contract test",
+  "external_data: requires explicitly accepted non-redistributed dataset files",
 ]
 
 [tool.ruff]
