@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,42 @@ from pydantic import BaseModel, ConfigDict, Field
 from da3_cad import __version__
 from da3_cad.config import AppConfig
 from da3_cad.models import ObservationSet
+
+
+def repository_state(directory: Path | None = None) -> dict[str, object]:
+    """Record the Git revision when running from a checkout, without requiring one."""
+
+    working_directory = directory or Path.cwd()
+    try:
+        root = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=working_directory,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=working_directory,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=working_directory,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return {"available": False}
+    return {
+        "available": True,
+        "root": root,
+        "commit": commit,
+        "working_tree_clean": not bool(status),
+    }
 
 
 class StageRecord(BaseModel):

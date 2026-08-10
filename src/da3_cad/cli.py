@@ -11,12 +11,17 @@ from rich.console import Console
 from rich.pretty import Pretty
 
 from da3_cad import __version__
+from da3_cad.backends.cadrille import (
+    cadrille_license_notice,
+    get_cadrille_model_spec,
+)
 from da3_cad.backends.da3 import da3_license_notice, get_da3_model_spec, require_weight_terms
 from da3_cad.benchmark.smoke import discover_cases, run_smoke_benchmark
 from da3_cad.config import AppConfig, load_config
 from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.pipeline import edit_run, inspect_run, reconstruct
+from da3_cad.reconstruction_pipeline import reconstruct_full
 
 app = typer.Typer(
     name="da3-cad",
@@ -80,13 +85,46 @@ def reconstruct_command(
     config: ConfigOption = None,
     device: DeviceOption = None,
     seed: SeedOption = None,
+    accept_noncommercial_weights: Annotated[
+        bool,
+        typer.Option(
+            "--accept-noncommercial-weights",
+            help="Accept the displayed NC DA3 checkpoint terms for this run.",
+        ),
+    ] = False,
+    accept_license: Annotated[
+        str | None,
+        typer.Option(
+            "--accept-license",
+            help="Exact neural decoder license acknowledgement, e.g. cc-by-nc-4.0.",
+        ),
+    ] = None,
+    known_dimension: Annotated[
+        str | None,
+        typer.Option(
+            "--known-dimension",
+            help="Explicit scale evidence such as hole_1_diameter=8mm.",
+        ),
+    ] = None,
     dry_run: DryRunOption = False,
 ) -> None:
     """Reconstruct a parameterized CAD model from an image directory."""
 
     settings = _config(config, device, seed)
+    is_stub = settings.depth_backend == "stub" and settings.cad_backend == "stub"
     try:
         observations = load_observations(input_dir)
+        if not is_stub:
+            da3_spec = get_da3_model_spec(settings.da3.checkpoint)
+            console.print(f"[bold]Depth checkpoint terms:[/bold] {da3_license_notice(da3_spec)}")
+            if settings.depth_backend != f"da3-{da3_spec.key}":
+                raise ValueError("reconstruct config depth_backend and checkpoint disagree")
+            if settings.cad_backend.startswith("cadrille-"):
+                cadrille_spec = get_cadrille_model_spec(settings.cadrille.checkpoint)
+                console.print(
+                    f"[bold]Decoder checkpoint terms:[/bold] "
+                    f"{cadrille_license_notice(cadrille_spec)}"
+                )
         if dry_run:
             console.print(
                 Pretty(
@@ -97,21 +135,52 @@ def reconstruct_command(
                         "images": len(observations.images),
                         "input_digest": observations.digest,
                         "config": settings.model_dump(),
+                        "accepted_da3_noncommercial": accept_noncommercial_weights,
+                        "accepted_decoder_license": accept_license,
+                        "known_dimension": known_dimension,
                         "writes": False,
                     }
                 )
             )
             return
-        with console.status("Running explicitly labelled Phase A stub pipeline..."):
-            result = reconstruct(input_dir, output_dir, settings)
-    except (OSError, ValueError) as error:
+        if is_stub:
+            with console.status("Running explicitly labelled Phase A stub pipeline..."):
+                result = reconstruct(input_dir, output_dir, settings)
+            backend_label = "stub"
+        else:
+            da3_spec = get_da3_model_spec(settings.da3.checkpoint)
+            require_weight_terms(
+                da3_spec,
+                accepted_noncommercial=accept_noncommercial_weights,
+            )
+            with console.status(
+                "Running staged DA3, canonicalizer, CAD generation and sandbox validation..."
+            ):
+                full_result = reconstruct_full(
+                    input_dir,
+                    output_dir,
+                    settings,
+                    accepted_da3_noncommercial=accept_noncommercial_weights,
+                    accepted_cadrille_license=accept_license,
+                    known_dimension_text=known_dimension,
+                )
+            result = full_result.validation
+            backend_label = full_result.program.backend
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print(f"[red]Reconstruction failed:[/red] {error}")
         raise typer.Exit(1) from error
     if not result.valid:
         console.print(f"[red]Generated program is invalid:[/red] {result.error}")
+        console.print("[yellow]No geometric fallback was substituted.[/yellow]")
         raise typer.Exit(1)
     console.print(f"[green]Valid STEP:[/green] {result.step_path}")
-    console.print("[yellow]STUB output; not a geometric-quality claim.[/yellow]")
+    if is_stub:
+        console.print("[yellow]STUB output; not a geometric-quality claim.[/yellow]")
+    else:
+        console.print(f"[green]CAD backend:[/green] {backend_label}; fallback used: no")
+        console.print(
+            "[yellow]Units remain normalized unless explicit scale evidence was accepted.[/yellow]"
+        )
 
 
 @app.command("geometry")

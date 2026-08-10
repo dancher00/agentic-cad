@@ -10,14 +10,13 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 import numpy as np
 
 from da3_cad.cad.parameterize import parameterize_generated_source
 from da3_cad.cad.program import extract_parameters
 from da3_cad.config import CadrilleConfig
-from da3_cad.geometry.canonicalizer import CanonicalCloud
 from da3_cad.model_manager import ModelLifecycleReport, StagedModelManager
 from da3_cad.models import CadProgram, FloatArray
 
@@ -27,6 +26,13 @@ CADRILLE_PROCESSOR_ID = "Qwen/Qwen2-VL-2B-Instruct"
 CADRILLE_PROCESSOR_REVISION = "895c3a49bc3fa70a340399125c650a463535e71c"
 CADRILLE_LICENSE = "CC BY-NC 4.0"
 CADRILLE_LICENSE_ACCEPTANCE = "cc-by-nc-4.0"
+
+
+class DecoderPointInput(Protocol):
+    """Minimal exact input contract consumed by the Cadrille adapter."""
+
+    @property
+    def decoder_points(self) -> FloatArray: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,11 +265,12 @@ class CadrilleBackend:
         self.last_lifecycle: ModelLifecycleReport | None = None
         self.last_runtime_report: dict[str, object] | None = None
         self.last_raw_text: str | None = None
+        self.last_clean_source: str | None = None
         self.last_parameterization_report: dict[str, object] | None = None
 
     def generate(
         self,
-        canonical: CanonicalCloud,
+        canonical: DecoderPointInput,
         *,
         seed: int,
     ) -> CadProgram:
@@ -356,6 +363,7 @@ class CadrilleBackend:
         self.last_raw_text = raw_text
         self.last_lifecycle = lifecycle
         source = clean_generated_source(raw_text)
+        self.last_clean_source = source
         try:
             parameters = extract_parameters(source)
             parameterization: dict[str, object] = {

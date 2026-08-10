@@ -52,13 +52,23 @@ def _quality_payload(validation: ValidationResult, warnings: list[str]) -> dict[
     }
 
 
-def _write_report(path: Path, validation: ValidationResult, warnings: list[str]) -> None:
+def _write_report(
+    path: Path,
+    validation: ValidationResult,
+    warnings: list[str],
+    *,
+    backend: str = "stub",
+    units: str = "normalized-test-units",
+    fallback_used: bool = False,
+) -> None:
+    backend_note = " (not a quality model or benchmark result)" if backend == "stub" else ""
     lines = [
         "# DA3-CAD quality report",
         "",
         f"- Status: **{'valid' if validation.valid else 'invalid'}**",
-        "- Backend: **stub** (not a quality model or benchmark result)",
-        "- Units: normalized test units; millimetres were not inferred",
+        f"- Backend: **{backend}**{backend_note}",
+        f"- Fallback used: **{'yes' if fallback_used else 'no'}**",
+        f"- Units: {units}",
         f"- Volume: {validation.volume if validation.volume is not None else 'n/a'}",
         f"- Bounds: {validation.bbox if validation.bbox is not None else 'n/a'}",
         "",
@@ -149,19 +159,68 @@ def edit_run(
 ) -> ValidationResult:
     source_path = source_dir / "model.py"
     provenance_path = source_dir / "provenance.json"
-    if not source_path.is_file() or not provenance_path.is_file():
+    parameters_path = source_dir / "parameters.json"
+    quality_path = source_dir / "quality.json"
+    required = (source_path, provenance_path, parameters_path, quality_path)
+    if not all(path.is_file() for path in required):
         raise ValueError(f"not a DA3-CAD run directory: {source_dir}")
+
+    source_parameters: Any = json.loads(parameters_path.read_text(encoding="utf-8"))
+    source_quality: Any = json.loads(quality_path.read_text(encoding="utf-8"))
+    if not isinstance(source_parameters, dict) or not isinstance(source_quality, dict):
+        raise ValueError("run metadata roots must be JSON objects")
+    units = source_parameters.get("units")
+    backend = source_quality.get("backend")
+    fallback_used = source_quality.get("fallback_used", False)
+    source_warnings = source_quality.get("warnings", [])
+    if not isinstance(units, str) or not isinstance(backend, str):
+        raise ValueError("run metadata is missing string units/backend")
+    if not isinstance(fallback_used, bool):
+        raise ValueError("run metadata fallback_used must be boolean")
+    if not isinstance(source_warnings, list) or not all(
+        isinstance(item, str) for item in source_warnings
+    ):
+        raise ValueError("run metadata warnings must be a list of strings")
+
     source = source_path.read_text(encoding="utf-8")
     edited_source, parameters = edit_parameters(source, updates)
     _prepare_output(output_dir)
     (output_dir / "model.py").write_text(edited_source, encoding="utf-8")
-    _json_write(output_dir / "parameters.json", _parameter_payload(parameters))
+    edited_parameters = {
+        **source_parameters,
+        "parameters": [
+            {"name": name, "value": value, "editable": True}
+            for name, value in sorted(parameters.items())
+        ],
+    }
+    _json_write(output_dir / "parameters.json", edited_parameters)
     validation = validate_and_export(edited_source, output_dir, config.sandbox)
-    warnings = ["edited from an existing generated program", "units remain normalized test units"]
-    _json_write(output_dir / "quality.json", _quality_payload(validation, warnings))
-    _write_report(output_dir / "report.md", validation, warnings)
+    edit_warnings = [
+        "edited from an existing generated program; decoder was not rerun",
+        f"units remain {units}; no scale was invented during edit",
+    ]
+    warnings = [*source_warnings, *edit_warnings]
+    edited_quality = {
+        **source_quality,
+        "status": "valid" if validation.valid else "invalid",
+        "is_benchmark_result": False,
+        "validation": validation.as_dict(),
+        "warnings": warnings,
+    }
+    _json_write(output_dir / "quality.json", edited_quality)
+    _write_report(
+        output_dir / "report.md",
+        validation,
+        warnings,
+        backend=backend,
+        units=units,
+        fallback_used=fallback_used,
+    )
 
     provenance: dict[str, Any] = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance_warnings = provenance.get("warnings", [])
+    if not isinstance(provenance_warnings, list):
+        raise ValueError("run provenance warnings must be a list")
     created = datetime.now(UTC).isoformat()
     material = f"{provenance.get('run_id')}:{created}:{sorted(updates.items())}"
     provenance["run_id"] = hashlib.sha256(material.encode()).hexdigest()[:16]
@@ -173,10 +232,16 @@ def edit_run(
             "backend": "ast-parameter-editor",
             "status": "valid" if validation.valid else "invalid",
             "seconds": validation.execution_seconds,
-            "details": {"updates": updates, "validation": validation.as_dict()},
+            "details": {
+                "source_backend": backend,
+                "source_fallback_used": fallback_used,
+                "units": units,
+                "updates": updates,
+                "validation": validation.as_dict(),
+            },
         }
     ]
-    provenance["warnings"] = [*provenance.get("warnings", []), *warnings]
+    provenance["warnings"] = [*provenance_warnings, *edit_warnings]
     _json_write(output_dir / "provenance.json", provenance)
     return validation
 
