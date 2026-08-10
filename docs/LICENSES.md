@@ -16,7 +16,7 @@ with this repository.
 | [Qwen2-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct) | tokenizer/processor at `895c3a49bc3fa70a340399125c650a463535e71c` | Apache-2.0 | no; cached outside git |
 | [DeepCAD test mesh mirror](https://huggingface.co/datasets/maksimko123/deepcad_test_mesh) | dataset at `ee4999c749fbb6a726df6284abb1a949ec7548c1` | labelled CC BY-NC 4.0; upstream provenance remains distinct | no |
 | [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion360GalleryDataset/blob/master/LICENSE.md) | test-mesh mirror at `af9643d11bdae5512020bfba024cb4d609b893e1` | Autodesk non-commercial and redistribution terms | no |
-| T-LESS BOP/HF | dataset | CC BY 4.0 | no; attribution retained in reports |
+| [T-LESS BOP/HF](https://huggingface.co/datasets/bop-benchmark/tless) | Primesense test images and CAD models at `5fd309a04476a842d93abfb584fba9ee7caecdf1` | CC BY 4.0 on the HF card and [original CTU site](https://cmp.felk.cvut.cz/t-less/) | no; exact opt-in, verified archives, attribution retained in reports |
 
 Exact URLs, immutable revisions and acquisition behavior are recorded in
 `PLAN.md`. The normalization audit downloader displays the dataset URLs, pinned
@@ -29,3 +29,9 @@ cards and immutable revisions, then requires the exact acknowledgement
 `--accept-license cc-by-nc-4.0`; the downloader verifies the complete weight
 SHA-256 and writes only a local receipt beneath the ignored cache. Package
 dependency licenses will be audited before release.
+
+The T-LESS downloader similarly requires `--accept-license cc-by-4.0`, pins the
+BOP/Hugging Face dataset revision, verifies the full SHA-256 and byte size of
+the base, CAD-model and Primesense BOP19 archives, and extracts them only below
+the ignored `data/tless/` tree. Use of T-LESS must cite Hodaň et al., *T-LESS:
+An RGB-D Dataset for 6D Pose Estimation of Texture-less Objects*, WACV 2017.
