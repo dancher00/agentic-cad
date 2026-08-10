@@ -832,6 +832,18 @@ all model tensors were moved off GPU. The immutable report SHA-256 is
 `29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072`;
 see `docs/HIGH_VIEW_SWEEP.md`.
 
+The GT-blind implementation was preregistered at `d748ba3` and its primary
+N=8 parameter gate then completed on all 20 objects. Projected-local-depth had
+scale/shift Spearman rho -0.0134/-0.0036. Fixed-local-plane had positive rho
+0.2876/0.3258, but scale/shift sign agreement was only 35.7%/49.3%, below the
+frozen 55% gate. Neither criterion qualified, selection is therefore `none`,
+and the harness stopped before product precision exactly as preregistered. The
+immutable primary report SHA-256 is
+`58972ea7f26f275262653530fe8e90501c1760ece32db9f411629edd704389b5`;
+see `docs/GT_BLIND_DEPTH_ALIGNMENT.md`. Any subsequent N-dependent check is
+parameter-only and cannot retroactively select a criterion or unlock N=8
+reconstruction metrics.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
