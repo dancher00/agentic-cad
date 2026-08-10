@@ -4,9 +4,9 @@ import runpy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-_STOP_DECISION = runpy.run_path(str(ROOT / "scripts" / "run_precision_ablation_step1.py"))[
-    "_stop_decision"
-]
+_SCRIPT = runpy.run_path(str(ROOT / "scripts" / "run_precision_ablation_step1.py"))
+_STOP_DECISION = _SCRIPT["_stop_decision"]
+_PAIRED_DELTA = _SCRIPT["_paired_delta"]
 
 
 def _curve() -> dict[str, object]:
@@ -41,3 +41,22 @@ def test_all_mandatory_stop_checks_can_pass() -> None:
 
     assert decision["checks"]["all_records_valid"] is True
     assert decision["passed"] is True
+
+
+def test_paired_delta_respects_lower_is_better_direction() -> None:
+    baseline_relation = {"normal_residual_absolute": {"mean": 0.20}}
+    step_relation = {"normal_residual_absolute": {"mean": 0.10}}
+    record = {
+        "baseline": {"diagnostics": {"emitted_frame": baseline_relation}},
+        "cross_view_ray": {"diagnostics": {"emitted_frame": step_relation}},
+    }
+
+    result = _PAIRED_DELTA(
+        [record],
+        "emitted_frame",
+        ("normal_residual_absolute", "mean"),
+        higher_is_better=False,
+    )
+
+    assert result["improvement_direction"] == "lower"
+    assert result["improved_fraction"] == 1.0

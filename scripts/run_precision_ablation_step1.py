@@ -256,6 +256,8 @@ def _paired_delta(
     records: list[dict[str, object]],
     frame: str,
     path: tuple[str, ...],
+    *,
+    higher_is_better: bool,
 ) -> dict[str, object]:
     deltas: list[float] = []
     for record in records:
@@ -265,10 +267,13 @@ def _paired_delta(
             baseline = baseline[component]
             step = step[component]
         deltas.append(float(step) - float(baseline))
+    delta_values = np.asarray(deltas)
+    improved = delta_values > 0.0 if higher_is_better else delta_values < 0.0
     return {
         "step_minus_baseline": _stats(deltas),
-        "improved_fraction": float(np.mean(np.asarray(deltas) > 0.0)),
-        "unchanged_fraction": float(np.mean(np.asarray(deltas) == 0.0)),
+        "improvement_direction": "higher" if higher_is_better else "lower",
+        "improved_fraction": float(np.mean(improved)),
+        "unchanged_fraction": float(np.mean(delta_values == 0.0)),
     }
 
 
@@ -286,6 +291,7 @@ def _curve(records: list[dict[str, object]]) -> dict[str, object]:
                         "0.05",
                         "point_precision_fraction",
                     ),
+                    higher_is_better=True,
                 ),
                 "coverage_0.05": _paired_delta(
                     records,
@@ -295,11 +301,13 @@ def _curve(records: list[dict[str, object]]) -> dict[str, object]:
                         "0.05",
                         "surface_coverage_fraction",
                     ),
+                    higher_is_better=True,
                 ),
                 "absolute_normal_residual_mean": _paired_delta(
                     records,
                     frame,
                     ("normal_residual_absolute", "mean"),
+                    higher_is_better=False,
                 ),
             }
             for frame in ("emitted_frame", "gt_axis_oracle")
