@@ -36,7 +36,20 @@ dev = [
   "ruff>=0.11,<1",
   "types-pyyaml>=6.0.12,<7",
 ]
-gpu = ["torch>=2.13,<2.14"]
+gpu = [
+  "torch>=2.13,<2.14",
+  "torchvision>=0.28,<0.29",
+]
+da3 = [
+  "addict==2.4.0",
+  "einops>=0.8,<1",
+  "evo>=1.37,<2",
+  "huggingface-hub>=0.36,<1",
+  "omegaconf>=2.3,<3",
+  "opencv-python-headless==4.11.0.86",
+  "safetensors>=0.6,<1",
+  "scipy>=1.16,<1.17",
+]
 
 [project.scripts]
 da3-cad = "da3_cad.cli:app"

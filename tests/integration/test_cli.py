@@ -66,3 +66,49 @@ def test_phase_a_benchmark_is_explicitly_not_a_metric_result(
     report = json.loads((output_dir / "results.json").read_text())
     assert report["is_benchmark_result"] is False
     assert report["rows"][0]["metrics"] is None
+
+
+def test_geometry_base_dry_run_reports_pinned_model_without_writes(
+    sample_case: Path, tmp_path: Path
+) -> None:
+    output_dir = tmp_path / "geometry"
+    result = runner.invoke(
+        app,
+        [
+            "geometry",
+            str(sample_case / "views"),
+            "--output",
+            str(output_dir),
+            "--config",
+            "configs/da3_base.yaml",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "f4a6c9b3c95e41c82048423d3493a81ec3fa810e" in result.stdout
+    assert "Apache-2.0" in result.stdout
+    assert "'writes': False" in result.stdout
+    assert not output_dir.exists()
+
+
+def test_geometry_large_refuses_weights_without_explicit_nc_acceptance(
+    sample_case: Path, tmp_path: Path
+) -> None:
+    output_dir = tmp_path / "geometry-large"
+    result = runner.invoke(
+        app,
+        [
+            "geometry",
+            str(sample_case / "views"),
+            "--output",
+            str(output_dir),
+            "--config",
+            "configs/da3_large.yaml",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "CC BY-NC 4.0" in result.stdout
+    assert "--accept-noncommercial-weights" in result.stdout
+    assert not output_dir.exists()

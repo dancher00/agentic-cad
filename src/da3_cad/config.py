@@ -17,6 +17,28 @@ class SandboxConfig(BaseModel):
     wall_seconds: int = Field(default=45, ge=1)
 
 
+class Da3Config(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    checkpoint: Literal["base", "large"] = "base"
+    source_dir: Path = Path("data/upstream/Depth-Anything-3")
+    cache_dir: Path = Path("data/hf")
+    process_resolution: int = Field(default=504, ge=56, le=2016)
+    process_resolution_method: Literal["upper_bound_resize", "lower_bound_resize"] = (
+        "upper_bound_resize"
+    )
+    local_files_only: bool = False
+
+
+class GeometryConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    segmentation_confidence_percentile: float = Field(default=25.0, ge=0.0, le=100.0)
+    segmentation_depth_percentile: float = Field(default=75.0, ge=0.0, le=100.0)
+    fusion_confidence_percentile: float = Field(default=40.0, ge=0.0, le=100.0)
+    minimum_confidence: float | None = None
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -27,6 +49,8 @@ class AppConfig(BaseModel):
     depth_backend: str = "stub"
     cad_backend: str = "stub"
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
+    da3: Da3Config = Field(default_factory=Da3Config)
+    geometry: GeometryConfig = Field(default_factory=GeometryConfig)
 
 
 def load_config(

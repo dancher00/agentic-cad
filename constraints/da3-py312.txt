@@ -1,0 +1,12 @@
+# Exact direct DA3 inference dependencies tested on CPython 3.12 / 2026-08-10.
+# Install the base lock, this file, the cu130 overlay, then the project/source
+# with --no-deps. The pinned source downloader is scripts/fetch_da3_source.py.
+addict==2.4.0
+einops==0.8.2
+evo==1.37.0
+huggingface-hub==0.36.2
+omegaconf==2.3.1
+opencv-python-headless==4.11.0.86
+safetensors==0.8.0
+scipy==1.16.3
+torchvision==0.28.0+cu130

@@ -11,8 +11,10 @@ from rich.console import Console
 from rich.pretty import Pretty
 
 from da3_cad import __version__
+from da3_cad.backends.da3 import da3_license_notice, get_da3_model_spec, require_weight_terms
 from da3_cad.benchmark.smoke import discover_cases, run_smoke_benchmark
 from da3_cad.config import AppConfig, load_config
+from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.pipeline import edit_run, inspect_run, reconstruct
 
@@ -110,6 +112,65 @@ def reconstruct_command(
         raise typer.Exit(1)
     console.print(f"[green]Valid STEP:[/green] {result.step_path}")
     console.print("[yellow]STUB output; not a geometric-quality claim.[/yellow]")
+
+
+@app.command("geometry")
+def geometry_command(
+    input_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
+    output_dir: Annotated[Path, typer.Option("--output", "-o", help="New output directory.")],
+    config: ConfigOption = None,
+    device: DeviceOption = None,
+    seed: SeedOption = None,
+    accept_noncommercial_weights: Annotated[
+        bool,
+        typer.Option(
+            "--accept-noncommercial-weights",
+            help="Accept the displayed NC checkpoint terms for this run.",
+        ),
+    ] = False,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Run real DA3 multi-view depth and emit a fused world point cloud."""
+
+    settings = _config(config, device, seed)
+    try:
+        spec = get_da3_model_spec(settings.da3.checkpoint)
+        console.print(f"[bold]Checkpoint terms:[/bold] {da3_license_notice(spec)}")
+        if settings.depth_backend != f"da3-{spec.key}":
+            raise ValueError("geometry config depth_backend and checkpoint disagree")
+        if dry_run:
+            console.print(
+                Pretty(
+                    {
+                        "command": "geometry",
+                        "input": str(input_dir.resolve()),
+                        "output": str(output_dir.resolve()),
+                        "model": spec.as_dict(),
+                        "config": settings.model_dump(),
+                        "writes": False,
+                    }
+                )
+            )
+            return
+        require_weight_terms(spec, accepted_noncommercial=accept_noncommercial_weights)
+        with console.status("Running pinned DA3 and fusing the real multi-view cloud..."):
+            result = run_geometry(
+                input_dir,
+                output_dir,
+                settings,
+                accepted_noncommercial=accept_noncommercial_weights,
+            )
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Geometry failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(
+        f"[green]Real fused point cloud:[/green] "
+        f"{output_dir / 'artefacts' / 'fused_cloud.ply'} "
+        f"({len(result.cloud.points):,} points)"
+    )
+    console.print(
+        "[yellow]Scale remains unresolved normalized DA3 units; no CAD decoder ran.[/yellow]"
+    )
 
 
 @app.command("inspect")

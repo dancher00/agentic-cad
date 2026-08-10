@@ -33,5 +33,8 @@ sympy==1.14.0
 # Official CPython 3.12 x86_64 wheel SHA-256:
 # 8db7338e6895c3d4bd89a02ff4209507d1f0cf2ffeb3b898538b5a07d1ea8c1e
 torch==2.13.0+cu130
+# Official CPython 3.12 x86-64 wheel SHA-256:
+# 8a0008d34ccc4e81066b97ff0ae5a34c676bfdf3464baf40c01b320dc9a45ce0
+torchvision==0.28.0+cu130
 triton==3.7.1
 typing-extensions==4.15.0
