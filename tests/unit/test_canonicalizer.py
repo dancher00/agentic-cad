@@ -134,6 +134,36 @@ def test_every_stage_is_explicitly_ablatable() -> None:
     assert result.normalization is None
 
 
+def test_exact_preselected_cloud_is_preserved_when_sampling_is_disabled() -> None:
+    source = _plate_cloud()
+    keep = np.arange(256)
+    cloud = FusedPointCloud(
+        points=source.points[keep],
+        colors=source.colors[keep],
+        confidences=source.confidences[keep],
+        view_indices=source.view_indices[keep],
+        pixel_xy=source.pixel_xy[keep],
+        report=source.report,
+        scale=source.scale,
+    )
+    config = CanonicalizerConfig(
+        confidence_enabled=False,
+        outlier_enabled=False,
+        consistency_enabled=False,
+        symmetry_detection_enabled=False,
+        orientation_enabled=False,
+        sampling_enabled=False,
+        normalization_enabled=False,
+    )
+
+    result = PointCloudCanonicalizer(config).run(cloud, seed=5)
+
+    assert np.array_equal(result.decoder_points, cloud.points)
+    sampling = next(stage for stage in result.stages if stage.name == "sampling")
+    assert sampling.report["method"] == "identity-exact-contract"
+    assert not any("stable-index" in warning for warning in result.warnings)
+
+
 def test_canonicalizer_artifacts_contain_exact_decoder_tensor(tmp_path: Path) -> None:
     result = PointCloudCanonicalizer(_config()).run(_plate_cloud(), seed=9)
     output = tmp_path / "canonical"

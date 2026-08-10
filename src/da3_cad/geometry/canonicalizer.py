@@ -391,6 +391,14 @@ class PointCloudCanonicalizer:
                 "input_points": len(state.points),
                 "output_points": config.point_count,
             }
+        elif len(state.points) == config.point_count:
+            sampled_indices = np.arange(config.point_count, dtype=np.int64)
+            sampling_report = {
+                "method": "identity-exact-contract",
+                "reason": "input was already selected to the exact decoder point budget",
+                "input_points": len(state.points),
+                "output_points": config.point_count,
+            }
         else:
             sampled_indices = np.linspace(
                 0, len(state.points) - 1, num=config.point_count, dtype=np.int64
