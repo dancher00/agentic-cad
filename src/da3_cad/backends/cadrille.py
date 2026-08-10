@@ -438,6 +438,8 @@ class CadrilleBackend:
         canonicals: tuple[DecoderPointInput, ...],
         *,
         seeds: tuple[int, ...],
+        preserve_first_candidate: bool = True,
+        max_decode_batch_size: int | None = None,
     ) -> tuple[CadProgram, ...]:
         """Generate a frozen candidate batch with one model load/unload lifecycle."""
 
@@ -445,6 +447,8 @@ class CadrilleBackend:
             raise ValueError("canonicals and seeds must have the same non-zero length")
         if len(set(seeds)) != len(seeds):
             raise ValueError("candidate generation seeds must be unique")
+        if max_decode_batch_size is not None and max_decode_batch_size <= 0:
+            raise ValueError("max_decode_batch_size must be positive when provided")
         random.seed(seeds[0])
         np.random.seed(seeds[0] % (2**32))
         try:
@@ -469,9 +473,17 @@ class CadrilleBackend:
             prepare_point_cloud_prompt(canonical.decoder_points, tokenizer)
             for canonical in canonicals
         ]
-        decode_groups = [individual_batches[:1]]
-        if len(individual_batches) > 1:
-            decode_groups.append(individual_batches[1:])
+        first_group_size = 1 if preserve_first_candidate else len(individual_batches)
+        if max_decode_batch_size is not None:
+            first_group_size = min(first_group_size, max_decode_batch_size)
+        decode_groups = [individual_batches[:first_group_size]]
+        remaining = individual_batches[first_group_size:]
+        if remaining:
+            group_size = max_decode_batch_size or len(remaining)
+            decode_groups.extend(
+                remaining[start : start + group_size]
+                for start in range(0, len(remaining), group_size)
+            )
         model_class = self._model_class_loader()
         model_contract: dict[str, object] = {}
 
@@ -617,6 +629,8 @@ class CadrilleBackend:
                 "do_sample": False,
                 "candidate_count": len(programs),
                 "decode_batch_sizes": [len(group) for group in decode_groups],
+                "preserve_first_candidate": preserve_first_candidate,
+                "max_decode_batch_size": max_decode_batch_size,
                 "max_new_tokens": self.config.max_new_tokens,
                 "use_cache": self.config.use_cache,
                 "attention_implementation": self.config.attn_implementation,

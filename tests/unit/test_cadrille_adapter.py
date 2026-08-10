@@ -185,3 +185,45 @@ def test_backend_generates_candidate_batch_with_one_model_lifecycle(tmp_path) ->
     assert generation["candidate_count"] == 3
     assert generation["decode_batch_sizes"] == [1, 2]
     assert len(generation["candidates"]) == 3  # type: ignore[arg-type]
+
+def test_backend_supports_non_candidate_microbatches(tmp_path) -> None:
+    base = np.linspace(-1.0, 1.0, 256 * 3, dtype=np.float32).reshape(256, 3)
+    canonicals = tuple(
+        SimpleNamespace(decoder_points=np.roll(base, shift, axis=0))
+        for shift in range(5)
+    )
+    backend = CadrilleBackend(
+        CadrilleConfig(
+            checkpoint="sft",
+            cache_dir=tmp_path,
+            local_files_only=True,
+            max_new_tokens=32,
+        ),
+        accepted_license=CADRILLE_LICENSE_ACCEPTANCE,
+        device="cpu",
+        model_class_loader=lambda: _FakeModel,
+        tokenizer_loader=lambda _cache, _local: _FakeTokenizer(),
+        checkpoint_verifier=lambda *_args, **_kwargs: {
+            "sha256": get_cadrille_model_spec("sft").weight_sha256,
+            "sha256_verified": True,
+        },
+    )
+    _FakeModel.load_count = 0
+    _FakeModel.generate_batch_sizes = []
+
+    programs = backend.generate_many(
+        canonicals,  # type: ignore[arg-type]
+        seeds=(11, 12, 13, 14, 15),
+        preserve_first_candidate=False,
+        max_decode_batch_size=2,
+    )
+
+    assert len(programs) == 5
+    assert _FakeModel.load_count == 1
+    assert _FakeModel.generate_batch_sizes == [2, 2, 1]
+    assert backend.last_runtime_report is not None
+    generation = backend.last_runtime_report["generation"]
+    assert isinstance(generation, dict)
+    assert generation["decode_batch_sizes"] == [2, 2, 1]
+    assert generation["preserve_first_candidate"] is False
+    assert generation["max_decode_batch_size"] == 2
