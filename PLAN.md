@@ -679,6 +679,30 @@ resample or pad, and leaves rank-one neighborhoods unchanged with provenance.
 Failure of any check stops the sequence before quadrics, area resampling, axis
 hypotheses, pilot reruns or the long campaign.
 
+### 7.6 Local plane projection stop
+
+The 16-neighbor projection was measured on all 74 frozen pairs from clean
+commit `fd22fe7`; all 18,944 selected points produced valid exact-size outputs
+and no local neighborhood was degenerate. In the GT-axis-oracle frame, median
+precision @.05 remained exactly 0.30078125, median absolute normal residual
+changed from 0.08904997 to 0.08905701 (1.000079x), and diagnostic sampled
+Chamfer changed from 99.54736 to 99.54538 (0.999980x). The gate fails precision
+and normal residual.
+
+The operation's record-median displacement was only 1.5118e-5 of the raw
+cloud's largest bbox extent. Sixty-six of 74 records had identical @.05
+precision; five improved and three worsened. N=16 was unchanged, while N=4's
+median gain was only 0.005859. The emitted and axis-oracle working scopes also
+remain exactly 5/74 and 14/74 records. This supports the narrow conclusion that
+projection onto a plane estimated from the same smooth, coherently offset DA3
+surface cannot identify that offset. It does not rule out surface models with
+independent multi-view evidence.
+
+Per the frozen stop gate, quadrics, area resampling, axis hypotheses, pilot
+reruns and the long campaign remain unexecuted. See
+`docs/SURFACE_FITTING_ABLATION.md` and
+`benchmarks/canonicalizer_precision_ablation/step2_local_plane.json`.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
