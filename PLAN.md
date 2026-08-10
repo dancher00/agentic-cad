@@ -417,8 +417,9 @@ Implement the evaluator before long runs, as specified in section 6. Then add:
 - deterministic dataset download/verification manifests;
 - fixed, committed DeepCAD/Fusion subset IDs selected by a seed and a documented
   hash rule, not geometry quality;
-- a deterministic maximum-16-view renderer with nested, well-separated camera
-  subsets for `N={1,2,4,8,16}`;
+- a deterministic maximum-32-view renderer with nested, well-separated camera
+  subsets for `N={1,2,4,8,16,24,32}`; the original 16-view prefix remains
+  literal and N=24/32 are initially limited to the bounded high-view diagnostic;
 - normal and hard render profiles, with all perturbations derived from the item
   seed;
 - resumable stage caches keyed by code SHA, config hash, checkpoint revision,
@@ -538,9 +539,11 @@ specification.
   seeded hashing and committed before inference. It is run only at the selected
   best view count.
 - View-count subset: 90 DeepCAD + 60 Fusion360 items, nested within the headline
-  subset. Sweep `N={1,2,4,8,16}` on these 150 items. Render a deterministic
-  16-view master schedule once and choose nested max-min angular subsets so
-  adding views does not replace earlier evidence.
+  subset. The deferred campaign remains `N={1,2,4,8,16}`. The bounded pilot
+  diagnostic additionally measures `N={24,32}` on its same 20 objects. Render
+  a deterministic 32-view master schedule once and choose nested max-min angular
+  prefixes so adding views does not replace earlier evidence; the published
+  first 16 camera angles and render hashes are an explicit compatibility gate.
 - Hard subset: a separately committed 60 DeepCAD + 40 Fusion360 sample with the
   same selection rule; fixed clutter, lighting, blur, JPEG and focal jitter.
 - Primary neural rows: DA3-LARGE -> full canonicalizer -> cadrille-RL, reported
@@ -796,6 +799,25 @@ oracle is not a GT-blind product correction. The immutable report SHA-256 is
 `dac2f2fb617adb99167ea8c77dc068dc40c5e91bbc2f7ffe55f3f0c423c83569`.
 The scientific branch is now closed as required; see
 `docs/PER_VIEW_DEPTH_ORACLE.md`.
+
+### 7.10 Reopened bounded high-view and GT-blind diagnostics
+
+The later authorization reopens only two linked measurements, not the long
+campaign. First, extend the same 20-object pilot to N=24/32 with a literal
+16-view schedule prefix and compare uncalibrated, exact-pose and exact-pose plus
+GT-only per-view-affine rows. Median paired axis-oracle precision@.05 gains of
+0.05 are material; a 24-to-32 gain below 0.03 marks a plateau at 24, while a
+gain of at least 0.03 leaves the upper bound unmeasured. Planned failures and
+allocated/reserved N=32 VRAM are explicit. The complete preregistration is
+`docs/HIGH_VIEW_SWEEP_PROTOCOL.md`.
+
+Second, implement exactly two deterministic, GT-blind per-view affine-depth
+consistency objectives before fusion. Fix view zero to identity, retain
+scale/shift bounds and compare fitted parameters directly with gauge-normalized
+GT-oracle coefficients at N={8,16,24,32} before inspecting precision. Parameter
+fidelity, not precision, chooses at most one criterion for the product-path
+N=8 evaluation. If its uncalibrated precision@.05 is below 0.30, stop rather
+than search more losses. README and the 150-object campaign remain untouched.
 
 ## 8. Licensing and acquisition behavior
 

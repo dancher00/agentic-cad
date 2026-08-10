@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Render committed split IDs into content-addressed 16-view masters."""
+"""Render committed split IDs into content-addressed 32-view masters."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import subprocess
 import time
 from pathlib import Path
 
 from da3_cad.benchmark.cache import StageCache, StageKey, repository_commit
+from da3_cad.benchmark.cameras import MASTER_VIEW_COUNT
 from da3_cad.benchmark.datasets import (
     DATASETS,
     load_selected_mesh_manifest,
@@ -22,6 +24,18 @@ from da3_cad.benchmark.splits import item_seed, read_split
 def _digest(payload: dict[str, object]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _clean_repository(root: Path) -> None:
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    if status.strip():
+        raise ValueError("benchmark rendering requires a clean repository")
 
 
 def main() -> int:
@@ -38,6 +52,7 @@ def main() -> int:
     parser.add_argument("--image-size", type=int, default=504)
     args = parser.parse_args()
 
+    _clean_repository(Path.cwd())
     config = RenderConfig(image_size=args.image_size, profile=args.profile)
     config_payload = config.as_dict()
     config_sha = _digest(config_payload)
@@ -70,7 +85,7 @@ def main() -> int:
                 repository_commit=commit,
                 config_sha256=config_sha,
                 checkpoint_revisions=(),
-                view_count=16,
+                view_count=MASTER_VIEW_COUNT,
             )
             output = args.output_root / "renders" / dataset / item_id_value / key.digest
             cached = cache.load(key)

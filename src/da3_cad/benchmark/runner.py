@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 import numpy as np
 
+from da3_cad.benchmark.cameras import VIEW_COUNTS
 from da3_cad.evaluation.aggregate import aggregate_metrics
 from da3_cad.evaluation.cadrille_reference import (
     run_reference_repeats,
@@ -70,8 +71,9 @@ class BenchmarkRunManifest:
     def __post_init__(self) -> None:
         if not self.item_ids or len(set(self.item_ids)) != len(self.item_ids):
             raise ValueError("benchmark manifest IDs must be unique and non-empty")
-        if self.view_count not in (1, 2, 4, 8, 16):
-            raise ValueError("benchmark view count must be one of 1,2,4,8,16")
+        if self.view_count not in VIEW_COUNTS:
+            allowed = ",".join(str(value) for value in VIEW_COUNTS)
+            raise ValueError(f"benchmark view count must be one of {allowed}")
         expected = 1 if self.candidate_row == "single-decode" else 10
         if self.candidate_count != expected:
             raise ValueError("candidate row and frozen candidate count disagree")

@@ -14,7 +14,12 @@ import numpy as np
 import trimesh
 from PIL import Image, ImageDraw, ImageFilter
 
-from da3_cad.benchmark.cameras import MASTER_VIEW_COUNT, Camera, master_schedule
+from da3_cad.benchmark.cameras import (
+    MASTER_VIEW_COUNT,
+    VIEW_COUNTS,
+    Camera,
+    master_schedule,
+)
 from da3_cad.evaluation.mesh import TessellationConfig, load_mesh
 from da3_cad.models import FloatArray
 
@@ -216,7 +221,7 @@ def render_item(
         "input_mesh_sha256": _sha256(mesh_path),
         "config": settings.as_dict(),
         "camera_schedule": view_records,
-        "nested_subsets": {str(count): list(range(count)) for count in (1, 2, 4, 8, 16)},
+        "nested_subsets": {str(count): list(range(count)) for count in VIEW_COUNTS},
         "reconstruction_input": "views/ only",
         "gt_camera_metadata_withheld": True,
         "gt_masks_withheld": True,
@@ -229,8 +234,9 @@ def render_item(
 
 
 def materialize_view_subset(master_views: Path, output_dir: Path, count: int) -> tuple[Path, ...]:
-    if count not in (1, 2, 4, 8, 16):
-        raise ValueError("view count must be one of 1,2,4,8,16")
+    if count not in VIEW_COUNTS:
+        allowed = ",".join(str(value) for value in VIEW_COUNTS)
+        raise ValueError(f"view count must be one of {allowed}")
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError(f"view subset directory is not empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)

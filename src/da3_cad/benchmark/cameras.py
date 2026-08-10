@@ -9,8 +9,29 @@ import numpy as np
 
 from da3_cad.models import FloatArray
 
-VIEW_COUNTS = (1, 2, 4, 8, 16)
-MASTER_VIEW_COUNT = 16
+VIEW_COUNTS = (1, 2, 4, 8, 16, 24, 32)
+MASTER_VIEW_COUNT = 32
+
+# This prefix was published by the original 16-view protocol. Keep it literal:
+# extending the master schedule must never replace earlier camera evidence.
+LEGACY_16_ANGLES = (
+    (45.0, 27.5),
+    (225.0, -27.5),
+    (135.0, 0.0),
+    (315.0, 0.0),
+    (45.0, -55.0),
+    (225.0, 55.0),
+    (292.5, -55.0),
+    (112.5, 55.0),
+    (157.5, -55.0),
+    (337.5, 55.0),
+    (0.0, 0.0),
+    (90.0, 0.0),
+    (180.0, 0.0),
+    (270.0, 0.0),
+    (112.5, -27.5),
+    (157.5, 27.5),
+)
 
 
 def _direction(azimuth_deg: float, elevation_deg: float) -> FloatArray:
@@ -52,6 +73,8 @@ def _master_angles() -> tuple[tuple[float, float], ...]:
 
 
 MASTER_ANGLES = _master_angles()
+if MASTER_ANGLES[: len(LEGACY_16_ANGLES)] != LEGACY_16_ANGLES:
+    raise RuntimeError("32-view schedule changed the frozen 16-view prefix")
 
 
 @dataclass(frozen=True, slots=True)

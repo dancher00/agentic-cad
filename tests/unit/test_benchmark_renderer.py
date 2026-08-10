@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from da3_cad.benchmark.cameras import (
+    LEGACY_16_ANGLES,
     MASTER_ANGLES,
     master_schedule,
     minimum_pairwise_angle_degrees,
@@ -16,13 +17,15 @@ from da3_cad.benchmark.renderer import RenderConfig, materialize_view_subset, re
 
 def test_camera_schedule_is_nested_and_well_separated() -> None:
     cameras = master_schedule(image_size=128)
-    assert len(cameras) == 16
-    assert len(set(MASTER_ANGLES)) == 16
-    for count in (1, 2, 4, 8, 16):
+    assert len(cameras) == 32
+    assert len(set(MASTER_ANGLES)) == 32
+    assert MASTER_ANGLES[:16] == LEGACY_16_ANGLES
+    for count in (1, 2, 4, 8, 16, 24, 32):
         assert [camera.index for camera in cameras[:count]] == list(range(count))
     assert minimum_pairwise_angle_degrees(cameras[:2]) > 140.0
     assert minimum_pairwise_angle_degrees(cameras[:4]) > 75.0
-    assert minimum_pairwise_angle_degrees(cameras) > 25.0
+    assert minimum_pairwise_angle_degrees(cameras[:16]) > 25.0
+    assert minimum_pairwise_angle_degrees(cameras) > 20.0
     for camera in cameras:
         assert camera.intrinsics.shape == (3, 3)
         assert camera.world_to_camera.shape == (4, 4)
@@ -70,10 +73,14 @@ def test_renderer_is_repeatable_and_keeps_gt_masks_outside_views(tmp_path: Path)
         config=config,
     )
     assert first_report["camera_schedule"] == second_report["camera_schedule"]
-    assert len(tuple((first / "views").glob("*.png"))) == 16
-    assert len(tuple((first / "gt_masks_not_for_reconstruction").glob("*.png"))) == 16
+    assert len(tuple((first / "views").glob("*.png"))) == 32
+    assert len(tuple((first / "gt_masks_not_for_reconstruction").glob("*.png"))) == 32
     assert not any("mask" in path.name for path in (first / "views").iterdir())
 
     subset = tmp_path / "n4"
     paths = materialize_view_subset(first / "views", subset, 4)
     assert [path.name for path in paths] == [f"view_{index:03d}.png" for index in range(4)]
+
+    subset_24 = tmp_path / "n24"
+    paths_24 = materialize_view_subset(first / "views", subset_24, 24)
+    assert len(paths_24) == 24

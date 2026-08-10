@@ -51,13 +51,18 @@ python scripts/download_benchmark_meshes.py \
   --accept-noncommercial-terms
 ```
 
-The CPU renderer creates one deterministic 16-view perspective master. Its
-greedy max-min angular schedule has nested prefixes for N={1,2,4,8,16}; adding
-a view never replaces prior evidence. `normal` uses a fixed neutral background
+The CPU renderer creates one deterministic 32-view perspective master. Its
+greedy max-min angular schedule has nested prefixes for
+N={1,2,4,8,16,24,32}; adding a view never replaces prior evidence, and the
+original 16 camera angles remain a literal compatibility prefix. `normal` uses a fixed neutral background
 and varied deterministic lighting. `hard` derives clutter, ±20% focal jitter,
 blur, JPEG quality, lighting and material colour solely from the per-item seed.
 GT camera matrices and masks are written outside `views/` and are marked
 withheld from reconstruction.
+
+The committed Phase D campaign remains frozen at N through 16. N=24/32 are a
+separate 20-object diagnostic governed by `docs/HIGH_VIEW_SWEEP_PROTOCOL.md`;
+they are not silently added to the 150-object campaign.
 
 ```bash
 python scripts/render_benchmark_subset.py \
