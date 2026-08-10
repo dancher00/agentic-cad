@@ -819,6 +819,19 @@ fidelity, not precision, chooses at most one criterion for the product-path
 N=8 evaluation. If its uncalibrated precision@.05 is below 0.30, stop rather
 than search more losses. README and the 150-object campaign remain untouched.
 
+The high-view extension completed from preregistration commit `fa0a853` in
+1,921 seconds. The first 16 RGB, mask and camera records matched exactly for all
+20 objects. N=24 and N=32 each have 19/20 complete records; both explicit
+failures are the same frozen Fusion360 mask failure. On the common 19-object
+set, GT-oracle precision@0.05 was 0.6094, 0.7500, 0.7031 and 0.7344 at
+N=8/16/24/32, with paired adjacent changes +0.0625, -0.0078 and +0.0195.
+The frozen rule therefore returns `non-monotone-no-numeric-capture-threshold`:
+there is no measured plateau or defensible numeric capture recommendation yet.
+N=32 used at most 7.64 GiB allocated and 10.51 GiB reserved CUDA memory, and
+all model tensors were moved off GPU. The immutable report SHA-256 is
+`29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072`;
+see `docs/HIGH_VIEW_SWEEP.md`.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
