@@ -39,6 +39,7 @@ class GeometryConfig(BaseModel):
     segmentation_depth_percentile: float = Field(default=75.0, ge=0.0, le=100.0)
     fusion_confidence_percentile: float = Field(default=40.0, ge=0.0, le=100.0)
     minimum_confidence: float | None = None
+    depth_alignment_criterion: Literal["projected-local-depth", "fixed-local-plane"] | None = None
 
 
 class CanonicalizerConfig(BaseModel):

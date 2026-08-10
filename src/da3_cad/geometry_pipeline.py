@@ -12,6 +12,7 @@ from da3_cad.backends.da3 import Da3Backend, da3_license_notice
 from da3_cad.config import AppConfig
 from da3_cad.geometry.diagnostics import write_geometry_diagnostics
 from da3_cad.geometry.fusion import FusedPointCloud, fuse_prediction
+from da3_cad.geometry.multiview_depth_alignment import align_multiview_depths
 from da3_cad.geometry.unprojection import (
     as_homogeneous_extrinsic,
     unprojection_roundtrip_errors,
@@ -98,8 +99,19 @@ def run_geometry(
             confidence_percentile=config.geometry.segmentation_confidence_percentile,
             depth_percentile=config.geometry.segmentation_depth_percentile,
         )
+    alignment_report: dict[str, object] = {"status": "disabled"}
+    fusion_prediction = prediction
+    if config.geometry.depth_alignment_criterion is not None:
+        alignment = align_multiview_depths(
+            prediction,
+            segmentation.masks,
+            criterion=config.geometry.depth_alignment_criterion,
+            seed=config.seed,
+        )
+        fusion_prediction = alignment.prediction
+        alignment_report = alignment.report
     cloud = fuse_prediction(
-        prediction,
+        fusion_prediction,
         segmentation.masks,
         mask_source=segmentation.backend,
         confidence_percentile=config.geometry.fusion_confidence_percentile,
@@ -107,31 +119,51 @@ def run_geometry(
         require_confidence=True,
         extrinsic_convention="world_to_camera",
     )
-    write_geometry_diagnostics(output_dir / "artefacts", prediction, segmentation.masks, cloud)
+    write_geometry_diagnostics(
+        output_dir / "artefacts",
+        fusion_prediction,
+        segmentation.masks,
+        cloud,
+    )
 
-    confidence = prediction.confidence
+    confidence = fusion_prediction.confidence
     if confidence is None:
         raise RuntimeError("validated DA3 prediction unexpectedly lost confidence")
-    np.savez_compressed(
-        output_dir / "artefacts" / "camera_prediction.npz",
-        depth=prediction.depth,
-        confidence=confidence,
-        intrinsics=prediction.intrinsics,
-        extrinsics=prediction.extrinsics,
-        masks=segmentation.masks,
-    )
+    if config.geometry.depth_alignment_criterion is not None:
+        _write_json(
+            output_dir / "artefacts" / "depth_alignment_report.json",
+            alignment_report,
+        )
+        np.savez_compressed(
+            output_dir / "artefacts" / "camera_prediction.npz",
+            depth=fusion_prediction.depth,
+            confidence=confidence,
+            intrinsics=fusion_prediction.intrinsics,
+            extrinsics=fusion_prediction.extrinsics,
+            masks=segmentation.masks,
+            raw_depth_before_alignment=prediction.depth,
+        )
+    else:
+        np.savez_compressed(
+            output_dir / "artefacts" / "camera_prediction.npz",
+            depth=fusion_prediction.depth,
+            confidence=confidence,
+            intrinsics=fusion_prediction.intrinsics,
+            extrinsics=fusion_prediction.extrinsics,
+            masks=segmentation.masks,
+        )
     if backend.last_runtime_report is None or backend.last_lifecycle is None:
         raise RuntimeError("DA3 backend did not produce its required runtime report")
 
     cloud_bounds = np.stack((cloud.points.min(axis=0), cloud.points.max(axis=0)))
     roundtrips = [
         unprojection_roundtrip_errors(
-            prediction.depth[index],
-            prediction.intrinsics[index],
-            prediction.extrinsics[index],
+            fusion_prediction.depth[index],
+            fusion_prediction.intrinsics[index],
+            fusion_prediction.extrinsics[index],
             convention="world_to_camera",
         )
-        for index in range(prediction.depth.shape[0])
+        for index in range(fusion_prediction.depth.shape[0])
     ]
     report: dict[str, object] = {
         "schema_version": "1.0",
@@ -154,13 +186,14 @@ def run_geometry(
             "extrinsics": "world-to-camera; adapter accepts and validates N×3×4 or N×4×4",
             "pixel_coordinates": "integer u=0..W-1, v=0..H-1 as in pinned exporter",
         },
-        "runtime_pose_validation": _pose_report(prediction),
+        "runtime_pose_validation": _pose_report(fusion_prediction),
         "runtime_unprojection_roundtrip": roundtrips,
         "segmentation": {
             "backend": segmentation.backend,
             "selected_pixels": [int(mask.sum()) for mask in segmentation.masks],
             "warnings": list(segmentation.warnings),
         },
+        "depth_alignment": alignment_report,
         "fusion": cloud.report.as_dict(),
         "cloud": {
             "point_count": int(len(cloud.points)),
@@ -178,12 +211,17 @@ def run_geometry(
             "artefacts/fused_cloud.npz",
             "artefacts/fused_cloud.ply",
             "artefacts/fusion_report.json",
+            *(
+                ["artefacts/depth_alignment_report.json"]
+                if config.geometry.depth_alignment_criterion is not None
+                else []
+            ),
         ],
     }
     _write_json(output_dir / "geometry_report.json", report)
     return GeometryRunResult(
         output_dir=output_dir,
         cloud=cloud,
-        prediction=prediction,
+        prediction=fusion_prediction,
         report=report,
     )
