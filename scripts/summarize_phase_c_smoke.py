@@ -13,6 +13,7 @@ from da3_cad.benchmark.phase_c_smoke import build_phase_c_smoke_summary
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reconstruction", type=Path, required=True)
+    parser.add_argument("--edited-reconstruction", type=Path, required=True)
     parser.add_argument("--checkpoints", type=Path, required=True)
     parser.add_argument(
         "--output",
@@ -28,6 +29,7 @@ def main() -> None:
     ).stdout.strip()
     payload = build_phase_c_smoke_summary(
         reconstruction_dir=args.reconstruction,
+        edited_reconstruction_dir=args.edited_reconstruction,
         checkpoint_report_path=args.checkpoints,
         repository_commit=commit,
     )

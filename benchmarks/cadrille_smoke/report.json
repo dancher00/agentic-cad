@@ -1,0 +1,1233 @@
+{
+  "checkpoint_smoke": {
+    "input": {
+      "coordinate_space": "[-1,1]^3 isotropic bbox",
+      "dtype": "float32",
+      "maximum": 1.0,
+      "minimum": -1.0,
+      "sha256": "8f56b9153e9131dd3ce1a011eddb1ba9c32d0de368e30ddb1aa9f9c6ca66d89c",
+      "shape": [
+        1,
+        256,
+        3
+      ],
+      "source": "data/phase_c_e2e_rl/artefacts/canonicalizer/decoder_input.npy"
+    },
+    "license": {
+      "accepted": "cc-by-nc-4.0",
+      "weights_redistributed": false
+    },
+    "notes": [
+      "single-cloud compatibility smoke; not reconstruction-quality evidence",
+      "greedy single-candidate generation only",
+      "invalid model output is reported without a geometric fallback"
+    ],
+    "python": "3.12.13 | packaged by Anaconda, Inc. | (main, Jul  9 2026, 14:38:16) [GCC 14.3.0]",
+    "repository_clean_before_report": true,
+    "repository_commit": "6ee52c2fca812a0206ac4dcc7f2f2c8c0b949704",
+    "runs": {
+      "rl": {
+        "artifacts": {
+          "editable_source": "data/cadrille_checkpoint_smoke/rl/parameterized.py",
+          "parameterized_exports": "data/cadrille_checkpoint_smoke/rl/parameterized",
+          "raw_clean_source": "data/cadrille_checkpoint_smoke/rl/raw_clean.py",
+          "raw_exports": "data/cadrille_checkpoint_smoke/rl/raw",
+          "raw_transport": "data/cadrille_checkpoint_smoke/rl/raw_transport.txt"
+        },
+        "backend": "cadrille-point-cloud-rl",
+        "fallback_used": false,
+        "is_benchmark_result": false,
+        "parameter_count": 59,
+        "parameterization_geometry": {
+          "absolute_tolerance": 1e-09,
+          "bbox_max_absolute_difference": 0.0,
+          "equivalent": true,
+          "parameterized_valid": true,
+          "raw_valid": true,
+          "relative_tolerance": 1e-09,
+          "status": "equivalent",
+          "volume_absolute_difference": 0.0
+        },
+        "parameterized_validation": {
+          "bbox": [
+            -100.0,
+            -42.0,
+            -12.0,
+            100.0,
+            42.00000000000001,
+            13.0
+          ],
+          "details": {
+            "limits": {
+              "cpu_seconds": 30,
+              "memory_limit_mb": 8192,
+              "wall_seconds": 45
+            },
+            "stage": "complete",
+            "worker_returncode": 0
+          },
+          "error": null,
+          "execution_seconds": 0.6813310559373349,
+          "step_path": "model.step",
+          "stl_path": "model.stl",
+          "valid": true,
+          "volume": 9849.125
+        },
+        "raw_validation": {
+          "bbox": [
+            -100.0,
+            -42.0,
+            -12.0,
+            100.0,
+            42.00000000000001,
+            13.0
+          ],
+          "details": {
+            "limits": {
+              "cpu_seconds": 30,
+              "memory_limit_mb": 8192,
+              "wall_seconds": 45
+            },
+            "stage": "complete",
+            "worker_returncode": 0
+          },
+          "error": null,
+          "execution_seconds": 0.6837223219918087,
+          "step_path": "model.step",
+          "stl_path": "model.stl",
+          "valid": true,
+          "volume": 9849.125
+        },
+        "runtime": {
+          "checkpoint_file": {
+            "acquisition_and_hash_seconds": 1.6888966009719297,
+            "bytes": 4418370528,
+            "path": "data/hf/models--maksimko123--cadrille-rl/snapshots/712489b5890a0ce81b18cf441e14b2ed2eadc02a/model.safetensors",
+            "sha256": "f4e9e8873cfde47084b8d2f26e95822b64664537147ee3188a85cfdd5d17553f",
+            "sha256_verified": true
+          },
+          "generation": {
+            "attention_implementation": "sdpa",
+            "do_sample": false,
+            "max_new_tokens": 768,
+            "parameterization": {
+              "geometry_claim": "AST literals rewritten only; validate equivalence in sandbox",
+              "mode": "ast-literal-lift",
+              "original_sha256": "a7c719613de77d10be1b0e342e8b80211b8e4bdc87c5bae79455997e667d55d7",
+              "parameter_count": 59,
+              "parameterized_sha256": "568790e6443c00ce754a4a2119a79f31a32c3faa28009ec1a58fa3585117088d",
+              "parameters": [
+                "workplane_1_origin_x",
+                "workplane_1_origin_y",
+                "workplane_1_origin_z",
+                "workplane_2_origin_x",
+                "workplane_2_origin_y",
+                "workplane_2_origin_z",
+                "workplane_1_offset",
+                "moveto_1_x",
+                "moveto_1_y",
+                "box_1_length",
+                "box_1_width",
+                "box_1_height",
+                "segment_1_start_x",
+                "segment_1_start_y",
+                "segment_1_end_x",
+                "segment_1_end_y",
+                "segment_2_end_x",
+                "segment_2_end_y",
+                "segment_3_end_x",
+                "segment_3_end_y",
+                "segment_4_end_x",
+                "segment_4_end_y",
+                "segment_5_end_x",
+                "segment_5_end_y",
+                "segment_6_end_x",
+                "segment_6_end_y",
+                "extrude_1_distance",
+                "segment_7_start_x",
+                "segment_7_start_y",
+                "segment_7_end_x",
+                "segment_7_end_y",
+                "segment_8_end_x",
+                "segment_8_end_y",
+                "segment_9_end_x",
+                "segment_9_end_y",
+                "segment_10_end_x",
+                "segment_10_end_y",
+                "segment_11_end_x",
+                "segment_11_end_y",
+                "segment_12_end_x",
+                "segment_12_end_y",
+                "segment_13_end_x",
+                "segment_13_end_y",
+                "extrude_2_distance",
+                "segment_14_start_x",
+                "segment_14_start_y",
+                "segment_14_end_x",
+                "segment_14_end_y",
+                "segment_15_end_x",
+                "segment_15_end_y",
+                "segment_16_end_x",
+                "segment_16_end_y",
+                "segment_17_end_x",
+                "segment_17_end_y",
+                "segment_18_end_x",
+                "segment_18_end_y",
+                "segment_19_end_x",
+                "segment_19_end_y",
+                "extrude_3_distance"
+              ],
+              "rewritten_calls": [
+                "Workplane#1",
+                "Workplane#2",
+                "workplane#1",
+                "moveTo#1",
+                "box#1",
+                "segment#1",
+                "segment#2",
+                "segment#3",
+                "segment#4",
+                "segment#5",
+                "segment#6",
+                "extrude#1",
+                "segment#7",
+                "segment#8",
+                "segment#9",
+                "segment#10",
+                "segment#11",
+                "segment#12",
+                "segment#13",
+                "extrude#2",
+                "segment#14",
+                "segment#15",
+                "segment#16",
+                "segment#17",
+                "segment#18",
+                "segment#19",
+                "extrude#3"
+              ]
+            },
+            "raw_text_sha256": "631083bf13d4d11e01110cd9d838b2b43949e87ea6bb062d66e45445ee7a54d4",
+            "seed": 20260810,
+            "source_sha256": "568790e6443c00ce754a4a2119a79f31a32c3faa28009ec1a58fa3585117088d",
+            "strategy": "greedy",
+            "use_cache": true
+          },
+          "input": {
+            "coordinate_space": "[-1,1]^3 isotropic bbox",
+            "dtype": "float32",
+            "sha256": "8f56b9153e9131dd3ce1a011eddb1ba9c32d0de368e30ddb1aa9f9c6ca66d89c",
+            "shape": [
+              1,
+              256,
+              3
+            ]
+          },
+          "lifecycle": {
+            "baseline_allocated_bytes": 33554432,
+            "baseline_reserved_bytes": 33554432,
+            "compiled_architectures": [
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90",
+              "sm_100",
+              "sm_120"
+            ],
+            "compute_capability": [
+              12,
+              0
+            ],
+            "cuda_buffers_after_cpu_transfer": 0,
+            "cuda_parameters_after_cpu_transfer": 0,
+            "cuda_version": "13.0",
+            "device_free_bytes_at_start": 15634333696,
+            "device_name": "NVIDIA GeForce RTX 5080",
+            "device_total_bytes": 16600465408,
+            "inference_seconds": 2.2758540079230443,
+            "load_seconds": 0.0337285689311102,
+            "model_parameter_bytes": 4418290688,
+            "model_parameters": 2209065472,
+            "model_tensors_off_cuda": true,
+            "peak_allocated_bytes": 4549127680,
+            "peak_reserved_bytes": 4901044224,
+            "post_unload_allocated_bytes": 33554432,
+            "post_unload_reserved_bytes": 33554432,
+            "requested_device": "cuda",
+            "resolved_device": "cuda",
+            "torch_version": "2.13.0+cu130",
+            "transfer_seconds": 0.23158806201536208,
+            "unload_returned_to_baseline": true,
+            "unload_seconds": 1.0313570300349966
+          },
+          "model": {
+            "key": "rl",
+            "license": "CC BY-NC 4.0",
+            "model_id": "maksimko123/cadrille-rl",
+            "processor_id": "Qwen/Qwen2-VL-2B-Instruct",
+            "processor_revision": "895c3a49bc3fa70a340399125c650a463535e71c",
+            "revision": "712489b5890a0ce81b18cf441e14b2ed2eadc02a",
+            "source_revision": "338db111a1612e8e3a61309f71db138c09474eec",
+            "source_url": "https://github.com/col14m/cadrille",
+            "weight_bytes": 4418370528,
+            "weight_sha256": "f4e9e8873cfde47084b8d2f26e95822b64664537147ee3188a85cfdd5d17553f"
+          },
+          "processor": {
+            "model_id": "Qwen/Qwen2-VL-2B-Instruct",
+            "revision": "895c3a49bc3fa70a340399125c650a463535e71c"
+          },
+          "runtime_model_contract": {
+            "attention_implementation": "sdpa",
+            "generation_eos_token_id": [
+              151645,
+              151643
+            ],
+            "generation_pad_token_id": 151643,
+            "input_embedding_dtype": "torch.bfloat16",
+            "point_encoder_dtype": "torch.float32"
+          }
+        },
+        "status": "valid-solid",
+        "template_id": "cadrille-rl-greedy",
+        "total_generate_seconds": 5.39633901801426,
+        "warnings": [
+          "checkpoint weights are CC BY-NC 4.0; non-commercial research use",
+          "output scale is normalized unless a separate scale channel is applied",
+          "named parameter table source: ast-literal-lift",
+          "neural program was not replaced by the geometric fallback"
+        ]
+      },
+      "sft": {
+        "artifacts": {
+          "editable_source": "data/cadrille_checkpoint_smoke/sft/parameterized.py",
+          "parameterized_exports": "data/cadrille_checkpoint_smoke/sft/parameterized",
+          "raw_clean_source": "data/cadrille_checkpoint_smoke/sft/raw_clean.py",
+          "raw_exports": "data/cadrille_checkpoint_smoke/sft/raw",
+          "raw_transport": "data/cadrille_checkpoint_smoke/sft/raw_transport.txt"
+        },
+        "backend": "cadrille-point-cloud-sft",
+        "fallback_used": false,
+        "is_benchmark_result": false,
+        "parameter_count": 79,
+        "parameterization_geometry": {
+          "absolute_tolerance": 1e-09,
+          "equivalent": null,
+          "parameterized_valid": false,
+          "raw_valid": false,
+          "relative_tolerance": 1e-09,
+          "status": "both-invalid-not-comparable"
+        },
+        "parameterized_validation": {
+          "bbox": null,
+          "details": {
+            "stage": "validation",
+            "stderr": "",
+            "stdout": ""
+          },
+          "error": "ValueError: program did not produce a valid CadQuery solid",
+          "execution_seconds": 0.6713542110519484,
+          "step_path": null,
+          "stl_path": null,
+          "valid": false,
+          "volume": null
+        },
+        "raw_validation": {
+          "bbox": null,
+          "details": {
+            "stage": "validation",
+            "stderr": "",
+            "stdout": ""
+          },
+          "error": "ValueError: program did not produce a valid CadQuery solid",
+          "execution_seconds": 0.6713888910599053,
+          "step_path": null,
+          "stl_path": null,
+          "valid": false,
+          "volume": null
+        },
+        "runtime": {
+          "checkpoint_file": {
+            "acquisition_and_hash_seconds": 1.6868699740152806,
+            "bytes": 4418370528,
+            "path": "data/hf/models--maksimko123--cadrille/snapshots/2f422d1169e4362e2288b0e0f54bb3a2b504e0f9/model.safetensors",
+            "sha256": "234480bde9b756ad6282b23fd5aed822205da98bcecb3db8c800a189471f16a4",
+            "sha256_verified": true
+          },
+          "generation": {
+            "attention_implementation": "sdpa",
+            "do_sample": false,
+            "max_new_tokens": 768,
+            "parameterization": {
+              "geometry_claim": "AST literals rewritten only; validate equivalence in sandbox",
+              "mode": "ast-literal-lift",
+              "original_sha256": "32ca217fa529dd95bd3da9fd92c9b711ca36e658a9e632f05597fee675c5b1eb",
+              "parameter_count": 79,
+              "parameterized_sha256": "44f033dd73e4998c1841134309b8a7d82dcbd2d2546db4cfcd2640510c6f6bef",
+              "parameters": [
+                "workplane_1_origin_x",
+                "workplane_1_origin_y",
+                "workplane_1_origin_z",
+                "workplane_2_origin_x",
+                "workplane_2_origin_y",
+                "workplane_2_origin_z",
+                "segment_1_start_x",
+                "segment_1_start_y",
+                "segment_1_end_x",
+                "segment_1_end_y",
+                "segment_2_end_x",
+                "segment_2_end_y",
+                "arc_1_mid_x",
+                "arc_1_mid_y",
+                "arc_1_end_x",
+                "arc_1_end_y",
+                "segment_3_end_x",
+                "segment_3_end_y",
+                "segment_4_end_x",
+                "segment_4_end_y",
+                "segment_5_end_x",
+                "segment_5_end_y",
+                "arc_2_mid_x",
+                "arc_2_mid_y",
+                "arc_2_end_x",
+                "arc_2_end_y",
+                "segment_6_end_x",
+                "segment_6_end_y",
+                "arc_3_mid_x",
+                "arc_3_mid_y",
+                "arc_3_end_x",
+                "arc_3_end_y",
+                "segment_7_start_x",
+                "segment_7_start_y",
+                "segment_7_end_x",
+                "segment_7_end_y",
+                "arc_4_mid_x",
+                "arc_4_mid_y",
+                "arc_4_end_x",
+                "arc_4_end_y",
+                "push_1_arg_1_item_1_x",
+                "push_1_arg_1_item_1_y",
+                "circle_1_radius",
+                "extrude_1_distance",
+                "segment_8_start_x",
+                "segment_8_start_y",
+                "segment_8_end_x",
+                "segment_8_end_y",
+                "arc_5_mid_x",
+                "arc_5_mid_y",
+                "arc_5_end_x",
+                "arc_5_end_y",
+                "segment_9_end_x",
+                "segment_9_end_y",
+                "segment_10_end_x",
+                "segment_10_end_y",
+                "segment_11_end_x",
+                "segment_11_end_y",
+                "arc_6_mid_x",
+                "arc_6_mid_y",
+                "arc_6_end_x",
+                "arc_6_end_y",
+                "segment_12_end_x",
+                "segment_12_end_y",
+                "push_2_arg_1_item_1_x",
+                "push_2_arg_1_item_1_y",
+                "circle_2_radius",
+                "extrude_2_distance",
+                "arc_7_start_x",
+                "arc_7_start_y",
+                "arc_7_mid_x",
+                "arc_7_mid_y",
+                "arc_7_end_x",
+                "arc_7_end_y",
+                "arc_8_mid_x",
+                "arc_8_mid_y",
+                "arc_8_end_x",
+                "arc_8_end_y",
+                "extrude_3_distance"
+              ],
+              "rewritten_calls": [
+                "Workplane#1",
+                "Workplane#2",
+                "segment#1",
+                "segment#2",
+                "arc#1",
+                "segment#3",
+                "segment#4",
+                "segment#5",
+                "arc#2",
+                "segment#6",
+                "arc#3",
+                "segment#7",
+                "arc#4",
+                "push#1",
+                "circle#1",
+                "extrude#1",
+                "segment#8",
+                "arc#5",
+                "segment#9",
+                "segment#10",
+                "segment#11",
+                "arc#6",
+                "segment#12",
+                "push#2",
+                "circle#2",
+                "extrude#2",
+                "arc#7",
+                "arc#8",
+                "extrude#3"
+              ]
+            },
+            "raw_text_sha256": "d3ff43c1710a06d22e09f1c8039fa04af1dc91baa8d07363841da87e3b51fda6",
+            "seed": 20260810,
+            "source_sha256": "44f033dd73e4998c1841134309b8a7d82dcbd2d2546db4cfcd2640510c6f6bef",
+            "strategy": "greedy",
+            "use_cache": true
+          },
+          "input": {
+            "coordinate_space": "[-1,1]^3 isotropic bbox",
+            "dtype": "float32",
+            "sha256": "8f56b9153e9131dd3ce1a011eddb1ba9c32d0de368e30ddb1aa9f9c6ca66d89c",
+            "shape": [
+              1,
+              256,
+              3
+            ]
+          },
+          "lifecycle": {
+            "baseline_allocated_bytes": 0,
+            "baseline_reserved_bytes": 0,
+            "compiled_architectures": [
+              "sm_75",
+              "sm_80",
+              "sm_86",
+              "sm_90",
+              "sm_100",
+              "sm_120"
+            ],
+            "compute_capability": [
+              12,
+              0
+            ],
+            "cuda_buffers_after_cpu_transfer": 0,
+            "cuda_parameters_after_cpu_transfer": 0,
+            "cuda_version": "13.0",
+            "device_free_bytes_at_start": 15724511232,
+            "device_name": "NVIDIA GeForce RTX 5080",
+            "device_total_bytes": 16600465408,
+            "inference_seconds": 3.294494057074189,
+            "load_seconds": 0.12100431800354272,
+            "model_parameter_bytes": 4418290688,
+            "model_parameters": 2209065472,
+            "model_tensors_off_cuda": true,
+            "peak_allocated_bytes": 4549127680,
+            "peak_reserved_bytes": 4903141376,
+            "post_unload_allocated_bytes": 33554432,
+            "post_unload_reserved_bytes": 33554432,
+            "requested_device": "cuda",
+            "resolved_device": "cuda",
+            "torch_version": "2.13.0+cu130",
+            "transfer_seconds": 0.2296184750739485,
+            "unload_returned_to_baseline": false,
+            "unload_seconds": 1.0625845530303195
+          },
+          "model": {
+            "key": "sft",
+            "license": "CC BY-NC 4.0",
+            "model_id": "maksimko123/cadrille",
+            "processor_id": "Qwen/Qwen2-VL-2B-Instruct",
+            "processor_revision": "895c3a49bc3fa70a340399125c650a463535e71c",
+            "revision": "2f422d1169e4362e2288b0e0f54bb3a2b504e0f9",
+            "source_revision": "338db111a1612e8e3a61309f71db138c09474eec",
+            "source_url": "https://github.com/col14m/cadrille",
+            "weight_bytes": 4418370528,
+            "weight_sha256": "234480bde9b756ad6282b23fd5aed822205da98bcecb3db8c800a189471f16a4"
+          },
+          "processor": {
+            "model_id": "Qwen/Qwen2-VL-2B-Instruct",
+            "revision": "895c3a49bc3fa70a340399125c650a463535e71c"
+          },
+          "runtime_model_contract": {
+            "attention_implementation": "sdpa",
+            "generation_eos_token_id": [
+              151645,
+              151643
+            ],
+            "generation_pad_token_id": 151643,
+            "input_embedding_dtype": "torch.bfloat16",
+            "point_encoder_dtype": "torch.float32"
+          }
+        },
+        "status": "invalid-solid",
+        "template_id": "cadrille-sft-greedy",
+        "total_generate_seconds": 7.989771418971941,
+        "warnings": [
+          "checkpoint weights are CC BY-NC 4.0; non-commercial research use",
+          "output scale is normalized unless a separate scale channel is applied",
+          "named parameter table source: ast-literal-lift",
+          "neural program was not replaced by the geometric fallback"
+        ]
+      }
+    },
+    "schema_version": "1.0",
+    "seed": 20260810,
+    "status": "real-checkpoint-compatibility-not-quality-benchmark"
+  },
+  "claims": [
+    "one eight-view DA3-LARGE to Cadrille-RL reconstruction produced a valid editable solid",
+    "raw and AST-parameterized RL geometry matched within 1e-9",
+    "editing one named RL parameter produced a different valid solid",
+    "SFT and RL checkpoints loaded and ran on torch 2.13 sm_120 with SDPA",
+    "both Cadrille models transferred every parameter and buffer off CUDA"
+  ],
+  "full_reconstruction": {
+    "canonicalizer": {
+      "decoder_contract": {
+        "channels": [
+          "x",
+          "y",
+          "z"
+        ],
+        "coordinate_space": "[-1,1]^3 isotropic bbox",
+        "dtype": "float32",
+        "finite": true,
+        "shape": [
+          1,
+          256,
+          3
+        ]
+      },
+      "decoder_input_maximum": 1.0,
+      "decoder_input_minimum": -1.0,
+      "decoder_input_sha256": "8f56b9153e9131dd3ce1a011eddb1ba9c32d0de368e30ddb1aa9f9c6ca66d89c",
+      "orientation": {
+        "axes_world_columns": [
+          [
+            0.05798808994758126,
+            -0.6526705243714996,
+            0.7554194649602717
+          ],
+          [
+            0.9971907458857292,
+            0.0019305422624310911,
+            -0.07487916483532749
+          ],
+          [
+            0.04741305457460425,
+            0.7576393994660025,
+            0.6509489554740071
+          ]
+        ],
+        "center_world": [
+          0.012582928431205662,
+          -0.01804121089720614,
+          1.0267102585482155
+        ],
+        "details": {
+          "dominant_plane_iterations": 256,
+          "dominant_plane_median_inlier_residual": 0.0013770619912989298,
+          "dominant_plane_support_fraction": 0.6107196444511975,
+          "dominant_plane_threshold": 0.008683102130889893,
+          "in_plane_variance": [
+            0.018570793846310447,
+            0.0018289628583091566
+          ],
+          "in_plane_variance_ratio": 0.09848598145267365,
+          "pca_eigenvalues": [
+            0.01890740782088722,
+            0.0018403459116765482,
+            0.0005156261975490569
+          ],
+          "provenance_branch_explicit": true,
+          "selected_in_plane_source": "in-plane-pca-major",
+          "selection_rule": "distinct in-plane eigenvalues fix the PCA major axis",
+          "symmetry_candidates": [
+            {
+              "long_extent": 0.5167248242624709,
+              "objective": 0.12581636696317627,
+              "priority": 0,
+              "short_extent": 0.21652638906726188,
+              "source": "in-plane-pca-major",
+              "symmetry_score": 0.1353256087610168
+            },
+            {
+              "long_extent": 0.5167248242624709,
+              "objective": 0.12581636696317627,
+              "priority": 1,
+              "short_extent": 0.21652638906726188,
+              "source": "in-plane-pca-minor:swapped-to-longer-axis",
+              "symmetry_score": 0.1353256087610168
+            },
+            {
+              "long_extent": 0.5167564563990436,
+              "objective": 0.12469296380098721,
+              "priority": 2,
+              "short_extent": 0.21200013628428607,
+              "source": "detected-symmetry-plane:swapped-to-longer-axis",
+              "symmetry_score": 0.13420584855224413
+            }
+          ],
+          "symmetry_vote": {
+            "accepted": true,
+            "candidate_source": "world_x",
+            "evaluated_points": 4096,
+            "normal": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "point": [
+              -0.004345841705799103,
+              -0.08707651868462563,
+              1.1003041863441467
+            ],
+            "score": 0.012069063169449376,
+            "tolerance_fraction": 0.04
+          },
+          "tie_break": "objective rounded to 1e-10, then fixed candidate priority"
+        },
+        "determinant": 1.0000000000000002,
+        "method": "planar-dominance-symmetry",
+        "planar_extent_ratio": 0.13634255343959265,
+        "planar_threshold": 0.2
+      },
+      "scale": {
+        "millimeters_per_unit": null,
+        "reference": null,
+        "source": "none",
+        "status": "unresolved",
+        "units": "normalized",
+        "warning": "no scale evidence; output units are explicitly normalized, not millimetres"
+      }
+    },
+    "da3": {
+      "checkpoint_file": {
+        "acquisition_and_hash_seconds": 0.6292898139217868,
+        "bytes": 1643843860,
+        "filename": "model.safetensors",
+        "sha256": "eaf2ae06df55889ad23eb245c82e2dd2a30c0cbf7e3d873a118fa5ed27a3e421",
+        "sha256_verified": true
+      },
+      "fusion": {
+        "confidence_percentile": 40.0,
+        "confidence_scope": "per-view",
+        "confidence_thresholds": [
+          1.4779701471328734,
+          1.0394186973571777,
+          1.573052167892456,
+          1.0209765434265137,
+          1.0005835056304933,
+          1.0011643409729003,
+          1.00163733959198,
+          1.0010994672775269
+        ],
+        "fused_points": 112900,
+        "mask_source": "border-color-central-component-v1",
+        "require_confidence": true,
+        "views": [
+          {
+            "confidence_selected": 18701,
+            "finite_positive_depth": 78400,
+            "fused": 18701,
+            "mask_selected": 31168,
+            "pixels": 78400,
+            "view_index": 0
+          },
+          {
+            "confidence_selected": 19872,
+            "finite_positive_depth": 78400,
+            "fused": 19872,
+            "mask_selected": 33120,
+            "pixels": 78400,
+            "view_index": 1
+          },
+          {
+            "confidence_selected": 18292,
+            "finite_positive_depth": 78400,
+            "fused": 18292,
+            "mask_selected": 30486,
+            "pixels": 78400,
+            "view_index": 2
+          },
+          {
+            "confidence_selected": 19836,
+            "finite_positive_depth": 78400,
+            "fused": 19836,
+            "mask_selected": 33060,
+            "pixels": 78400,
+            "view_index": 3
+          },
+          {
+            "confidence_selected": 9371,
+            "finite_positive_depth": 78400,
+            "fused": 9371,
+            "mask_selected": 15618,
+            "pixels": 78400,
+            "view_index": 4
+          },
+          {
+            "confidence_selected": 8588,
+            "finite_positive_depth": 78400,
+            "fused": 8588,
+            "mask_selected": 14313,
+            "pixels": 78400,
+            "view_index": 5
+          },
+          {
+            "confidence_selected": 9938,
+            "finite_positive_depth": 78400,
+            "fused": 9938,
+            "mask_selected": 16561,
+            "pixels": 78400,
+            "view_index": 6
+          },
+          {
+            "confidence_selected": 8302,
+            "finite_positive_depth": 78400,
+            "fused": 8302,
+            "mask_selected": 13836,
+            "pixels": 78400,
+            "view_index": 7
+          }
+        ]
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 0,
+        "baseline_reserved_bytes": 0,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15724511232,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 0.3491251759696752,
+        "load_seconds": 1.008762623067014,
+        "model_parameter_bytes": 1643767068,
+        "model_parameters": 410941767,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 3023673344,
+        "peak_reserved_bytes": 4110417920,
+        "post_unload_allocated_bytes": 38573056,
+        "post_unload_reserved_bytes": 58720256,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.14091884798835963,
+        "unload_returned_to_baseline": false,
+        "unload_seconds": 0.500460157985799
+      },
+      "model": {
+        "key": "large",
+        "license": "CC BY-NC 4.0",
+        "model_id": "depth-anything/DA3-LARGE",
+        "noncommercial": true,
+        "parameter_scale": "0.35B (upstream model card)",
+        "revision": "c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+        "source_revision": "3d835ec1a5802d64a8b8b15f817a1ab54809bfe4",
+        "source_url": "https://github.com/ByteDance-Seed/Depth-Anything-3",
+        "weight_sha256": "eaf2ae06df55889ad23eb245c82e2dd2a30c0cbf7e3d873a118fa5ed27a3e421"
+      }
+    },
+    "decoder": {
+      "checkpoint_file": {
+        "acquisition_and_hash_seconds": 1.6792606349335983,
+        "bytes": 4418370528,
+        "path": "data/hf/models--maksimko123--cadrille-rl/snapshots/712489b5890a0ce81b18cf441e14b2ed2eadc02a/model.safetensors",
+        "sha256": "f4e9e8873cfde47084b8d2f26e95822b64664537147ee3188a85cfdd5d17553f",
+        "sha256_verified": true
+      },
+      "generation": {
+        "attention_implementation": "sdpa",
+        "do_sample": false,
+        "max_new_tokens": 768,
+        "parameterization": {
+          "geometry_claim": "AST literals rewritten only; validate equivalence in sandbox",
+          "mode": "ast-literal-lift",
+          "original_sha256": "a7c719613de77d10be1b0e342e8b80211b8e4bdc87c5bae79455997e667d55d7",
+          "parameter_count": 59,
+          "parameterized_sha256": "568790e6443c00ce754a4a2119a79f31a32c3faa28009ec1a58fa3585117088d",
+          "parameters": [
+            "workplane_1_origin_x",
+            "workplane_1_origin_y",
+            "workplane_1_origin_z",
+            "workplane_2_origin_x",
+            "workplane_2_origin_y",
+            "workplane_2_origin_z",
+            "workplane_1_offset",
+            "moveto_1_x",
+            "moveto_1_y",
+            "box_1_length",
+            "box_1_width",
+            "box_1_height",
+            "segment_1_start_x",
+            "segment_1_start_y",
+            "segment_1_end_x",
+            "segment_1_end_y",
+            "segment_2_end_x",
+            "segment_2_end_y",
+            "segment_3_end_x",
+            "segment_3_end_y",
+            "segment_4_end_x",
+            "segment_4_end_y",
+            "segment_5_end_x",
+            "segment_5_end_y",
+            "segment_6_end_x",
+            "segment_6_end_y",
+            "extrude_1_distance",
+            "segment_7_start_x",
+            "segment_7_start_y",
+            "segment_7_end_x",
+            "segment_7_end_y",
+            "segment_8_end_x",
+            "segment_8_end_y",
+            "segment_9_end_x",
+            "segment_9_end_y",
+            "segment_10_end_x",
+            "segment_10_end_y",
+            "segment_11_end_x",
+            "segment_11_end_y",
+            "segment_12_end_x",
+            "segment_12_end_y",
+            "segment_13_end_x",
+            "segment_13_end_y",
+            "extrude_2_distance",
+            "segment_14_start_x",
+            "segment_14_start_y",
+            "segment_14_end_x",
+            "segment_14_end_y",
+            "segment_15_end_x",
+            "segment_15_end_y",
+            "segment_16_end_x",
+            "segment_16_end_y",
+            "segment_17_end_x",
+            "segment_17_end_y",
+            "segment_18_end_x",
+            "segment_18_end_y",
+            "segment_19_end_x",
+            "segment_19_end_y",
+            "extrude_3_distance"
+          ],
+          "rewritten_calls": [
+            "Workplane#1",
+            "Workplane#2",
+            "workplane#1",
+            "moveTo#1",
+            "box#1",
+            "segment#1",
+            "segment#2",
+            "segment#3",
+            "segment#4",
+            "segment#5",
+            "segment#6",
+            "extrude#1",
+            "segment#7",
+            "segment#8",
+            "segment#9",
+            "segment#10",
+            "segment#11",
+            "segment#12",
+            "segment#13",
+            "extrude#2",
+            "segment#14",
+            "segment#15",
+            "segment#16",
+            "segment#17",
+            "segment#18",
+            "segment#19",
+            "extrude#3"
+          ]
+        },
+        "raw_text_sha256": "631083bf13d4d11e01110cd9d838b2b43949e87ea6bb062d66e45445ee7a54d4",
+        "seed": 20260810,
+        "source_sha256": "568790e6443c00ce754a4a2119a79f31a32c3faa28009ec1a58fa3585117088d",
+        "strategy": "greedy",
+        "use_cache": true
+      },
+      "lifecycle": {
+        "baseline_allocated_bytes": 33554432,
+        "baseline_reserved_bytes": 58720256,
+        "compiled_architectures": [
+          "sm_75",
+          "sm_80",
+          "sm_86",
+          "sm_90",
+          "sm_100",
+          "sm_120"
+        ],
+        "compute_capability": [
+          12,
+          0
+        ],
+        "cuda_buffers_after_cpu_transfer": 0,
+        "cuda_parameters_after_cpu_transfer": 0,
+        "cuda_version": "13.0",
+        "device_free_bytes_at_start": 15600779264,
+        "device_name": "NVIDIA GeForce RTX 5080",
+        "device_total_bytes": 16600465408,
+        "inference_seconds": 2.5442164139822125,
+        "load_seconds": 0.03430876799393445,
+        "model_parameter_bytes": 4418290688,
+        "model_parameters": 2209065472,
+        "model_tensors_off_cuda": true,
+        "peak_allocated_bytes": 4549127680,
+        "peak_reserved_bytes": 4901044224,
+        "post_unload_allocated_bytes": 33554432,
+        "post_unload_reserved_bytes": 33554432,
+        "requested_device": "cuda",
+        "resolved_device": "cuda",
+        "torch_version": "2.13.0+cu130",
+        "transfer_seconds": 0.23107475298456848,
+        "unload_returned_to_baseline": true,
+        "unload_seconds": 1.0829173240344971
+      },
+      "model": {
+        "key": "rl",
+        "license": "CC BY-NC 4.0",
+        "model_id": "maksimko123/cadrille-rl",
+        "processor_id": "Qwen/Qwen2-VL-2B-Instruct",
+        "processor_revision": "895c3a49bc3fa70a340399125c650a463535e71c",
+        "revision": "712489b5890a0ce81b18cf441e14b2ed2eadc02a",
+        "source_revision": "338db111a1612e8e3a61309f71db138c09474eec",
+        "source_url": "https://github.com/col14m/cadrille",
+        "weight_bytes": 4418370528,
+        "weight_sha256": "f4e9e8873cfde47084b8d2f26e95822b64664537147ee3188a85cfdd5d17553f"
+      },
+      "parameterization_validation": {
+        "absolute_tolerance": 1e-09,
+        "bbox_max_absolute_difference": 0.0,
+        "equivalent": true,
+        "mode": "ast-literal-lift",
+        "parameterized_valid": true,
+        "parameterized_validation": {
+          "bbox": [
+            -100.0,
+            -42.0,
+            -12.0,
+            100.0,
+            42.00000000000001,
+            13.0
+          ],
+          "details": {
+            "limits": {
+              "cpu_seconds": 30,
+              "memory_limit_mb": 8192,
+              "wall_seconds": 45
+            },
+            "stage": "complete",
+            "worker_returncode": 0
+          },
+          "error": null,
+          "execution_seconds": 0.6772594330832362,
+          "step_path": "model.step",
+          "stl_path": "model.stl",
+          "valid": true,
+          "volume": 9849.125
+        },
+        "raw_valid": true,
+        "raw_validation": {
+          "bbox": [
+            -100.0,
+            -42.0,
+            -12.0,
+            100.0,
+            42.00000000000001,
+            13.0
+          ],
+          "details": {
+            "limits": {
+              "cpu_seconds": 30,
+              "memory_limit_mb": 8192,
+              "wall_seconds": 45
+            },
+            "stage": "complete",
+            "worker_returncode": 0
+          },
+          "error": null,
+          "execution_seconds": 0.686882737907581,
+          "step_path": "model.step",
+          "stl_path": "model.stl",
+          "valid": true,
+          "volume": 9849.125
+        },
+        "relative_tolerance": 1e-09,
+        "status": "equivalent",
+        "volume_absolute_difference": 0.0
+      },
+      "runtime_model_contract": {
+        "attention_implementation": "sdpa",
+        "generation_eos_token_id": [
+          151645,
+          151643
+        ],
+        "generation_pad_token_id": 151643,
+        "input_embedding_dtype": "torch.bfloat16",
+        "point_encoder_dtype": "torch.float32"
+      }
+    },
+    "fallback_used": false,
+    "input_digest": "fd31f6d2693080fa42f3b551e6f6cbab3158462ccba30ccc8ed600e6a0ca8bff",
+    "input_views": 8,
+    "output": {
+      "backend": "cadrille-point-cloud-rl",
+      "parameter_count": 59,
+      "step": "model.step",
+      "stl": "model.stl",
+      "template_id": "cadrille-rl-greedy",
+      "units": "normalized-cad-training-units",
+      "validation": {
+        "bbox": [
+          -100.0,
+          -42.0,
+          -12.0,
+          100.0,
+          42.00000000000001,
+          13.0
+        ],
+        "details": {
+          "limits": {
+            "cpu_seconds": 30,
+            "memory_limit_mb": 8192,
+            "wall_seconds": 45
+          },
+          "stage": "complete",
+          "worker_returncode": 0
+        },
+        "error": null,
+        "execution_seconds": 0.6823123659705743,
+        "step_path": "model.step",
+        "stl_path": "model.stl",
+        "valid": true,
+        "volume": 9849.125
+      }
+    },
+    "profile": "research",
+    "provenance_stages": [
+      "depth-unprojection-fusion",
+      "canonicalization",
+      "cad-generation",
+      "program-validation"
+    ],
+    "source_control": {
+      "available": true,
+      "commit": "6ee52c2fca812a0206ac4dcc7f2f2c8c0b949704",
+      "working_tree_clean": true
+    }
+  },
+  "not_claimed": [
+    "CAD reconstruction quality or benchmark accuracy",
+    "generalization beyond this single synthetic eight-view part",
+    "metric scale without external evidence",
+    "validity of the SFT program for this input"
+  ],
+  "real_parameter_edit": {
+    "after": 8.0,
+    "backend": "cadrille-point-cloud-rl",
+    "before": 4.0,
+    "edited_validation": {
+      "bbox": [
+        -100.0,
+        -42.0,
+        -12.0,
+        100.0,
+        42.00000000000001,
+        13.0
+      ],
+      "details": {
+        "limits": {
+          "cpu_seconds": 30,
+          "memory_limit_mb": 8192,
+          "wall_seconds": 45
+        },
+        "stage": "complete",
+        "worker_returncode": 0
+      },
+      "error": null,
+      "execution_seconds": 0.6436766419792548,
+      "step_path": "model.step",
+      "stl_path": "model.stl",
+      "valid": true,
+      "volume": 10305.125
+    },
+    "fallback_used": false,
+    "original_validation": {
+      "bbox": [
+        -100.0,
+        -42.0,
+        -12.0,
+        100.0,
+        42.00000000000001,
+        13.0
+      ],
+      "details": {
+        "limits": {
+          "cpu_seconds": 30,
+          "memory_limit_mb": 8192,
+          "wall_seconds": 45
+        },
+        "stage": "complete",
+        "worker_returncode": 0
+      },
+      "error": null,
+      "execution_seconds": 0.6823123659705743,
+      "step_path": "model.step",
+      "stl_path": "model.stl",
+      "valid": true,
+      "volume": 9849.125
+    },
+    "parameter": "box_1_length",
+    "provenance_stage": {
+      "backend": "ast-parameter-editor",
+      "details": {
+        "source_backend": "cadrille-point-cloud-rl",
+        "source_fallback_used": false,
+        "units": "normalized-cad-training-units",
+        "updates": {
+          "box_1_length": 8.0
+        },
+        "validation": {
+          "bbox": [
+            -100.0,
+            -42.0,
+            -12.0,
+            100.0,
+            42.00000000000001,
+            13.0
+          ],
+          "details": {
+            "limits": {
+              "cpu_seconds": 30,
+              "memory_limit_mb": 8192,
+              "wall_seconds": 45
+            },
+            "stage": "complete",
+            "worker_returncode": 0
+          },
+          "error": null,
+          "execution_seconds": 0.6436766419792548,
+          "step_path": "model.step",
+          "stl_path": "model.stl",
+          "valid": true,
+          "volume": 10305.125
+        }
+      },
+      "name": "parameter-edit",
+      "seconds": 0.6436766419792548,
+      "status": "valid"
+    },
+    "units": "normalized-cad-training-units"
+  },
+  "repository_commit": "6ee52c2fca812a0206ac4dcc7f2f2c8c0b949704",
+  "rl_greedy_repeat_exact": true,
+  "schema_version": "1.0",
+  "status": "real-phase-c-integration-not-quality-benchmark"
+}

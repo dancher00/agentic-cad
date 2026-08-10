@@ -155,7 +155,7 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _verified_checkpoint(
+def verified_da3_checkpoint(
     spec: Da3ModelSpec,
     cache_dir: Path,
     *,
@@ -289,7 +289,7 @@ class Da3Backend:
             torch.cuda.manual_seed_all(seed)
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint = _verified_checkpoint(
+        checkpoint = verified_da3_checkpoint(
             self.spec,
             self.cache_dir,
             local_files_only=self.local_files_only,

@@ -3,9 +3,16 @@
 DA3-CAD is a research pipeline for reconstructing editable parametric CAD from
 multi-view RGB images. The deterministic CPU path exercises the real CLI,
 generated CadQuery validation, STEP/STL export, parameter editing, provenance
-and diagnostics. Phase B also exposes real DA3-BASE/LARGE multi-view depth,
-camera recovery, unprojection and fused point-cloud diagnostics. The CAD decoder,
-canonicalizer and benchmark metrics are not yet claimed.
+and diagnostics. The real path integrates pinned DA3-BASE/LARGE geometry, a
+deterministic canonicalizer and either Cadrille or a permissive geometric
+control. One eight-view GPU integration smoke is validated; CAD quality and
+benchmark metrics are not yet claimed.
+
+Current geometric-control support is deliberately narrow: rectangular/circular
+extrusions and circular through-holes. Neural output can contain a broader
+CadQuery vocabulary, but threads, gears, freeform surfacing, assemblies,
+tolerances and GD&T are unsupported and must not be inferred from the smoke
+result.
 
 ## CPU stub quickstart
 
@@ -65,10 +72,55 @@ colored PLY/NPZ cloud and `geometry_report.json`. Scale is explicitly unresolved
 and no CAD decoder runs at this phase. The executed BASE/LARGE evidence, memory
 measurements and remaining limitations are in `docs/DA3_SMOKE.md`.
 
+## Real reconstruction profiles
+
+Install the Cadrille runtime after the CPU/CUDA/DA3 locks, then fetch external
+weights with their terms displayed. The downloaders verify complete checkpoint
+SHA-256 values and write only ignored local receipts:
+
+```bash
+./.venv/bin/python -m pip install -r constraints/cadrille-py312.txt
+./.venv/bin/python -m pip install --no-deps -e .
+./.venv/bin/python scripts/fetch_da3_weights.py --profile large \
+  --cache-dir data/hf --accept-noncommercial-weights
+./.venv/bin/python scripts/fetch_cadrille_weights.py --profile all \
+  --cache-dir data/hf --accept-license cc-by-nc-4.0
+```
+
+The verified research smoke uses DA3-LARGE plus Cadrille-RL, both CC BY-NC 4.0,
+with separate per-run acknowledgements:
+
+```bash
+./.venv/bin/python scripts/build_flatness_audit_case.py \
+  --root data/da3_flatness_audit
+./.venv/bin/da3-cad reconstruct data/da3_flatness_audit/views_08 \
+  -o outputs/research --config configs/research_smoke.yaml \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+```
+
+This path writes a parameterized `model.py`, STEP/STL, quality report,
+canonicalizer trace, raw decoder output and full provenance. It runs generated
+code through the AST allow-list and the default RLIMIT/timeout subprocess. It
+never substitutes the geometric fitter for an invalid neural program. Scale
+remains visibly normalized unless supported external evidence exists.
+
+The fully permissive profile uses Apache-2.0 DA3-BASE weights and the
+Apache-2.0 deterministic geometric control:
+
+```bash
+./.venv/bin/da3-cad reconstruct INPUT_VIEWS -o outputs/permissive \
+  --config configs/permissive.yaml
+```
+
+Its CAD vocabulary and expected quality are narrower; it is a control, not a
+drop-in equivalent of Cadrille. See `docs/PHASE_C_E2E.md` and
+`docs/CADRILLE_SMOKE.md` for executed evidence, the real edit check, memory
+accounting and explicit non-claims.
+
 ## Licensing profiles
 
 Project source is Apache-2.0 and redistributes neither third-party weights nor
 datasets. The `research` path uses opt-in CC BY-NC weights. The fully permissive
-path is DA3-BASE plus the deterministic geometric fitter; the fitter arrives in
-Phase C and will be reported separately with an honest lower-capacity/narrower
-CAD-vocabulary label. See `docs/LICENSES.md`.
+path is DA3-BASE plus the deterministic geometric fitter. It is implemented and
+labelled as a lower-capacity, narrower-vocabulary control; neither profile has a
+CAD-quality benchmark claim yet. See `docs/LICENSES.md`.

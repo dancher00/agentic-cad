@@ -34,6 +34,7 @@ def _require_gpu_lifecycle(lifecycle: dict[str, Any], label: str) -> None:
 def build_phase_c_smoke_summary(
     *,
     reconstruction_dir: Path,
+    edited_reconstruction_dir: Path,
     checkpoint_report_path: Path,
     repository_commit: str,
 ) -> dict[str, object]:
@@ -45,6 +46,9 @@ def build_phase_c_smoke_summary(
     quality = _load_json(reconstruction_dir / "quality.json")
     parameters = _load_json(reconstruction_dir / "parameters.json")
     provenance = _load_json(reconstruction_dir / "provenance.json")
+    edited_quality = _load_json(edited_reconstruction_dir / "quality.json")
+    edited_parameters = _load_json(edited_reconstruction_dir / "parameters.json")
+    edited_provenance = _load_json(edited_reconstruction_dir / "provenance.json")
     checkpoints = _load_json(checkpoint_report_path)
 
     required_files = (
@@ -148,6 +152,52 @@ def build_phase_c_smoke_summary(
     if [stage["name"] for stage in provenance["stages"]] != expected_stages:
         raise ValueError("full run provenance is missing a required stage")
 
+    edited_required = (
+        edited_reconstruction_dir / "model.py",
+        edited_reconstruction_dir / "model.step",
+        edited_reconstruction_dir / "model.stl",
+        edited_reconstruction_dir / "report.md",
+    )
+    edited_missing = [str(path) for path in edited_required if not path.is_file()]
+    if edited_missing:
+        raise ValueError(f"edited reconstruction is missing artifacts: {edited_missing}")
+    if edited_quality["status"] != "valid" or edited_quality["validation"]["valid"] is not True:
+        raise ValueError("real neural parameter edit did not produce a valid solid")
+    if edited_quality["backend"] != quality["backend"]:
+        raise ValueError("real edit lost the neural backend label")
+    if edited_quality["fallback_used"] is not False:
+        raise ValueError("real edit introduced a fallback")
+    if edited_parameters["units"] != parameters["units"]:
+        raise ValueError("real edit changed unit semantics")
+    if edited_parameters["scale"] != parameters["scale"]:
+        raise ValueError("real edit changed scale evidence")
+    original_values = {str(item["name"]): float(item["value"]) for item in parameters["parameters"]}
+    edited_values = {
+        str(item["name"]): float(item["value"]) for item in edited_parameters["parameters"]
+    }
+    if set(original_values) != set(edited_values):
+        raise ValueError("real edit changed the parameter vocabulary")
+    changed_parameters = sorted(
+        name for name in original_values if original_values[name] != edited_values[name]
+    )
+    if changed_parameters != ["box_1_length"]:
+        raise ValueError(f"real edit changed unexpected parameters: {changed_parameters}")
+    if original_values["box_1_length"] != 4.0 or edited_values["box_1_length"] != 8.0:
+        raise ValueError("real edit did not apply the declared 4-to-8 change")
+    if edited_quality["validation"]["volume"] == quality["validation"]["volume"]:
+        raise ValueError("real edit did not change solid volume")
+    if edited_provenance["command"] != "edit" or len(edited_provenance["stages"]) != 1:
+        raise ValueError("real edit provenance is missing its edit stage")
+    edit_stage = edited_provenance["stages"][0]
+    if edit_stage["backend"] != "ast-parameter-editor":
+        raise ValueError("real edit did not use the AST parameter editor")
+    if edit_stage["details"]["source_backend"] != quality["backend"]:
+        raise ValueError("real edit provenance lost the source backend")
+    if edit_stage["details"]["source_fallback_used"] is not False:
+        raise ValueError("real edit provenance reports a fallback")
+    if edit_stage["details"]["updates"] != {"box_1_length": 8.0}:
+        raise ValueError("real edit provenance does not match the requested change")
+
     if checkpoints["status"] != "real-checkpoint-compatibility-not-quality-benchmark":
         raise ValueError("checkpoint report has the wrong status")
     if checkpoints["repository_commit"] != repository_commit:
@@ -197,7 +247,11 @@ def build_phase_c_smoke_summary(
             "input_digest": reconstruction["input_digest"],
             "profile": reconstruction["profile"],
             "fallback_used": False,
-            "source_control": source_control,
+            "source_control": {
+                "available": source_control["available"],
+                "commit": source_control["commit"],
+                "working_tree_clean": source_control["working_tree_clean"],
+            },
             "da3": {
                 "model": geometry_runtime["model"],
                 "checkpoint_file": geometry_runtime["checkpoint_file"],
@@ -231,12 +285,24 @@ def build_phase_c_smoke_summary(
             },
             "provenance_stages": expected_stages,
         },
+        "real_parameter_edit": {
+            "backend": edited_quality["backend"],
+            "fallback_used": edited_quality["fallback_used"],
+            "units": edited_parameters["units"],
+            "parameter": "box_1_length",
+            "before": original_values["box_1_length"],
+            "after": edited_values["box_1_length"],
+            "original_validation": quality["validation"],
+            "edited_validation": edited_quality["validation"],
+            "provenance_stage": edit_stage,
+        },
         "checkpoint_smoke": checkpoints,
         "rl_greedy_repeat_exact": rl_repeat_exact,
         "claims": [
             "one eight-view DA3-LARGE to Cadrille-RL reconstruction produced "
             "a valid editable solid",
             "raw and AST-parameterized RL geometry matched within 1e-9",
+            "editing one named RL parameter produced a different valid solid",
             "SFT and RL checkpoints loaded and ran on torch 2.13 sm_120 with SDPA",
             "both Cadrille models transferred every parameter and buffer off CUDA",
         ],

@@ -343,7 +343,8 @@ manifests, schemas, and traceable summary results belong in git.
 
 Completed evidence is in `benchmarks/da3_smoke/report.json` and
 `docs/DA3_SMOKE.md`. BASE and LARGE both produced exact-repeat four-view
-clouds; decoder/canonical-axis work has not started.
+clouds; at stop point 4, decoder/canonical-axis work had not started. Phase C
+completion is recorded separately below.
 
 ### Phase C — canonicalizer and CAD backends
 
@@ -392,6 +393,22 @@ Then:
    availability gate are intentionally out of scope.
 6. Validate one real DA3 -> canonicalizer -> decoder reconstruction and stop at
    stop point 5.
+
+Completed stop-point-5 evidence is in
+`benchmarks/cadrille_smoke/report.json`, `docs/PHASE_C_E2E.md` and
+`docs/CADRILLE_SMOKE.md`. At feature commit
+`6ee52c2fca812a0206ac4dcc7f2f2c8c0b949704`, one eight-view DA3-LARGE run took
+the explicit planar-dominance branch, produced the exact 256-point decoder
+tensor, generated a valid RL solid and exported STEP/STL without fallback. Raw
+and AST-parameterized geometry matched exactly; a named parameter edit produced
+a different valid solid. Both SFT and RL loaded with SDPA on torch 2.13/sm_120
+and transferred all model tensors off CUDA. SFT generated an invalid solid for
+this input and is reported as such rather than replaced.
+
+The permissive fitter was deliberately implemented more narrowly than the
+initial list above: it emits rectangular/circular extrusions and circular
+through-holes. Pockets, revolves and fillets remain deferred because the
+current point evidence does not identify them defensibly; reports state this.
 
 ### Phase D — evaluator and benchmark harness
 
@@ -653,11 +670,15 @@ the ordering and stop-point gates will not be bypassed.
 - Representative DA3 throughput at resolution 504 and without concurrent GPU
   load; BASE/LARGE compatibility, real inference and resolution-280 memory peaks
   are verified at stop point 4.
-- Successful loading of both cadrille checkpoints through the minimal adapted
-  class with Transformers SDPA and torch 2.13.
-- CadQuery version compatibility with generated cadrille programs.
-- Peak VRAM and throughput for benchmark view counts/resolutions and the future
-  CAD decoder; the committed DA3 smoke numbers are compatibility evidence only.
+- SFT and RL loading, greedy SDPA generation and model-tensor unload are
+  verified on torch 2.13/sm_120. SFT emitted an invalid solid on the single
+  stop-point fixture; checkpoint validity rates and quality remain unmeasured.
+- The pinned CadQuery version executes the RL raw/parameterized program and a
+  real named edit. Compatibility across the generated-program distribution is
+  still unverified.
+- Cadrille peak VRAM is verified at 4.237 GiB allocated for the single
+  256-point smoke input. Peak VRAM and throughput across benchmark view counts,
+  resolution 504 and future batch/candidate budgets remain unverified.
 - Robust mesh boolean behavior and the exact root cause/reproduction range of
   cadrille issue #19.
 - Broader normalization validation beyond the committed five DeepCAD and five

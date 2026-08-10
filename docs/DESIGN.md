@@ -17,7 +17,7 @@ hostile arbitrary Python.
 runs true joint multi-view inference, converts the complete prediction to CPU,
 unloads the model, then performs segmentation and fusion. `ModelManager` records
 current-process allocated/reserved VRAM before, at peak and after unload. DA3 and
-the future CAD model are never resident together by default.
+the later CAD model are never resident together by default.
 
 The adapter uses the unmodified pinned DA3 model, input processor and output
 processor. Upstream `api.py` eagerly imports unrelated optional exporters even

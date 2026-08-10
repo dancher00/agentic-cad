@@ -19,9 +19,10 @@ with this repository.
 Exact URLs, immutable revisions and acquisition behavior are recorded in
 `PLAN.md`. The normalization audit downloader displays the dataset URLs, pinned
 revisions and terms before requiring `--accept-noncommercial-terms`; downloaded
-files stay in ignored `data/`. DA3-LARGE similarly prints its model URL,
-revision and CC BY-NC terms before requiring
-`--accept-noncommercial-weights`. Cadrille SFT/RL acquisition prints both model
+files stay in ignored `data/`. DA3 checkpoint acquisition prints each model
+URL, revision and terms before requiring `--accept-noncommercial-weights` for
+LARGE, verifies the complete weight SHA-256 and writes only an ignored local
+receipt. Cadrille SFT/RL acquisition prints both model
 cards and immutable revisions, then requires the exact acknowledgement
 `--accept-license cc-by-nc-4.0`; the downloader verifies the complete weight
 SHA-256 and writes only a local receipt beneath the ignored cache. Package
