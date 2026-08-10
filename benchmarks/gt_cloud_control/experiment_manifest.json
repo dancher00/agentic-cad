@@ -1,0 +1,131 @@
+{
+  "claims_policy": {
+    "invalid_predictions_remain_in_denominator": true,
+    "no_trimming": true,
+    "purpose": "mandatory adapter sanity control before any long campaign",
+    "readme_quality_claim": false
+  },
+  "control_version": "da3-cad-cadrille-gt-cloud-control-v1",
+  "datasets": {
+    "deepcad": {
+      "expected_count": 8046,
+      "item_count": 12,
+      "item_ids": [
+        "00335067",
+        "00722082",
+        "00083573",
+        "00609396",
+        "00747106",
+        "00436471",
+        "00219954",
+        "00971439",
+        "00756346",
+        "00519355",
+        "00529471",
+        "00422269"
+      ],
+      "license": "CC BY-NC 4.0 label on mirror; upstream provenance remains distinct",
+      "name": "deepcad",
+      "redistributed": false,
+      "repo_id": "maksimko123/deepcad_test_mesh",
+      "revision": "ee4999c749fbb6a726df6284abb1a949ec7548c1",
+      "split": "benchmarks/splits/deepcad_pilot.txt",
+      "split_sha256": "2c3e0ced98b6ff1bf915cf09958ca26da8243789d5b793a84e408f4a421626f8",
+      "terms_url": "https://huggingface.co/datasets/maksimko123/deepcad_test_mesh"
+    },
+    "fusion360": {
+      "expected_count": 1725,
+      "item_count": 8,
+      "item_ids": [
+        "21941_1a683ec2_0009",
+        "25211_336c083f_0001",
+        "79530_946fa2d1_0000",
+        "38454_24787d99_0002",
+        "22276_69c5036b_0001",
+        "138724_99a5d09c_0000",
+        "142680_cd829f9e_0006",
+        "56345_80dc7bcc_0000"
+      ],
+      "license": "Autodesk Fusion 360 Gallery Dataset non-commercial terms",
+      "name": "fusion360",
+      "redistributed": false,
+      "repo_id": "maksimko123/fusion360_test_mesh",
+      "revision": "af9643d11bdae5512020bfba024cb4d609b893e1",
+      "split": "benchmarks/splits/fusion360_pilot.txt",
+      "split_sha256": "ae5f1b0a1f335e91fd8f4d60b42c6ca5db53da25999aa9daca6ceec1a71fe7f5",
+      "terms_url": "https://github.com/AutodeskAILab/Fusion360GalleryDataset/blob/master/LICENSE.md"
+    }
+  },
+  "decoder": {
+    "attention_implementation": "sdpa",
+    "decode_batching": {
+      "max_decode_batch_size": 9,
+      "preserve_first_candidate": false,
+      "reason": "16 GiB sm_120 memory bound; prior pilot proved candidate-0 source identity between singleton and batch-9 for 74 paired decodes"
+    },
+    "generation": "greedy single sample",
+    "key": "rl",
+    "license": "CC BY-NC 4.0",
+    "max_new_tokens": 768,
+    "model_id": "maksimko123/cadrille-rl",
+    "processor_id": "Qwen/Qwen2-VL-2B-Instruct",
+    "processor_revision": "895c3a49bc3fa70a340399125c650a463535e71c",
+    "profile": "rl",
+    "revision": "712489b5890a0ce81b18cf441e14b2ed2eadc02a",
+    "source_revision": "338db111a1612e8e3a61309f71db138c09474eec",
+    "source_url": "https://github.com/col14m/cadrille",
+    "torch_dtype": "bfloat16 language model; float32 point encoder",
+    "weight_bytes": 4418370528,
+    "weight_sha256": "f4e9e8873cfde47084b8d2f26e95822b64664537147ee3188a85cfdd5d17553f"
+  },
+  "environment": {
+    "packages": {
+      "cadquery": "2.4.0",
+      "manifold3d": "3.5.2",
+      "numpy": "1.26.4",
+      "torch": "2.13.0+cu130",
+      "transformers": "4.50.3",
+      "trimesh": "4.12.2"
+    },
+    "python": "3.12.13"
+  },
+  "evaluator": {
+    "alignment": "none: no ICP, pose oracle, per-axis scaling or metric alignment",
+    "distance": "bidirectional squared nearest-neighbour means x1000",
+    "global_seed": 20260810,
+    "ground_truth_frame_tolerance": 0.0005,
+    "mesh_iou": {
+      "engine": "manifold",
+      "license": "Apache-2.0",
+      "package": "manifold3d==3.5.2",
+      "scope": "one intersection and union over complete meshes"
+    },
+    "prediction_normalization": "bbox centre to origin, divide by largest extent, translate by +0.5",
+    "sample_count": 8192,
+    "tessellation": {
+      "angular_tolerance": 0.1,
+      "linear_tolerance": 0.001,
+      "source": "CadQuery/OpenCascade Shape.tessellate",
+      "vertex_welding": {
+        "digits_vertex": 12,
+        "merge_texture_and_normals": true,
+        "method": "trimesh.merge_vertices"
+      }
+    },
+    "version": "da3-cad-evaluator-v1"
+  },
+  "global_seed": 20260810,
+  "input_preprocessing": {
+    "decoder_points": 256,
+    "fps": "PyTorch3D FP32 sample_farthest_points, random_start_point=False, start index 0",
+    "normalization": "(xyz - 0.5) * 2 after FPS; no fitted bbox transform",
+    "surface_points": 8192,
+    "surface_sampling": "trimesh 4.5.3 sample_surface algorithm with explicit stable per-item seed",
+    "upstream_cadrille_revision": "338db111a1612e8e3a61309f71db138c09474eec",
+    "upstream_dataset_py_sha256": "d4ab5f9d0f6e6fc84ec1d9b63ad6807150ffd6e844fccea37936913a18183e23",
+    "upstream_pytorch3d_revision": "06a76ef8ddd00b6c889768dfc990ae8cb07c6f2f",
+    "upstream_trimesh_version": "4.5.3"
+  },
+  "repository_commit": "69f71fc00e12dcbab20405db269904acd23b23c6",
+  "schema_version": "1.0"
+}
