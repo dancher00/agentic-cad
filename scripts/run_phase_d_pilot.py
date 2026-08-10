@@ -600,55 +600,130 @@ def main() -> int:
                     role=f"reconstruct:n{view_count}",
                 )
                 item_config = config.model_copy(update={"seed": reconstruction_seed})
-                geometry_output, geometry_timing = _geometry_stage(
-                    dataset=dataset_name,
-                    item_id_value=item_id_value,
-                    dataset_revision=spec.revision,
-                    master_views=master_views,
-                    view_count=view_count,
-                    item_config=item_config,
-                    repository_sha=repository_sha,
-                    config_sha=config_sha,
-                    output_root=args.output_root,
-                    cache=cache,
-                )
-                canonical, canonical_timing = _canonical_stage(
-                    dataset=dataset_name,
-                    item_id_value=item_id_value,
-                    dataset_revision=spec.revision,
-                    geometry_output=geometry_output,
-                    item_config=item_config,
-                    repository_sha=repository_sha,
-                    config_sha=config_sha,
-                    view_count=view_count,
-                    output_root=args.output_root,
-                    cache=cache,
-                )
-                decode_output, decode_payload = _decode_stage(
-                    dataset=dataset_name,
-                    item_id_value=item_id_value,
-                    dataset_revision=spec.revision,
-                    canonical=canonical,
-                    item_config=item_config,
-                    repository_sha=repository_sha,
-                    config_sha=config_sha,
-                    view_count=view_count,
-                    output_root=args.output_root,
-                    cache=cache,
-                )
+                pipeline_started = time.perf_counter()
+                failed_stage = "da3_geometry"
+                common_stage_timings: dict[str, object] = {
+                    "render_16_view_master": {
+                        "wall_seconds": float(render_record["wall_seconds"]),
+                        "amortized_across_view_counts": True,
+                    }
+                }
+                try:
+                    geometry_output, geometry_timing = _geometry_stage(
+                        dataset=dataset_name,
+                        item_id_value=item_id_value,
+                        dataset_revision=spec.revision,
+                        master_views=master_views,
+                        view_count=view_count,
+                        item_config=item_config,
+                        repository_sha=repository_sha,
+                        config_sha=config_sha,
+                        output_root=args.output_root,
+                        cache=cache,
+                    )
+                    common_stage_timings["da3_geometry"] = geometry_timing
+                    failed_stage = "canonicalizer"
+                    canonical, canonical_timing = _canonical_stage(
+                        dataset=dataset_name,
+                        item_id_value=item_id_value,
+                        dataset_revision=spec.revision,
+                        geometry_output=geometry_output,
+                        item_config=item_config,
+                        repository_sha=repository_sha,
+                        config_sha=config_sha,
+                        view_count=view_count,
+                        output_root=args.output_root,
+                        cache=cache,
+                    )
+                    common_stage_timings["canonicalizer"] = canonical_timing
+                    failed_stage = "decoder_or_candidate_validation"
+                    decode_output, decode_payload = _decode_stage(
+                        dataset=dataset_name,
+                        item_id_value=item_id_value,
+                        dataset_revision=spec.revision,
+                        canonical=canonical,
+                        item_config=item_config,
+                        repository_sha=repository_sha,
+                        config_sha=config_sha,
+                        view_count=view_count,
+                        output_root=args.output_root,
+                        cache=cache,
+                    )
+                except Exception as error:
+                    failure_reason = (
+                        f"{failed_stage} failed: {type(error).__name__}: {error}"
+                    )
+                    pipeline_wall = time.perf_counter() - pipeline_started
+                    common_stage_timings["pipeline_failure"] = {
+                        "stage": failed_stage,
+                        "exception_type": type(error).__name__,
+                        "message": str(error),
+                        "wall_seconds_through_failure": pipeline_wall,
+                    }
+                    known_peaks = [
+                        int(value.get("peak_vram_allocated_bytes") or 0)
+                        for value in common_stage_timings.values()
+                        if isinstance(value, dict)
+                    ]
+                    for budget in CANDIDATE_BUDGETS:
+                        row = "single-decode" if budget == 1 else "best-of-10-input-CD"
+                        harness = harnesses[(dataset_name, view_count, budget)]
+                        item_result = (
+                            harness.store.root / "items" / f"{item_id_value}.json"
+                        )
+                        selection = {
+                            "ground_truth_access": False,
+                            "selected_index": None,
+                            "failure_stage": failed_stage,
+                        }
+                        if not item_result.exists():
+                            harness.evaluate_item(
+                                item_id_value,
+                                None,
+                                gt_path,
+                                invalid_reason=failure_reason,
+                                selection=selection,
+                                stage_timings=common_stage_timings,
+                            )
+                        item_payload = json.loads(
+                            item_result.read_text(encoding="utf-8")
+                        )
+                        evaluation_wall = float(
+                            item_payload["stage_timings"][
+                                "evaluation_and_upstream_audit"
+                            ]["wall_seconds"]
+                        )
+                        timing_records.append(
+                            {
+                                "dataset": dataset,
+                                "item_id": item_id_value,
+                                "view_count": view_count,
+                                "row": row,
+                                "wall_seconds": pipeline_wall + evaluation_wall,
+                                "peak_vram_allocated_bytes": max(known_peaks),
+                            }
+                        )
+                    print(
+                        json.dumps(
+                            {
+                                "dataset": dataset,
+                                "item_id": item_id_value,
+                                "view_count": view_count,
+                                "status": "invalid",
+                                "reason": failure_reason,
+                            },
+                            sort_keys=True,
+                        )
+                    )
+                    continue
                 for budget in CANDIDATE_BUDGETS:
                     row = "single-decode" if budget == 1 else "best-of-10-input-CD"
                     relative = decode_payload["selected_relative_paths"][row]
                     prediction = decode_output / relative if relative is not None else None
                     selection = cast(dict[str, object], decode_payload["selection"][row])
                     decode_timing = cast(dict[str, Any], decode_payload["timing"][row])
-                    stage_timings: dict[str, object] = {
-                        "render_16_view_master": {
-                            "wall_seconds": float(render_record["wall_seconds"]),
-                            "amortized_across_view_counts": True,
-                        },
-                        "da3_geometry": geometry_timing,
-                        "canonicalizer": canonical_timing,
+                    stage_timings = {
+                        **common_stage_timings,
                         "decoder": decode_timing["decoder"],
                         "validation": {
                             "wall_seconds": float(decode_timing["validation_wall_seconds"]),
