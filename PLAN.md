@@ -1,6 +1,6 @@
 # DA3-CAD implementation plan
 
-Status: **approved with the 2026-08-10 protocol amendments; Phase A accepted at `6927712`, Phase B in progress**. This document is a plan, not
+Status: **approved with the 2026-08-10 protocol amendments; Phase A accepted at `6927712`, Phase B complete at stop point 4**. This document is a plan, not
 an implementation report. Runtime numbers below are planning estimates and must
 not be copied into the README as measured results.
 
@@ -55,6 +55,7 @@ The environment was verified on the target host before this plan was written:
 | Environment path | `/home/aida/DA3-CAD/.venv` (conda prefix, not committed) |
 | Python | 3.12.13 |
 | torch | 2.13.0+cu130, official CPython 3.12 x86-64 wheel |
+| torchvision | 0.28.0+cu130, official CPython 3.12 x86-64 wheel |
 | CUDA reported by torch | 13.0, available |
 | Compiled architectures | `sm_75`, `sm_80`, `sm_86`, `sm_90`, `sm_100`, `sm_120` |
 | GPU | NVIDIA GeForce RTX 5080, capability `(12, 0)`, 16 GB |
@@ -323,7 +324,7 @@ manifests, schemas, and traceable summary results belong in git.
 6. Verify CPU-only CLI -> valid STEP/STL/CadQuery -> edited geometry, with no
    network and no weights. This is stop point 3.
 
-### Phase B — geometry core and DA3
+### Phase B — geometry core and DA3 (completed)
 
 1. Implement and unit-test pinhole unprojection for both accepted extrinsics
    shapes and explicit world-to-camera/camera-to-world conversion.
@@ -339,6 +340,10 @@ manifests, schemas, and traceable summary results belong in git.
    depth/confidence semantics, VRAM, unload behavior and deterministic limits.
 6. Stop after real DA3 point clouds and diagnostic artefacts exist, before
    finalizing canonical axes (stop point 4).
+
+Completed evidence is in `benchmarks/da3_smoke/report.json` and
+`docs/DA3_SMOKE.md`. BASE and LARGE both produced exact-repeat four-view
+clouds; decoder/canonical-axis work has not started.
 
 ### Phase C — canonicalizer and CAD backends
 
@@ -645,22 +650,24 @@ the ordering and stop-point gates will not be bypassed.
 
 ## 11. Still unverified and required before claims
 
-- Full DA3 dependency installation and actual DA3-BASE/LARGE inference under the
-  new Python 3.12 environment; only torch/CUDA/SDPA is verified now.
+- Representative DA3 throughput at resolution 504 and without concurrent GPU
+  load; BASE/LARGE compatibility, real inference and resolution-280 memory peaks
+  are verified at stop point 4.
 - Successful loading of both cadrille checkpoints through the minimal adapted
   class with Transformers SDPA and torch 2.13.
 - CadQuery version compatibility with generated cadrille programs.
-- Actual peak VRAM and throughput for every model; all runtime ranges in this
-  plan remain estimates until the pilot.
-- The safest available hard execution sandbox on the target host.
+- Peak VRAM and throughput for benchmark view counts/resolutions and the future
+  CAD decoder; the committed DA3 smoke numbers are compatibility evidence only.
 - Robust mesh boolean behavior and the exact root cause/reproduction range of
   cadrille issue #19.
 - Broader normalization validation beyond the committed five DeepCAD and five
   Fusion360 real-mesh parity samples; the source contract and sampled gate are
   verified.
-- DA3 pose/frame behavior and T-LESS coordinate alignment end to end.
+- Recovered DA3 pose accuracy against ground truth, global metric scale and
+  T-LESS coordinate alignment end to end.
 - Segmentation quality without GT assistance, particularly target ambiguity in
-  cluttered T-LESS scenes.
+  cluttered T-LESS scenes; the verified border-color smoke mask is intentionally
+  limited to render/studio backgrounds.
 - Whether DA3-GIANT can run usefully inside 16 GB; it remains optional and must
   never weaken the required configurations to fit.
 

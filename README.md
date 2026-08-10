@@ -62,7 +62,8 @@ present:
 
 Both commands emit depth/confidence images, mask overlays, camera arrays, a
 colored PLY/NPZ cloud and `geometry_report.json`. Scale is explicitly unresolved
-and no CAD decoder runs at this phase.
+and no CAD decoder runs at this phase. The executed BASE/LARGE evidence, memory
+measurements and remaining limitations are in `docs/DA3_SMOKE.md`.
 
 ## Licensing profiles
 
