@@ -46,6 +46,8 @@ from da3_cad.models import BoolArray, DepthPrediction, FloatArray
 PROTOCOL_VERSION = "da3-cad-gt-blind-depth-alignment-v1"
 EXPECTED_COUNTS = {8: 20, 16: 19, 24: 19, 32: 19}
 PRECISION_STOP = 0.30
+PRIMARY_REPORT_SHA256 = "58972ea7f26f275262653530fe8e90501c1760ece32db9f411629edd704389b5"
+ESTIMATOR_COMMIT = "d748ba35232034fc7bffe6cd17000847111337ec"
 SOURCE_SHA256 = {
     "per_view_depth_oracle": "dac2f2fb617adb99167ea8c77dc068dc40c5e91bbc2f7ffe55f3f0c423c83569",
     "high_view_sweep": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072",
@@ -91,6 +93,24 @@ def _clean_repository(root: Path) -> None:
     ).stdout
     if status.strip():
         raise ValueError("GT-blind diagnostic requires a clean preregistered repository")
+
+
+def _assert_estimator_tree_unchanged(root: Path) -> None:
+    result = subprocess.run(
+        [
+            "git",
+            "diff",
+            "--quiet",
+            ESTIMATOR_COMMIT,
+            "--",
+            "src/da3_cad/geometry/multiview_depth_alignment.py",
+            "src/da3_cad/benchmark/gt_blind_depth_alignment.py",
+        ],
+        cwd=root,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise ValueError("post-gate curve requires the exact preregistered estimator tree")
 
 
 def _verified_report(path: Path, expected_sha256: str) -> dict[str, Any]:
@@ -682,6 +702,122 @@ def _precision_aggregate(records: list[dict[str, Any]]) -> dict[str, object]:
     return result
 
 
+def _run_post_gate_view_curve(
+    sources: dict[tuple[int, str, str], dict[str, Any]],
+    common: tuple[tuple[str, str], ...],
+    *,
+    primary_report_path: Path,
+    protocol_path: Path,
+    output_root: Path,
+    output_path: Path,
+) -> int:
+    root = Path.cwd()
+    _clean_repository(root)
+    _assert_estimator_tree_unchanged(root)
+    repository_sha = repository_commit(root)
+    if _sha256(primary_report_path) != PRIMARY_REPORT_SHA256:
+        raise ValueError("primary GT-blind parameter report changed")
+    primary = _json(primary_report_path)
+    selection = cast(dict[str, Any], primary["parameter_validation"])["selection"]
+    if (
+        selection["selected_criterion"] is not None
+        or selection["conclusion"] != "no-criterion-identifies-oracle-parameters"
+        or primary["product_precision"] is not None
+    ):
+        raise ValueError("post-gate curve requires the frozen failed N=8 parameter gate")
+    protocol = _json(protocol_path)
+    if protocol.get("protocol") != "da3-cad-gt-blind-view-curve-v1":
+        raise ValueError("post-gate view-curve protocol changed")
+    if protocol["primary_report_sha256"] != PRIMARY_REPORT_SHA256:
+        raise ValueError("view-curve protocol does not bind the primary report")
+
+    started = time.perf_counter()
+    primary_records = cast(
+        dict[str, list[dict[str, Any]]],
+        cast(dict[str, Any], primary["parameter_validation"])["records_detail"],
+    )
+    all_records: dict[str, dict[int, list[dict[str, Any]]]] = {}
+    curves: dict[str, object] = {}
+    for criterion_value in CRITERIA:
+        criterion = cast(AlignmentCriterion, criterion_value)
+        records_by_view: dict[int, list[dict[str, Any]]] = {8: primary_records[criterion]}
+        for view_count in (16, 24, 32):
+            view_sources = [sources[key] for key in sorted(sources) if key[0] == view_count]
+            records_by_view[view_count] = []
+            for index, source in enumerate(view_sources):
+                record = _run_or_load_alignment(
+                    source,
+                    criterion,
+                    output_root=output_root,
+                    implementation_commit=ESTIMATOR_COMMIT,
+                    repeat=index == 0,
+                )
+                records_by_view[view_count].append(record)
+                print(
+                    json.dumps(
+                        {
+                            "stage": "post-gate-parameter-curve",
+                            "criterion": criterion,
+                            "view_count": view_count,
+                            "completed": index + 1,
+                            "total": len(view_sources),
+                            "runtime_seconds": record["runtime_seconds"],
+                        },
+                        sort_keys=True,
+                    )
+                )
+        all_records[criterion] = records_by_view
+        curves[criterion] = _parameter_curve(records_by_view, common)
+
+    gate_reapplication: dict[str, object] = {}
+    for view_count in VIEW_COUNTS:
+        metrics = {
+            criterion: cast(dict[str, Any], curves[criterion])["by_view_count"][str(view_count)]
+            for criterion in CRITERIA
+        }
+        gate_reapplication[str(view_count)] = select_criterion(metrics)
+    report: dict[str, object] = {
+        "schema_version": "1.0",
+        "protocol": "da3-cad-gt-blind-view-curve-v1",
+        "status": "complete-parameter-only",
+        "repository_commit": repository_sha,
+        "estimator_commit": ESTIMATOR_COMMIT,
+        "protocol_source": {"path": str(protocol_path), "sha256": _sha256(protocol_path)},
+        "primary_report": {
+            "path": str(primary_report_path),
+            "sha256": PRIMARY_REPORT_SHA256,
+            "selection_remains": None,
+        },
+        "population": {
+            "common_objects": len(common),
+            "view_counts": list(VIEW_COUNTS),
+            "criteria": list(CRITERIA),
+            "new_parameter_runs": 2 * sum(EXPECTED_COUNTS[n] for n in (16, 24, 32)),
+        },
+        "curves": curves,
+        "original_gate_reapplied_for_diagnosis_only": gate_reapplication,
+        "records_detail": {
+            criterion: {
+                str(view_count): records
+                for view_count, records in sorted(all_records[criterion].items())
+            }
+            for criterion in CRITERIA
+        },
+        "product_precision": None,
+        "runtime_seconds": time.perf_counter() - started,
+        "claims_policy": {
+            "primary_n8_selection_changed": False,
+            "gt_or_mesh_passed_to_estimator": False,
+            "reconstruction_metrics_computed": False,
+            "long_campaign_started": False,
+            "readme_updated": False,
+        },
+    }
+    _write_json(output_path, report)
+    print(json.dumps({"status": report["status"], "output": str(output_path)}))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -714,6 +850,22 @@ def main() -> int:
         type=Path,
         default=Path("benchmarks/gt_blind_depth_alignment/report.json"),
     )
+    parser.add_argument("--post-gate-view-curve", action="store_true")
+    parser.add_argument(
+        "--primary-report",
+        type=Path,
+        default=Path("benchmarks/gt_blind_depth_alignment/report.json"),
+    )
+    parser.add_argument(
+        "--view-curve-protocol",
+        type=Path,
+        default=Path("benchmarks/gt_blind_view_curve/protocol.json"),
+    )
+    parser.add_argument(
+        "--view-curve-output",
+        type=Path,
+        default=Path("benchmarks/gt_blind_view_curve/report.json"),
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -723,6 +875,28 @@ def main() -> int:
         args.camera_report,
     )
     common = _common_keys(sources)
+    if args.post_gate_view_curve:
+        curve_plan = {
+            "protocol": "da3-cad-gt-blind-view-curve-v1",
+            "common_objects": len(common),
+            "view_counts": list(VIEW_COUNTS),
+            "criteria": list(CRITERIA),
+            "new_parameter_runs": 2 * sum(EXPECTED_COUNTS[n] for n in (16, 24, 32)),
+            "primary_selection_changed": False,
+            "product_precision": False,
+            "readme_update": False,
+        }
+        print(json.dumps(curve_plan, sort_keys=True))
+        if args.dry_run:
+            return 0
+        return _run_post_gate_view_curve(
+            sources,
+            common,
+            primary_report_path=args.primary_report,
+            protocol_path=args.view_curve_protocol,
+            output_root=args.output_root,
+            output_path=args.view_curve_output,
+        )
     planned = {
         "protocol": PROTOCOL_VERSION,
         "n8_criteria_runs": EXPECTED_COUNTS[8] * len(CRITERIA),

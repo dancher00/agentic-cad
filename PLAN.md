@@ -844,6 +844,13 @@ see `docs/GT_BLIND_DEPTH_ALIGNMENT.md`. Any subsequent N-dependent check is
 parameter-only and cannot retroactively select a criterion or unlock N=8
 reconstruction metrics.
 
+The requested accuracy-versus-view-count question remains useful despite that
+stop. It is therefore isolated in a post-gate parameter-only supplement,
+`docs/GT_BLIND_VIEW_CURVE_PROTOCOL.md`: both existing criteria, the same 19
+objects at every N, unchanged estimator code, and no precision or product
+selection. Raw N-dependent direct metrics may diagnose whether redundancy
+improves identifiability, but cannot rewrite the failed primary gate.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
