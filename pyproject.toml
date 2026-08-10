@@ -23,6 +23,7 @@ dependencies = [
   "pydantic>=2.10,<3",
   "pyyaml>=6,<7",
   "rich>=13,<15",
+  "scipy>=1.16,<1.17",
   "trimesh>=4.9,<5",
   "typer>=0.16,<1",
 ]
@@ -48,7 +49,6 @@ da3 = [
   "omegaconf>=2.3,<3",
   "opencv-python-headless==4.11.0.86",
   "safetensors>=0.6,<1",
-  "scipy>=1.16,<1.17",
 ]
 
 [project.scripts]
@@ -92,5 +92,5 @@ pretty = true
 packages = ["da3_cad"]
 
 [[tool.mypy.overrides]]
-module = ["cadquery.*", "trimesh.*", "yaml.*"]
+module = ["cadquery.*", "scipy.*", "trimesh.*", "yaml.*"]
 ignore_missing_imports = true

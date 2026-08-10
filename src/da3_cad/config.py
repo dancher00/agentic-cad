@@ -40,6 +40,34 @@ class GeometryConfig(BaseModel):
     minimum_confidence: float | None = None
 
 
+class CanonicalizerConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confidence_enabled: bool = True
+    confidence_percentile: float = Field(default=40.0, ge=0.0, le=100.0)
+    outlier_enabled: bool = True
+    statistical_neighbors: int = Field(default=16, ge=1, le=128)
+    statistical_std_ratio: float = Field(default=2.5, ge=0.0, le=10.0)
+    outlier_radius_fraction: float = Field(default=0.02, gt=0.0, le=1.0)
+    outlier_radius_min_neighbors: int = Field(default=3, ge=1, le=128)
+    consistency_enabled: bool = True
+    consistency_minimum_views: int = Field(default=2, ge=1, le=32)
+    consistency_radius_fraction: float = Field(default=0.03, gt=0.0, le=1.0)
+    symmetry_detection_enabled: bool = True
+    symmetry_completion_enabled: bool = False
+    symmetry_tolerance_fraction: float = Field(default=0.04, gt=0.0, le=1.0)
+    symmetry_duplicate_radius_fraction: float = Field(default=0.01, gt=0.0, le=1.0)
+    symmetry_evaluation_points: int = Field(default=4096, ge=256, le=65536)
+    orientation_enabled: bool = True
+    planar_extent_ratio_threshold: float = Field(default=0.20, gt=0.0, lt=1.0)
+    plane_distance_fraction: float = Field(default=0.02, gt=0.0, le=0.25)
+    plane_ransac_iterations: int = Field(default=256, ge=16, le=4096)
+    eigenvalue_tie_tolerance: float = Field(default=0.05, ge=0.0, le=0.5)
+    sampling_enabled: bool = True
+    point_count: Literal[256] = 256
+    normalization_enabled: bool = True
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -52,6 +80,7 @@ class AppConfig(BaseModel):
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     da3: Da3Config = Field(default_factory=Da3Config)
     geometry: GeometryConfig = Field(default_factory=GeometryConfig)
+    canonicalizer: CanonicalizerConfig = Field(default_factory=CanonicalizerConfig)
 
 
 def load_config(
