@@ -669,6 +669,16 @@ GT-derived per-record scale classes are never used at inference. See
 docs/PRECISION_DISTRIBUTION.md and
 benchmarks/canonicalizer_precision_ablation/distribution.json.
 
+Before measuring that method, its gate is frozen against the reproduced
+reliability-scoring row: all 74 outputs must remain exactly 256 points; median
+GT-axis-oracle precision @.05 must gain at least 0.02 absolute; median absolute
+normal residual and diagnostic sampled Chamfer must each be no worse (ratio at
+most 1.0). Coverage is excluded. The plane uses 16 other observations from the
+full raw fused cloud, moves only the already selected observations, does not
+resample or pad, and leaves rank-one neighborhoods unchanged with provenance.
+Failure of any check stops the sequence before quadrics, area resampling, axis
+hypotheses, pilot reruns or the long campaign.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
