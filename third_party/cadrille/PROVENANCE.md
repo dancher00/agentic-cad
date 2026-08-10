@@ -1,6 +1,6 @@
 # Cadrille vendoring provenance
 
-DA3-CAD vendors one minimal, modified inference fragment from
+DA3-CAD vendors one minimal, modified inference fragment and maintains one audit adapter from
 [`col14m/cadrille`](https://github.com/col14m/cadrille):
 
 - upstream revision: `338db111a1612e8e3a61309f71db138c09474eec`;
@@ -9,6 +9,14 @@ DA3-CAD vendors one minimal, modified inference fragment from
   `0338162cfb9f78981e63b48638935419e3d92c639bf2f97a9a191de96fca50b8`;
 - vendored file: `src/da3_cad/_vendor/cadrille_model.py`;
 - source license: Apache License 2.0, copied verbatim as `LICENSE`.
+
+The evaluator audit adapter is derived from `evaluate.py` at the same revision:
+
+- upstream file SHA-256:
+  `03e3d8c720d2a9f851e21676403034740d1ba18f63b19f451ea71d760d549873`;
+- adapter: `src/da3_cad/evaluation/cadrille_reference.py`;
+- modifications: explicit seeds, exception capture and serializable diagnostics;
+  metric formulae, sampling order and pairwise-component loop are preserved.
 
 The upstream file had no per-file copyright header. The vendored file therefore
 adds a prominent source/revision/license notice and a modification notice.

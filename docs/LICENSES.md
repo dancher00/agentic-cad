@@ -9,6 +9,7 @@ with this repository.
 | [DA3-LARGE](https://huggingface.co/depth-anything/DA3-LARGE) | weights at `c54c26b16ec04d218e8d584ecf4bce082a9fcc20` | CC BY-NC 4.0 | no; CLI requires explicit per-run opt-in |
 | [DA3-BASE](https://huggingface.co/depth-anything/DA3-BASE) | weights at `f4a6c9b3c95e41c82048423d3493a81ec3fa810e` | Apache-2.0 | no; downloaded into ignored cache |
 | [cadrille](https://github.com/col14m/cadrille) | minimal modified source from `338db111a1612e8e3a61309f71db138c09474eec` | Apache-2.0 | yes; license and diff provenance retained in `third_party/cadrille/` |
+| [Manifold](https://github.com/elalish/manifold) / `manifold3d==3.5.2` | robust complete-mesh Boolean engine used by the evaluator | Apache-2.0 | package dependency only; not vendored |
 | [cadrille SFT](https://huggingface.co/maksimko123/cadrille) | weights at `2f422d1169e4362e2288b0e0f54bb3a2b504e0f9` | CC BY-NC 4.0 | no; exact opt-in plus SHA-256 verification |
 | [cadrille RL](https://huggingface.co/maksimko123/cadrille-rl) | weights at `712489b5890a0ce81b18cf441e14b2ed2eadc02a` | CC BY-NC 4.0 | no; exact opt-in plus SHA-256 verification |
 | [Qwen2-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct) | tokenizer/processor at `895c3a49bc3fa70a340399125c650a463535e71c` | Apache-2.0 | no; cached outside git |
