@@ -8,6 +8,7 @@ with this repository.
 | [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3) | source at `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` | Apache-2.0 | fetched into ignored `data/`; not redistributed |
 | [DA3-LARGE](https://huggingface.co/depth-anything/DA3-LARGE) | weights at `c54c26b16ec04d218e8d584ecf4bce082a9fcc20` | CC BY-NC 4.0 | no; CLI requires explicit per-run opt-in |
 | [DA3-BASE](https://huggingface.co/depth-anything/DA3-BASE) | weights at `f4a6c9b3c95e41c82048423d3493a81ec3fa810e` | Apache-2.0 | no; downloaded into ignored cache |
+| [DA3METRIC-LARGE](https://huggingface.co/depth-anything/DA3METRIC-LARGE) | weights at `4010e39f3634a45bc60553321fb49fb760bd594e` | Apache-2.0 | no; diagnostic download stays in an ignored cache |
 | [cadrille](https://github.com/col14m/cadrille) | minimal modified source from `338db111a1612e8e3a61309f71db138c09474eec` | Apache-2.0 | yes; license and diff provenance retained in `third_party/cadrille/` |
 | [Manifold](https://github.com/elalish/manifold) / `manifold3d==3.5.2` | robust complete-mesh Boolean engine used by the evaluator | Apache-2.0 | package dependency only; not vendored |
 | [cadrille SFT](https://huggingface.co/maksimko123/cadrille) | weights at `2f422d1169e4362e2288b0e0f54bb3a2b504e0f9` | CC BY-NC 4.0 | no; exact opt-in plus SHA-256 verification |
@@ -28,4 +29,3 @@ cards and immutable revisions, then requires the exact acknowledgement
 `--accept-license cc-by-nc-4.0`; the downloader verifies the complete weight
 SHA-256 and writes only a local receipt beneath the ignored cache. Package
 dependency licenses will be audited before release.
-

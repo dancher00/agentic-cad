@@ -703,6 +703,33 @@ reruns and the long campaign remain unexecuted. See
 `docs/SURFACE_FITTING_ABLATION.md` and
 `benchmarks/canonicalizer_precision_ablation/step2_local_plane.json`.
 
+### 7.7 Frozen camera, metric-depth and scale diagnostics
+
+Before any further surface method, four controls are registered on the same 74
+decoded pilot records. DA3-LARGE receives exact renderer K/E with upstream
+`align_to_input_ext_scale=True`; this row is mathematically identifiable only
+for the 54 records with N>=2 because N=1 has no camera baseline for Umeyama
+scale alignment. DA3METRIC-LARGE runs monocular metric depth using the official
+`mean(fx,fy)*output/300` conversion and explicitly attached GT renderer
+cameras. A third row runs unposed DA3-LARGE with `use_ray_pose=True`. All
+three reuse frozen baseline reconstruction masks and the frozen GT-blind
+reliability selector; GT masks are prohibited.
+
+The fourth control starts from the reproduced scoring decoder points in the
+existing GT proper-axis diagnostic frame. It minimizes only bidirectional
+squared sampled Chamfer x1000 to the same 8,192 GT points, first with the best
+single canonical-axis scale and then with a diagonal three-axis scale. Bounds
+are [0.5,2.0], the origin is fixed, and translation, ICP, continuous rotation
+and precision-driven optimization are forbidden. Overall median axis-oracle
+precision @.05 of at least 0.60 confirms the scale hypothesis. Results at all
+four precision thresholds, fitted scales, boundary hits and pairwise pose
+diagnostics are retained.
+
+The implementation, synthetic tests and full command are frozen in
+`docs/CAMERA_SCALE_DIAGNOSTICS_PROTOCOL.md`. The project stops after this
+report regardless of outcome. Neither a long campaign nor README figures may
+start from this step.
+
 ## 8. Licensing and acquisition behavior
 
 `docs/LICENSES.md` will distinguish code, model weights and datasets; a source
