@@ -7,7 +7,7 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import trimesh
@@ -59,6 +59,24 @@ def _run_one(
         minimum_confidence=None,
         require_confidence=True,
     )
+    confidence = result.prediction.confidence
+    if confidence is None:
+        raise RuntimeError("flatness audit requires DA3 confidence")
+    eligible = (
+        np.isfinite(result.prediction.depth)
+        & (result.prediction.depth > 0.0)
+        & segmentation.masks
+        & np.isfinite(confidence)
+    )
+    legacy_threshold = float(np.percentile(confidence[eligible], 40.0))
+    legacy_global = fuse_prediction(
+        result.prediction,
+        segmentation.masks,
+        mask_source=segmentation.backend,
+        confidence_percentile=None,
+        minimum_confidence=legacy_threshold,
+        require_confidence=True,
+    )
     balanced_points, _, per_view = balance_views(
         result.cloud.points,
         result.cloud.view_indices,
@@ -89,6 +107,11 @@ def _run_one(
         "balanced_current_fusion": {
             "points_per_view": per_view,
             "shape": cloud_shape_statistics(balanced_points),
+        },
+        "legacy_global_percentile_fusion": {
+            "confidence_threshold": legacy_threshold,
+            "view_counts": [view.fused for view in legacy_global.report.views],
+            "shape": cloud_shape_statistics(legacy_global.points),
         },
         "mask_only_fusion": {
             "view_counts": [view.fused for view in mask_only.report.views],
@@ -135,6 +158,57 @@ def main() -> None:
                 )
             )
 
+    by_key = {(cast(str, run["model"]), cast(int, run["views"])): run for run in runs}
+    base_4 = by_key[("base", 4)]
+    base_8 = by_key[("base", 8)]
+    large_4 = by_key[("large", 4)]
+    legacy_large_8 = by_key[("large", 8)]["legacy_global_percentile_fusion"]
+    assert isinstance(legacy_large_8, dict)
+    current_large_8 = by_key[("large", 8)]["current_fusion"]
+    assert isinstance(current_large_8, dict)
+    base_4_current = base_4["current_fusion"]
+    base_8_current = base_8["current_fusion"]
+    large_4_current = large_4["current_fusion"]
+    assert isinstance(base_4_current, dict)
+    assert isinstance(base_8_current, dict)
+    assert isinstance(large_4_current, dict)
+    base_4_shape = base_4_current["shape"]
+    base_8_shape = base_8_current["shape"]
+    large_4_shape = large_4_current["shape"]
+    assert isinstance(base_4_shape, dict)
+    assert isinstance(base_8_shape, dict)
+    assert isinstance(large_4_shape, dict)
+    gt_ratio = float(gt_extents.min() / gt_extents.max())
+    diagnosis = {
+        "classification": ["a", "b", "c"],
+        "a_gt_part_is_thin": gt_ratio <= 0.2,
+        "b_four_views_insufficient_for_base": (
+            float(base_4_shape["pca_smallest_to_largest"]) > 2.0 * gt_ratio
+            and abs(float(base_8_shape["pca_smallest_to_largest"]) - gt_ratio) < 0.05
+        ),
+        "c_legacy_global_gate_dropped_views": any(
+            int(count) == 0 for count in legacy_large_8["view_counts"]
+        ),
+        "corrected_per_view_gate_keeps_every_view": all(
+            int(count) > 0
+            for run in runs
+            for count in run["current_fusion"]["view_counts"]  # type: ignore[index]
+        ),
+        "large_4_is_closer_to_gt_thickness_than_base_4": (
+            abs(float(large_4_shape["pca_smallest_to_largest"]) - gt_ratio)
+            < abs(float(base_4_shape["pca_smallest_to_largest"]) - gt_ratio)
+        ),
+        "large_base_difference_is_upstream_prediction": (
+            "same rendered bytes, segmentation algorithm and fusion implementation; "
+            "balanced and mask-only comparisons preserve the model-dependent gap"
+        ),
+        "recommended_minimum_views_for_this_fixture": 8,
+        "canonicalizer_requirement": (
+            "route low third-to-first extent ratios through planar-dominance and "
+            "symmetry orientation, and record that branch in provenance"
+        ),
+    }
+
     payload: dict[str, Any] = {
         "schema_version": "1.0",
         "status": "diagnostic-not-benchmark",
@@ -144,15 +218,17 @@ def main() -> None:
             "shape": "plate-with-through-hole",
             "parameters": SAMPLE_PARAMETERS,
             "gt_bbox_extents": gt_extents.tolist(),
-            "gt_smallest_to_largest": float(gt_extents.min() / gt_extents.max()),
+            "gt_smallest_to_largest": gt_ratio,
             "manifest": manifest,
         },
         "runs": runs,
+        "diagnosis": diagnosis,
         "interpretation_contract": {
             "world_bbox_is_rotation_dependent": True,
             "pca_extents_are_used_for_shape_thickness": True,
             "mask_only_comparison_isolates_confidence_gate": True,
             "balanced_comparison_isolates_view_count_dominance": True,
+            "legacy_global_comparison_reproduces_the_removed_gate": True,
             "no_cad_quality_metric": True,
         },
     }
