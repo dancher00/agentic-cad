@@ -4,6 +4,16 @@ This protocol was committed before any result from the three new DA3 controls
 or the scale optimizer was inspected. It is a diagnostic extension of the
 74-record frozen pilot, not a benchmark row and not a long campaign.
 
+Protocol amendment (2026-08-10, before any aggregate report): the initial
+version admitted `N=2` to the GT-pose control. The full run stopped when
+upstream rejected a two-view path with `Degenerate covariance rank`; no report
+or aggregate result had yet been written or inspected. Two centred camera
+positions have rank at most one, while upstream's 3D Umeyama solve requires
+rank at least two. GT-pose eligibility is therefore corrected to `N>=3` with
+non-collinear centres. The frozen campaign has no `N=3` records, so the
+executed slice is the 49 `N={4,8,16}` records. Population, masks, metrics,
+thresholds, scale bounds and stop rule are unchanged.
+
 ## Population and isolation
 
 The population is the same 74 successfully decoded item/view pairs used by the
@@ -24,10 +34,10 @@ fit a world-frame alignment.
 
 - **GT pose:** pinned DA3-LARGE receives exact renderer intrinsics and
   world-to-camera extrinsics with `align_to_input_ext_scale=True`. This is
-  identifiable only for `N>=2`: upstream obtains depth scale by Umeyama
-  alignment of camera centres, while one camera has no baseline. The 20
-  `N=1` records are therefore labelled `not-identifiable`, not patched with
-  a guessed scale. All other 54 records run, including the common 20-object
+  identifiable only for at least three non-collinear camera centres: upstream
+  obtains a Sim(3) by 3D Umeyama alignment. The 20 `N=1` and five `N=2`
+  records are therefore labelled `not-identifiable`, not patched with a
+  guessed scale. The remaining 49 records run, including the common 20-object
   `N=8` slice.
 - **Metric depth + GT cameras:** pinned Apache-2.0 DA3METRIC-LARGE runs as the
   monocular model it actually is. The official

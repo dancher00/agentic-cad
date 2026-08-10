@@ -708,8 +708,11 @@ reruns and the long campaign remain unexecuted. See
 Before any further surface method, four controls are registered on the same 74
 decoded pilot records. DA3-LARGE receives exact renderer K/E with upstream
 `align_to_input_ext_scale=True`; this row is mathematically identifiable only
-for the 54 records with N>=2 because N=1 has no camera baseline for Umeyama
-scale alignment. DA3METRIC-LARGE runs monocular metric depth using the official
+with at least three non-collinear camera centres. A pre-aggregate full-run
+failure corrected the initial N>=2 claim: two centred positions have covariance
+rank at most one and upstream 3D Umeyama rejects them. Thus N=1/N=2 are marked
+not identifiable and the 49 available N={4,8,16} records run. DA3METRIC-LARGE
+runs monocular metric depth using the official
 `mean(fx,fy)*output/300` conversion and explicitly attached GT renderer
 cameras. A third row runs unposed DA3-LARGE with `use_ray_pose=True`. All
 three reuse frozen baseline reconstruction masks and the frozen GT-blind

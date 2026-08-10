@@ -45,11 +45,11 @@ from da3_cad.geometry.reliability import select_reliable_points
 from da3_cad.models import BoolArray, DepthPrediction, FloatArray, ObservationSet
 from da3_cad.observations import load_observations
 
-PROTOCOL_VERSION = "da3-cad-camera-scale-diagnostics-v1"
+PROTOCOL_VERSION = "da3-cad-camera-scale-diagnostics-v1.1"
 CONTROL_VARIANTS = ("gt-pose", "metric-gt-pose", "ray-pose")
 SCALE_VARIANTS = ("scale-single-axis", "scale-diagonal")
 SCALE_CONFIRMATION_PRECISION = 0.60
-GT_POSE_MINIMUM_VIEWS = 2
+GT_POSE_MINIMUM_VIEWS = 3
 
 
 def _clean_repository(root: Path) -> None:
@@ -321,18 +321,17 @@ def _run_prediction(
             if prediction.extrinsics.shape[-2:] == (3, 4)
             else renderer.extrinsics
         )
+        intrinsics_error = float(
+            np.max(np.abs(prediction.intrinsics - renderer.intrinsics))
+        )
+        extrinsics_error = float(
+            np.max(np.abs(prediction.extrinsics - expected_extrinsics))
+        )
         camera_validation = {
-            "intrinsics_max_abs_error": float(
-                np.max(np.abs(prediction.intrinsics - renderer.intrinsics))
-            ),
-            "extrinsics_max_abs_error": float(
-                np.max(np.abs(prediction.extrinsics - expected_extrinsics))
-            ),
+            "intrinsics_max_abs_error": intrinsics_error,
+            "extrinsics_max_abs_error": extrinsics_error,
         }
-        if (
-            float(camera_validation["intrinsics_max_abs_error"]) > 1e-5
-            or float(camera_validation["extrinsics_max_abs_error"]) > 1e-5
-        ):
+        if intrinsics_error > 1e-5 or extrinsics_error > 1e-5:
             raise RuntimeError(f"{variant} failed to retain supplied renderer cameras")
     runtime = {**runtime, "returned_camera_validation": camera_validation}
     report = _store_prediction(
@@ -829,8 +828,8 @@ def main() -> int:
                 controls[variant] = {
                     "status": "not-identifiable",
                     "reason": (
-                        "N=1 has no camera baseline; upstream Umeyama cannot identify "
-                        "the depth-to-input-pose scale"
+                        "N<3 has camera-centre covariance rank below two; upstream "
+                        "3D Umeyama cannot identify the depth-to-input-pose Sim(3)"
                     ),
                 }
                 continue
@@ -927,7 +926,7 @@ def main() -> int:
     paired = {
         variant: _paired_comparison(records, variant)
         for variant in (*CONTROL_VARIANTS, *SCALE_VARIANTS)
-        if aggregates[variant]["records_complete"] > 0
+        if cast(int, aggregates[variant]["records_complete"]) > 0
     }
     report: dict[str, object] = {
         "schema_version": PROTOCOL_VERSION,
@@ -938,9 +937,9 @@ def main() -> int:
             "view_count_distribution": dict(
                 sorted(Counter(record["view_count"] for record in records).items())
             ),
-            "gt_pose_n1": (
-                "not identifiable and not inferred: one camera supplies no baseline "
-                "for upstream Umeyama depth-scale alignment"
+            "gt_pose_n1_n2": (
+                "not identifiable and not inferred: fewer than three camera centres "
+                "cannot supply covariance rank two for upstream 3D Umeyama alignment"
             ),
             "primary_comparison_frame": "GT proper-axis oracle; diagnostic only",
             "precision_thresholds": list(PRECISION_THRESHOLDS),
@@ -995,7 +994,7 @@ def main() -> int:
         "pose_diagnostics": {
             variant: _pose_aggregate(records, variant)
             for variant in ("baseline", *CONTROL_VARIANTS)
-            if aggregates[variant]["records_complete"] > 0
+            if cast(int, aggregates[variant]["records_complete"]) > 0
         },
         "diagnostic_decision": _diagnostic_decision(aggregates),
         "prediction_cache_counts": dict(sorted(cache_hits.items())),

@@ -6,6 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 _SCRIPT = runpy.run_path(str(ROOT / "scripts" / "run_camera_scale_diagnostics.py"))
 _DECISION = _SCRIPT["_diagnostic_decision"]
+_GT_POSE_MINIMUM_VIEWS = _SCRIPT["GT_POSE_MINIMUM_VIEWS"]
 
 
 def _aggregate(value: float) -> dict[str, object]:
@@ -13,6 +14,11 @@ def _aggregate(value: float) -> dict[str, object]:
         "records_complete": 74,
         "precision": {"axis_oracle": {"0.05": {"median": value}}},
     }
+
+
+def test_gt_pose_requires_enough_centres_for_rank_two_umeyama() -> None:
+    # One or two centred 3D points have covariance rank at most 0 or 1.
+    assert _GT_POSE_MINIMUM_VIEWS == 3
 
 
 def test_scale_decision_uses_frozen_sixty_percent_target() -> None:
