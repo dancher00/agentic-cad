@@ -43,7 +43,8 @@ class ViewFusionStats:
 @dataclass(frozen=True, slots=True)
 class FusionReport:
     confidence_percentile: float | None
-    confidence_threshold: float | None
+    confidence_scope: Literal["per-view"]
+    confidence_thresholds: tuple[float | None, ...]
     mask_source: str
     require_confidence: bool
     views: tuple[ViewFusionStats, ...]
@@ -55,7 +56,8 @@ class FusionReport:
     def as_dict(self) -> dict[str, object]:
         return {
             "confidence_percentile": self.confidence_percentile,
-            "confidence_threshold": self.confidence_threshold,
+            "confidence_scope": self.confidence_scope,
+            "confidence_thresholds": list(self.confidence_thresholds),
             "mask_source": self.mask_source,
             "require_confidence": self.require_confidence,
             "fused_points": self.fused_points,
@@ -103,28 +105,39 @@ def _confidence_gate(
     confidence_percentile: float | None,
     minimum_confidence: float | None,
     require_confidence: bool,
-) -> tuple[FloatArray, float | None]:
+) -> tuple[FloatArray, tuple[float | None, ...]]:
     confidence = prediction.confidence
     if confidence is None:
         if require_confidence:
             raise ValueError("fusion requires confidence but the backend returned none")
-        return np.ones_like(prediction.depth, dtype=np.float32), None
+        return (
+            np.ones_like(prediction.depth, dtype=np.float32),
+            tuple(None for _ in range(prediction.depth.shape[0])),
+        )
+    if confidence_percentile is not None and not 0.0 <= confidence_percentile <= 100.0:
+        raise ValueError("confidence_percentile must be in [0,100]")
+    if minimum_confidence is not None and not np.isfinite(minimum_confidence):
+        raise ValueError("minimum_confidence must be finite")
+
     values = np.asarray(confidence, dtype=np.float32)
-    eligible = np.isfinite(prediction.depth) & (prediction.depth > 0.0) & masks
-    eligible_values = values[eligible & np.isfinite(values)]
-    if eligible_values.size == 0:
-        raise ValueError("no finite confidence values remain after depth/mask gating")
-    thresholds: list[float] = []
-    if confidence_percentile is not None:
-        if not 0.0 <= confidence_percentile <= 100.0:
-            raise ValueError("confidence_percentile must be in [0,100]")
-        thresholds.append(float(np.percentile(eligible_values, confidence_percentile)))
-    if minimum_confidence is not None:
-        if not np.isfinite(minimum_confidence):
-            raise ValueError("minimum_confidence must be finite")
-        thresholds.append(float(minimum_confidence))
-    threshold = max(thresholds) if thresholds else float(np.min(eligible_values))
-    return values, threshold
+    thresholds: list[float | None] = []
+    for view_index in range(prediction.depth.shape[0]):
+        eligible = (
+            np.isfinite(prediction.depth[view_index])
+            & (prediction.depth[view_index] > 0.0)
+            & masks[view_index]
+            & np.isfinite(values[view_index])
+        )
+        eligible_values = values[view_index][eligible]
+        if eligible_values.size == 0:
+            raise ValueError(f"view {view_index} has no finite confidence after depth/mask gating")
+        candidates: list[float] = []
+        if confidence_percentile is not None:
+            candidates.append(float(np.percentile(eligible_values, confidence_percentile)))
+        if minimum_confidence is not None:
+            candidates.append(float(minimum_confidence))
+        thresholds.append(max(candidates) if candidates else None)
+    return values, tuple(thresholds)
 
 
 def fuse_prediction(
@@ -143,7 +156,7 @@ def fuse_prediction(
         raise ValueError("mask_source must be explicit")
     count, height, width = prediction.depth.shape
     mask_values = _validate_masks(masks, (count, height, width))
-    confidence, threshold = _confidence_gate(
+    confidence, thresholds = _confidence_gate(
         prediction,
         mask_values,
         confidence_percentile=confidence_percentile,
@@ -169,6 +182,7 @@ def fuse_prediction(
         )
         mask_gate = finite_depth & mask_values[view_index]
         confidence_gate = np.isfinite(confidence[view_index])
+        threshold = thresholds[view_index]
         if threshold is not None:
             confidence_gate &= confidence[view_index] >= threshold
         keep = unprojected.valid_mask & mask_gate & confidence_gate
@@ -202,7 +216,8 @@ def fuse_prediction(
         raise ValueError("no points remain after mask/confidence fusion gates")
     report = FusionReport(
         confidence_percentile=confidence_percentile,
-        confidence_threshold=threshold,
+        confidence_scope="per-view",
+        confidence_thresholds=thresholds,
         mask_source=mask_source,
         require_confidence=require_confidence,
         views=tuple(stats),

@@ -40,7 +40,7 @@ def _prediction(
     )
 
 
-def test_fusion_applies_mask_and_global_confidence_percentile() -> None:
+def test_fusion_applies_mask_and_per_view_confidence_percentile() -> None:
     masks = np.array(
         [
             [[False, True], [False, True]],
@@ -56,11 +56,12 @@ def test_fusion_applies_mask_and_global_confidence_percentile() -> None:
         confidence_percentile=50.0,
     )
 
-    assert cloud.report.confidence_threshold == pytest.approx(0.75)
+    assert cloud.report.confidence_scope == "per-view"
+    assert cloud.report.confidence_thresholds == pytest.approx((0.85, 0.65))
     assert cloud.report.fused_points == 2
-    assert cloud.view_indices.tolist() == [0, 0]
-    assert cloud.pixel_xy.tolist() == [[1, 0], [1, 1]]
-    np.testing.assert_allclose(cloud.points, [[1.0, 0.0, 1.0], [1.0, 1.0, 1.0]])
+    assert cloud.view_indices.tolist() == [0, 1]
+    assert cloud.pixel_xy.tolist() == [[1, 0], [1, 0]]
+    np.testing.assert_allclose(cloud.points, [[1.0, 0.0, 1.0], [6.0, 0.0, 1.0]])
     assert cloud.scale.status == "unresolved"
     assert cloud.scale.world_units_to_mm is None
 
@@ -74,6 +75,7 @@ def test_fusion_keeps_view_observation_accounting() -> None:
         minimum_confidence=0.45,
     )
 
+    assert cloud.report.confidence_thresholds == (0.45, 0.45)
     assert [view.fused for view in cloud.report.views] == [2, 2]
     assert cloud.view_indices.tolist() == [0, 0, 1, 1]
     assert np.all(cloud.points[cloud.view_indices == 1, 0] >= 5.0)
@@ -100,5 +102,5 @@ def test_fusion_refuses_missing_confidence_without_explicit_opt_out() -> None:
         confidence_percentile=None,
         require_confidence=False,
     )
-    assert cloud.report.confidence_threshold is None
+    assert cloud.report.confidence_thresholds == (None, None)
     assert cloud.report.fused_points == 8

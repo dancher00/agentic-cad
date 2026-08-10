@@ -78,7 +78,8 @@ def _run_one(
         "pose": result.report["runtime_pose_validation"],
         "current_fusion": {
             "confidence_percentile": result.cloud.report.confidence_percentile,
-            "confidence_threshold": result.cloud.report.confidence_threshold,
+            "confidence_scope": result.cloud.report.confidence_scope,
+            "confidence_thresholds": list(result.cloud.report.confidence_thresholds),
             "view_counts": fused_counts.tolist(),
             "view_fractions": (fused_counts / fused_counts.sum()).tolist(),
             "largest_view_fraction": float(fused_counts.max() / fused_counts.sum()),
