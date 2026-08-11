@@ -14,11 +14,12 @@ from da3_cad.models import ImageObservation, ObservationSet, UInt8Array
 
 IMAGE_EXTENSIONS: Final = {".jpg", ".jpeg", ".png"}
 EXIF_ORIENTATION: Final = 274
+CAPTURE_WARNING_BELOW: Final = 16
 CAPTURE_BENCHMARK: Final = {
     "status": "controlled-oracle-saturation-measured",
     "tested_view_counts": [8, 16, 24, 32],
     "measured_saturation_views": 16,
-    "informational_warning_below": 16,
+    "informational_warning_below": CAPTURE_WARNING_BELOW,
     "numeric_minimum_views": None,
     "numeric_recommended_views": None,
     "reason": (
@@ -156,7 +157,7 @@ def doctor_report(observations: ObservationSet) -> dict[str, object]:
 
     if len(images) < 3:
         warnings.append("fewer than 3 views: unseen geometry will be inferred")
-    if len(images) < int(CAPTURE_BENCHMARK["informational_warning_below"]):
+    if len(images) < CAPTURE_WARNING_BELOW:
         warnings.append(
             "fewer than 16 views: below the measured saturation point in the "
             "controlled oracle diagnostic; 16 is not a validated product minimum"
