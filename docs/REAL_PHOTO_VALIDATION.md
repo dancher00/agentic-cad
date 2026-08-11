@@ -80,15 +80,65 @@ plausibly expose the object around its sides.
 If a later frozen real-photo benchmark establishes a minimum or recommendation,
 those fields and the warning must be updated together with the new report SHA.
 
+## Run and inspect
+
+Run the preflight before allocating GPU memory, then reconstruct with the
+research profile and its two explicit non-commercial acknowledgements:
+
+```bash
+da3-cad doctor photos/ -o doctor.json
+da3-cad reconstruct photos/ -o output/part --config configs/research.yaml \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+da3-cad inspect output/part
+da3-cad viewer output/part --images photos/
+```
+
+Open `output/part/viewer.html` locally. It embeds the source thumbnails, fused
+cloud, final solid, primary versus implementation parameter tables, provenance
+summary and relative STEP/STL/JSON downloads; it makes no network requests.
+For a bad result, inspect in this order:
+
+1. `artefacts/geometry/mask_overlay_*.png`, then depth and confidence images;
+2. `artefacts/geometry/fused_cloud.ply` and `fusion_report.json`;
+3. `artefacts/canonicalizer/canonicalizer_trace.json` and its exact 256-point
+   decoder input;
+4. `artefacts/raw_decoder_output.py`, `decoder_report.json` and
+   `validation.json`;
+5. `parameters.json`, `quality.json` and `provenance.json`.
+
+| Symptom | Inspect first | Likely boundary |
+|---|---|---|
+| Background dominates cloud | mask overlays and mask pixel counts | segmentation, before DA3 fusion |
+| Views form several offset shells | camera arrays and per-view fusion counts | recovered pose / per-view depth scale |
+| Cloud is plausible but solid is unrelated | exact decoder input and raw decoder code | domain gap or decoder generation |
+| Solid is invalid or missing | decoder report and validation | generated-code policy, timeout or CAD Boolean |
+| Shape is right but physical dimensions are wrong | coordinate spaces and scale evidence | metric scale is unresolved |
+| Edit changes an incidental feature | primary/implementation parameter split | decoder supplied no engineering feature schema |
+
+The current Cadrille path deliberately rejects `--known-dimension`: lifted AST
+literals are replay parameters, not honestly identified engineering features.
+The flag works only where an explicit primary length exists, currently the
+permissive geometric templates, for example:
+
+```bash
+da3-cad reconstruct photos/ -o output/permissive --config configs/permissive.yaml \
+  --known-dimension body_width=80mm
+```
+
+This restriction prevents a caliper value from being attached to the wrong
+literal. Neural metric scaling remains product work until the decoder emits a
+feature schema; see `docs/UNITS_AND_PARAMETERS.md`.
+
 ## Real-photo validation record
 
 For each real capture, retain the original images and the emitted doctor JSON.
 Record camera/device, focal-length behavior, lighting, background, object
-dimensions and whether any frame was rejected. Run once without physical scale
-and once with `--known-dimension` when a trustworthy dimension is available;
-keep decoder-space, normalized-cube and millimetre transforms in provenance.
-Do not use a GT mask, ICP alignment or a GT-derived depth correction in the
-reported product row.
+dimensions and whether any frame was rejected. Run the neural profile without
+pretending decoder-native units are millimetres. A second metric run is valid
+only for a backend whose `parameters.json` exposes the measured feature as an
+editable primary length; keep decoder-space, normalized-cube and millimetre
+transforms in provenance. Do not use a GT mask, ICP alignment or a GT-derived
+depth correction in the reported product row.
 
 Sources:
 
