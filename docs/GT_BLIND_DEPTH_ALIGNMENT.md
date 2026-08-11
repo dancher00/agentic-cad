@@ -53,11 +53,18 @@ but neither criterion passed the original gate at any tested view count.
 
 At N=32, projected scale/shift sign agreement was 54.5%/58.2% and fixed-plane
 was 53.3%/59.9%; both miss the required 55% scale agreement. More importantly,
-the gauge-fixed oracle median within-object scale max/min expanded to 13.89,
-while the blind estimates remained at 2.51 and 2.39. Between 11% and 21% of
-high-N oracle scales lay outside the blind `[0.5,2.0]` bounds depending on N.
-The added overlaps improve ranking and error, but do not identify the oracle
-correction closely enough for deployment.
+the gauge-fixed oracle median within-object scale max/min expanded from 1.497
+on the primary 20-object N=8 gate to 13.89 on the 19-object N=32 common curve,
+while the N=32 blind estimates remained at 2.51 and 2.39. These populations are
+reported separately rather than silently paired (the common-19 N=8 oracle
+ratio is 1.434). A 13.89-fold within-object spread is not a small calibration
+error: DA3 assigns fundamentally incompatible depth scales to some views of
+the same object. A mutual-consistency objective then seeks a compromise where
+the oracle requires extreme, different corrections, which explains why more
+overlap improved coefficient ranking without recovering the coefficients.
+Between 11% and 21% of high-N oracle scales lay outside the blind `[0.5,2.0]`
+bounds depending on N. The added overlaps do not identify the oracle correction
+closely enough for deployment.
 
 The supplemental immutable report is
 `benchmarks/gt_blind_view_curve/report.json`, SHA-256

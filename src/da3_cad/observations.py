@@ -15,14 +15,15 @@ from da3_cad.models import ImageObservation, ObservationSet, UInt8Array
 IMAGE_EXTENSIONS: Final = {".jpg", ".jpeg", ".png"}
 EXIF_ORIENTATION: Final = 274
 CAPTURE_BENCHMARK: Final = {
-    "status": "no-numeric-capture-threshold-established",
+    "status": "controlled-oracle-saturation-measured",
     "tested_view_counts": [8, 16, 24, 32],
-    "numeric_warning_below": None,
+    "measured_saturation_views": 16,
+    "informational_warning_below": 16,
     "numeric_minimum_views": None,
     "numeric_recommended_views": None,
     "reason": (
-        "the common-object reconstruction curve was non-monotone and neither "
-        "GT-blind parameter criterion passed its gate at any tested view count"
+        "the controlled-oracle precision curve peaked at 16 views; 24 and 32 "
+        "did not improve it, but this does not establish a product minimum"
     ),
     "capture_design_limit": (
         "the nested schedule changes image count and angular fill together; "
@@ -155,6 +156,11 @@ def doctor_report(observations: ObservationSet) -> dict[str, object]:
 
     if len(images) < 3:
         warnings.append("fewer than 3 views: unseen geometry will be inferred")
+    if len(images) < int(CAPTURE_BENCHMARK["informational_warning_below"]):
+        warnings.append(
+            "fewer than 16 views: below the measured saturation point in the "
+            "controlled oracle diagnostic; 16 is not a validated product minimum"
+        )
     if exact_duplicates:
         warnings.append(f"exact duplicate inputs: {', '.join(exact_duplicates)}")
     if near_pairs:

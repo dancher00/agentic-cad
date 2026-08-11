@@ -2,23 +2,25 @@
 
 ## What the benchmark supports
 
-There is currently no measured minimum or recommended photo count. The tested
-counts are 8, 16, 24 and 32, but neither the reconstruction curve nor the
-GT-blind parameter curve establishes a deployable threshold.
+There is no measured minimum photo count. There is, however, a measured
+saturation point in the controlled exact-camera plus GT-only per-view affine
+diagnostic: its best tested result occurs at 16 views, and adding views through
+32 does not improve it. This is an empirical saturation result, not a claim
+that 16 is sufficient for arbitrary user photographs.
 
 | Capture question | Measured answer |
 |---|---|
 | Minimum frames | not established |
-| Recommended frames | not established |
+| Measured saturation point | 16 in the controlled oracle diagnostic |
 | Highest tested count | 32 |
-| Does 32 beat 16 in reconstruction? | not established; the controlled curve is non-monotone |
+| Does 32 beat 16 in reconstruction? | no: 0.734 versus 0.750 precision@0.05 |
 | Is count more important than angular separation? | not identifiable from the nested schedule |
 
 On the same 19 objects, exact-pose plus GT-only per-view-affine diagnostic
 precision@0.05 was 0.6094, 0.7500, 0.7031 and 0.7344 for N=8, 16, 24 and 32.
-The adjacent paired median changes were +0.0625, -0.0078 and +0.0195. This does
-not support a plateau or a numeric capture threshold, and specifically does
-not show that 32 frames outperform 16.
+The curve peaks at 16; N=24 and N=32 remain below that peak. We therefore call
+16 the measured saturation point over this tested range: more than 16 views
+did not help. We do not reinterpret it as a minimum or universal recommendation.
 
 More views nevertheless made the blind coefficients easier to rank. On the
 common 19-object set, scale/shift Spearman rho changed as follows:
@@ -56,9 +58,10 @@ Use these as operational precautions, not benchmarked quality guarantees:
    near-duplicates.
 4. Keep exposure and focus stable, avoid motion blur, and use a background that
    the configured segmenter can separate from the part.
-5. If capture cost is negligible, extra well-separated frames up to the tested
-   maximum of 32 are reasonable diagnostic redundancy. Do not interpret 32 as
-   a measured recommendation or 8/16 as a measured minimum.
+5. Target 16 well-separated views when practical. In the controlled diagnostic,
+   24 and 32 did not improve on 16; extra frames may still provide operational
+   redundancy, but they have no measured quality gain here. Do not interpret
+   16 as a proven minimum for arbitrary photographs.
 
 DA3-LARGE at N=32 used at most 7.64 GiB allocated and 10.51 GiB reserved on the
 16 GiB test GPU, and model tensors were moved off CUDA afterward. That is a
@@ -67,15 +70,15 @@ resource observation, not a quality threshold.
 ## Doctor behavior
 
 `da3-cad doctor INPUT_DIR` reports the benchmark status as
-`no-numeric-capture-threshold-established`. Its fields
-`numeric_warning_below`, `numeric_minimum_views` and
-`numeric_recommended_views` are intentionally `null`. It therefore does not
-emit a fabricated “below N” warning. The independent fewer-than-three warning
-remains because fewer than three distinct views cannot plausibly expose the
-object around its sides; it is not presented as a benchmark quality threshold.
+`controlled-oracle-saturation-measured`. Below 16 inputs it emits a qualified
+warning that the capture has not reached the measured saturation point. Its
+`numeric_minimum_views` and `numeric_recommended_views` remain `null`: the
+warning is not a fabricated sufficiency threshold. The independent
+fewer-than-three warning remains because fewer than three distinct views cannot
+plausibly expose the object around its sides.
 
-If a later frozen benchmark establishes a stable numeric threshold, all three
-fields and the warning must be updated together with the new report SHA.
+If a later frozen real-photo benchmark establishes a minimum or recommendation,
+those fields and the warning must be updated together with the new report SHA.
 
 ## Real-photo validation record
 
