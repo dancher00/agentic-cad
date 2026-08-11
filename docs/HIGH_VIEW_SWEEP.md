@@ -56,12 +56,13 @@ because this paired table excludes the one object absent at larger N. The
 paired changes are computed per object before taking the median; they are not
 differences of independently rounded medians.
 
-Under the frozen rule, only `8 -> 16` is a material gain. The curve is
-non-monotone, so this experiment yields neither a plateau count nor a numeric
-minimum/recommended capture count. In particular, it does not support a claim
-that 32 photographs outperform 16 on this population. The nested max-min
-schedule also changes both image count and angular fill, so it cannot identify
-whether any difference comes from count or viewpoint distribution alone.
+Under the frozen rule, only `8 -> 16` is a material gain. The curve peaks at
+16 and both later measurements remain below that peak, so 16 is the measured
+saturation point over the tested range: adding views through 32 does not help
+this controlled oracle row. This is not a numeric minimum or a universal
+recommendation for user photographs. The nested max-min schedule also changes
+both image count and angular fill, so it cannot identify whether the gain up to
+16 comes from count or viewpoint distribution alone.
 
 The GT oracle becomes increasingly extreme at high N: the median within-object
 maximum/minimum scale ratio is 12.08 at N=24 and 13.89 at N=32, with 51/456 and
@@ -76,8 +77,8 @@ peak reserved memory is 10.51 GiB on the 16-GiB RTX 5080. No run failed for
 memory. Capturing and processing 32 views is therefore feasible on the tested
 hardware, but it is not yet an evidence-backed quality recommendation.
 
-The next frozen measurement is the GT-blind per-view affine-depth estimator.
-Its parameter fidelity is evaluated as a function of `N={8,16,24,32}` before
-precision is inspected. Capture guidance and the doctor warning remain
-withheld until that linked experiment can either produce a stable threshold or
-show that no numeric threshold is supported.
+The linked GT-blind per-view affine-depth estimator subsequently failed its
+parameter gate at every `N={8,16,24,32}`; see
+`docs/GT_BLIND_DEPTH_ALIGNMENT.md`. `doctor` now reports the controlled
+16-view saturation result as a qualified informational warning, while leaving
+minimum and recommended view counts unset.
