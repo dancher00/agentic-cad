@@ -115,6 +115,7 @@ def _geometry_stage(
     item_id_value: str,
     dataset_revision: str,
     master_views: Path,
+    master_masks: Path | None = None,
     view_count: int,
     item_config: AppConfig,
     repository_sha: str,
@@ -125,9 +126,25 @@ def _geometry_stage(
     subset_root = output_root / "view_subsets" / dataset / item_id_value / f"n{view_count:02d}"
     if not subset_root.exists():
         materialize_view_subset(master_views, subset_root, view_count)
-    input_sha = image_set_digest(subset_root)
+    image_sha = image_set_digest(subset_root)
+    mask_subset_root: Path | None = None
+    if master_masks is not None:
+        mask_subset_root = (
+            output_root
+            / "mask_subsets"
+            / dataset
+            / item_id_value
+            / f"n{view_count:02d}"
+        )
+        if not mask_subset_root.exists():
+            materialize_view_subset(master_masks, mask_subset_root, view_count)
+        input_sha = json_digest(
+            {"rgb_sha256": image_sha, "mask_sha256": image_set_digest(mask_subset_root)}
+        )
+    else:
+        input_sha = image_sha
     key = StageKey(
-        stage="da3-geometry",
+        stage=("da3-geometry-gt-mask-oracle" if master_masks is not None else "da3-geometry"),
         item_id=f"{dataset}-{item_id_value}",
         dataset_revision=dataset_revision,
         input_sha256=input_sha,
@@ -149,6 +166,7 @@ def _geometry_stage(
             temporary,
             item_config,
             accepted_noncommercial=True,
+            segmentation_mask_dir=mask_subset_root,
         )
         elapsed = time.perf_counter() - started
         lifecycle = cast(dict[str, Any], result.report["da3"])["lifecycle"]

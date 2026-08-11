@@ -31,6 +31,7 @@ from da3_cad.config import load_config
 from da3_cad.evaluation.evaluator import EvaluationConfig, Evaluator
 
 VIEW_COUNTS = (1, 2, 4, 8, 16)
+ORACLE_VIEW_COUNTS = (8,)
 CANDIDATE_BUDGETS = (1, 10)
 
 
@@ -70,12 +71,41 @@ def _materialize_master(
     return views_root
 
 
+def _materialize_oracle_masks(
+    item: dict[str, Any],
+    *,
+    data_root: Path,
+    output_root: Path,
+) -> Path:
+    masks_root = output_root / str(item["item_id"]) / "masks"
+    masks_root.mkdir(parents=True, exist_ok=True)
+    expected_names: set[str] = set()
+    for index, view in enumerate(item["views"]):
+        name = f"view_{index:03d}.png"
+        expected_names.add(name)
+        source = data_root / str(view["audit_mask_path"])
+        expected_sha = str(view["audit_mask_sha256"])
+        if sha256_file(source) != expected_sha:
+            raise ValueError(f"T-LESS visible-mask digest mismatch: {source}")
+        destination = masks_root / name
+        if destination.is_file():
+            if sha256_file(destination) != expected_sha:
+                raise ValueError(f"stale materialized T-LESS mask: {destination}")
+        else:
+            shutil.copy2(source, destination)
+    extras = {path.name for path in masks_root.glob("*.png")} - expected_names
+    if extras:
+        raise ValueError(f"unexpected materialized T-LESS masks: {sorted(extras)}")
+    return masks_root
+
+
 def _mask_audit(
     geometry_output: Path,
     item: dict[str, Any],
     *,
     view_count: int,
     data_root: Path,
+    oracle: bool,
 ) -> dict[str, object]:
     payload = np.load(geometry_output / "artefacts/camera_prediction.npz")
     predicted = np.asarray(payload["masks"], dtype=np.bool_)
@@ -116,7 +146,11 @@ def _mask_audit(
         )
     intersection, union, proposal_pixels, target_pixels = (int(value) for value in totals)
     return {
-        "policy": "post-hoc only; GT mask was not available to reconstruction",
+        "policy": (
+            "official visible-instance GT mask supplied to reconstruction; evaluation oracle"
+            if oracle
+            else "post-hoc only; GT mask was not available to reconstruction"
+        ),
         "resize": "nearest-neighbour from original sensor image to DA3 processed shape",
         "views": records,
         "micro": {
@@ -183,6 +217,11 @@ def main() -> int:
     )
     parser.add_argument("--max-items", type=int)
     parser.add_argument("--view-count", type=int, action="append")
+    parser.add_argument(
+        "--segmentation-mode",
+        choices=("automatic", "gt-mask-oracle"),
+        default="automatic",
+    )
     parser.add_argument("--accept-noncommercial-weights", action="store_true")
     parser.add_argument("--accept-license")
     parser.add_argument("--dry-run", action="store_true")
@@ -200,13 +239,24 @@ def main() -> int:
         if args.max_items <= 0:
             raise ValueError("--max-items must be positive")
         items = items[: args.max_items]
-    views = tuple(args.view_count) if args.view_count else VIEW_COUNTS
-    if not views or any(value not in VIEW_COUNTS for value in views):
-        raise ValueError("T-LESS view counts must be selected from 1,2,4,8,16")
+    oracle = args.segmentation_mode == "gt-mask-oracle"
+    allowed_views = ORACLE_VIEW_COUNTS if oracle else VIEW_COUNTS
+    views = tuple(args.view_count) if args.view_count else allowed_views
+    if not views or any(value not in allowed_views for value in views):
+        allowed = ",".join(str(value) for value in allowed_views)
+        raise ValueError(
+            f"T-LESS {args.segmentation_mode} view counts must be selected from {allowed}"
+        )
     repository_sha = repository_commit(Path.cwd())
     config = load_config(args.config, device="cuda", seed=GLOBAL_SEED)
     if config.depth_backend != "da3-large" or config.cad_backend != "cadrille-rl":
         raise ValueError("T-LESS protocol is frozen to DA3-LARGE and Cadrille-RL")
+    expected_segmentation = "gt-mask-oracle" if oracle else "depth-confidence"
+    if config.geometry.segmentation_backend != expected_segmentation:
+        raise ValueError(
+            f"{args.segmentation_mode} requires geometry.segmentation_backend="
+            f"{expected_segmentation}"
+        )
     config_sha = json_digest(config.model_dump(mode="json"))
     item_ids = tuple(str(item["item_id"]) for item in items)
     print(
@@ -216,8 +266,10 @@ def main() -> int:
                 "items": len(items),
                 "view_counts": views,
                 "candidate_budgets": CANDIDATE_BUDGETS,
-                "full_frame_rgb_only": True,
-                "gt_masks_or_cameras_in_reconstruction": False,
+                "full_frame_rgb": True,
+                "segmentation_mode": args.segmentation_mode,
+                "gt_mask_in_reconstruction": oracle,
+                "gt_camera_in_reconstruction": False,
             },
             sort_keys=True,
         )
@@ -238,14 +290,23 @@ def main() -> int:
     for view_count in views:
         for budget in CANDIDATE_BUDGETS:
             row = "single-decode" if budget == 1 else "best-of-10-input-CD"
+            protocol = (
+                "da3-cad-tless-primesense-gt-mask-oracle-v1"
+                if oracle
+                else "da3-cad-tless-primesense-v1"
+            )
             manifest = BenchmarkRunManifest(
-                protocol="da3-cad-tless-primesense-v1",
+                protocol=protocol,
                 dataset="tless-primesense",
                 dataset_revision=source.revision,
                 split_name="all-30" if len(items) == 30 else f"smoke-{len(items)}",
                 split_sha256=split_sha,
                 item_ids=item_ids,
-                render_profile="real-camera-full-frame-rgb",
+                render_profile=(
+                    "real-camera-full-frame-rgb-plus-gt-visible-mask-oracle"
+                    if oracle
+                    else "real-camera-full-frame-rgb-automatic-segmentation"
+                ),
                 view_count=view_count,
                 candidate_row=cast(Any, row),
                 candidate_count=budget,
@@ -271,6 +332,15 @@ def main() -> int:
             data_root=args.data_root,
             output_root=args.output_root / "view_masters",
         )
+        master_masks = (
+            _materialize_oracle_masks(
+                item,
+                data_root=args.data_root,
+                output_root=args.output_root / "mask_masters",
+            )
+            if oracle
+            else None
+        )
         gt_path = args.gt_root / f"obj_{int(item['object_id']):06d}.ply"
         if not gt_path.is_file():
             raise FileNotFoundError(f"missing prepared T-LESS CAD GT: {gt_path}")
@@ -289,8 +359,9 @@ def main() -> int:
                     "wall_seconds": 0.0,
                     "source": "T-LESS Primesense full-frame RGB only",
                     "reconstruction_seed": reconstruction_seed,
-                    "gt_mask_access": False,
+                    "gt_mask_access": oracle,
                     "gt_camera_access": False,
+                    "segmentation_mode": args.segmentation_mode,
                 }
             }
             try:
@@ -299,6 +370,7 @@ def main() -> int:
                     item_id_value=item_id_value,
                     dataset_revision=source.revision,
                     master_views=master_views,
+                    master_masks=master_masks,
                     view_count=view_count,
                     item_config=item_config,
                     repository_sha=repository_sha,
@@ -312,6 +384,7 @@ def main() -> int:
                     item,
                     view_count=view_count,
                     data_root=args.data_root,
+                    oracle=oracle,
                 )
                 mask_audits.append(
                     {"item_id": item_id_value, "view_count": view_count, "audit": audit}
@@ -482,8 +555,20 @@ def main() -> int:
             )
     report: dict[str, object] = {
         "schema_version": "1.0",
-        "status": ("real-camera-all-30" if len(items) == 30 else "mechanics-smoke-not-a-claim"),
-        "protocol": "da3-cad-tless-primesense-v1",
+        "status": (
+            (
+                "real-camera-all-30-gt-mask-oracle-n8"
+                if oracle
+                else "real-camera-all-30-automatic-segmentation"
+            )
+            if len(items) == 30
+            else "mechanics-smoke-not-a-claim"
+        ),
+        "protocol": (
+            "da3-cad-tless-primesense-gt-mask-oracle-v1"
+            if oracle
+            else "da3-cad-tless-primesense-v1"
+        ),
         "repository_commit": repository_sha,
         "working_tree_clean_at_start": True,
         "dataset_revision": source.revision,
@@ -496,8 +581,22 @@ def main() -> int:
         "config_sha256": config_sha,
         "checkpoint_revisions": dict(checkpoint_revisions),
         "split_sha256": split_sha,
-        "reconstruction_gt_access": False,
-        "input_contract": "full-frame RGB only; no BOP depth, masks, K, E or crop",
+        "segmentation_mode": args.segmentation_mode,
+        "reconstruction_gt_access": oracle,
+        "oracle_access": {
+            "visible_instance_mask": oracle,
+            "bop_depth": False,
+            "gt_intrinsics": False,
+            "gt_pose": False,
+            "crop": False,
+            "cad_before_candidate_selection": False,
+        },
+        "input_contract": (
+            "full-frame RGB + official visible-instance GT mask oracle; "
+            "no BOP depth, K, E or crop"
+            if oracle
+            else "full-frame RGB with automatic segmentation; no BOP depth, masks, K, E or crop"
+        ),
         "rows": rows,
         "mask_audits": mask_audits,
     }

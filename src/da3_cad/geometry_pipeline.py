@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,7 @@ from da3_cad.models import DepthPrediction
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.segmentation.border_foreground import segment_border_foreground
 from da3_cad.segmentation.depth_foreground import segment_depth_foreground
+from da3_cad.segmentation.explicit_mask import segment_explicit_masks
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +66,7 @@ def run_geometry(
     config: AppConfig,
     *,
     accepted_noncommercial: bool,
+    segmentation_mask_dir: Path | None = None,
 ) -> GeometryRunResult:
     """Run real DA3 inference, segmentation, unprojection and gated fusion."""
 
@@ -91,9 +94,32 @@ def run_geometry(
         use_ray_pose=config.da3.use_ray_pose,
     )
     prediction = backend.predict(observations, device=config.device, seed=config.seed)
-    if config.geometry.segmentation_backend == "border-color":
+    source_masks: list[dict[str, str]] = []
+    if config.geometry.segmentation_backend == "gt-mask-oracle":
+        if segmentation_mask_dir is None:
+            raise ValueError(
+                "geometry.segmentation_backend=gt-mask-oracle requires "
+                "segmentation_mask_dir"
+            )
+        mask_paths = tuple(
+            sorted(segmentation_mask_dir.glob("*.png"), key=lambda path: path.name)
+        )
+        segmentation = segment_explicit_masks(prediction, mask_paths)
+        source_masks = [
+            {"name": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            for path in mask_paths
+        ]
+    elif config.geometry.segmentation_backend == "border-color":
+        if segmentation_mask_dir is not None:
+            raise ValueError(
+                "segmentation_mask_dir is only valid with the gt-mask-oracle backend"
+            )
         segmentation = segment_border_foreground(prediction)
     else:
+        if segmentation_mask_dir is not None:
+            raise ValueError(
+                "segmentation_mask_dir is only valid with the gt-mask-oracle backend"
+            )
         segmentation = segment_depth_foreground(
             prediction,
             confidence_percentile=config.geometry.segmentation_confidence_percentile,
@@ -190,6 +216,8 @@ def run_geometry(
         "runtime_unprojection_roundtrip": roundtrips,
         "segmentation": {
             "backend": segmentation.backend,
+            "oracle": config.geometry.segmentation_backend == "gt-mask-oracle",
+            "source_masks": source_masks,
             "selected_pixels": [int(mask.sum()) for mask in segmentation.masks],
             "warnings": list(segmentation.warnings),
         },
