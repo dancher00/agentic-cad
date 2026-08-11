@@ -2,9 +2,8 @@
 
 This is copy-ready PR text for the Awesome section of the official
 [`Depth-Anything-3`](https://github.com/ByteDance-Seed/Depth-Anything-3)
-README. Replace the single `REPOSITORY_URL` marker with the public repository
-URL before opening the PR. The local checkout has no Git remote, so inventing a
-link here would make the submission unverifiable.
+README. The proposed entry points to the public repository at
+[`dancher00/DA3-CAD`](https://github.com/dancher00/DA3-CAD).
 
 ## Proposed title
 
@@ -17,7 +16,7 @@ docs: add DA3-CAD to Awesome projects
 Insert this bullet in the existing `## 🌟 Awesome Work using DA3` list:
 
 ```markdown
-* [DA3-CAD](REPOSITORY_URL): Multi-view RGB-to-CadQuery/STEP/STL research pipeline with deterministic evaluation, an offline viewer, and measured T-LESS Primesense results.
+* [DA3-CAD](https://github.com/dancher00/DA3-CAD): Multi-view RGB-to-CadQuery/STEP/STL research pipeline with deterministic evaluation, an offline viewer, and measured T-LESS Primesense results.
 ```
 
 ## Proposed PR body
@@ -61,8 +60,7 @@ arbitrary phone photos.
 
 ## Maintainer verification before submission
 
-1. Replace `REPOSITORY_URL` in this file and confirm it opens without
-   authentication.
+1. Confirm `https://github.com/dancher00/DA3-CAD` opens without authentication.
 2. Confirm the public default branch contains `README.md`, `LICENSE`,
    `benchmarks/release_facts.json`, and `docs/TLESS_RESULTS.md`.
 3. Run `python scripts/build_release_facts.py`; it must reject a missing or

@@ -73,7 +73,9 @@ def test_release_documents_match_generated_evidence() -> None:
     assert segmentation["metrics"]["material_gain"] is False
     assert "2.620" in readme
     assert "third lever" in (readme + tless_doc)
-    assert "REPOSITORY_URL" in Path("docs/AWESOME_PR.md").read_text(encoding="utf-8")
+    awesome_pr = Path("docs/AWESOME_PR.md").read_text(encoding="utf-8")
+    assert "REPOSITORY_URL" not in awesome_pr
+    assert "https://github.com/dancher00/DA3-CAD" in awesome_pr
 
     assert facts["bottleneck-uncalibrated"]["metrics"]["precision_at_0.05"] == 0.21875
     assert facts["bottleneck-exact-cameras"]["metrics"]["precision_at_0.05"] == 0.4296875

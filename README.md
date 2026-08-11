@@ -7,22 +7,18 @@ stage supplies a 256-point cloud to [cadrille](https://github.com/col14m/cadrill
 and generated code runs in an AST-constrained, resource-limited subprocess. An
 offline viewer shows the photographs, cloud, solid, parameters and provenance.
 
-This is an honest research tool, not a production reverse-engineering system.
-The measured bottleneck is agreement of camera pose and depth scale between
-views. Arbitrary handheld-phone accuracy has not been measured, neural output
-has no reliable metric scale, and Cadrille's lifted literals are implementation
-parameters rather than proven engineering design intent.
+![DA3-CAD pipeline: rendered input views to fused cloud, recovered solid and implementation parameters](docs/assets/readme/hero.gif)
 
-On T-LESS, replacing a failed automatic mask (4.42% precision at N=8) with the
-official visible-instance mask raises mean IoU only from 6.29% to 8.91%. The
-`+2.62` percentage-point gain is below the preregistered `+5`-point materiality
-threshold: segmentation is visibly broken in clutter, but correcting it does
-not remove the dominant camera/scale domain gap.
+*Frozen rendered Fusion 360 showcase, N=8, seed 20260810, selected by the
+committed rule—not a hand-picked product claim. CD×10³ 14.671, IoU 13.68%; the
+recovered literals are explicitly not presented as design intent.*
 
-Supported geometric controls cover boxes, planar or circular extrusions and
-circular through-holes. Neural code can express a broader CadQuery vocabulary,
-but threads, gears, freeform surfacing, assemblies, tolerances and GD&T are not
-supported claims.
+A valid run writes `model.py`, `model.step`, `model.stl`, `parameters.json`, a
+quality report and complete provenance. This is an honest research tool, not a
+production reverse-engineering system: the measured bottleneck is agreement of
+camera pose and depth scale between views. Arbitrary handheld-phone accuracy is
+unmeasured, neural output has no reliable metric scale, and Cadrille literals
+are implementation parameters rather than a recovered semantic feature tree.
 
 ## Try it without a GPU
 
@@ -47,6 +43,13 @@ Then inspect, edit and open the self-contained viewer:
 `outputs/sample/viewer.html` makes no network requests. The stub uses the
 supplied pixels, but it is not a geometric-quality result; every stub artifact
 is visibly marked `STUB`.
+
+![Offline DA3-CAD viewer with solid, source views, exports, parameters and provenance](docs/assets/readme/viewer.png)
+
+*The viewer screenshot uses the frozen rendered neural showcase so every panel
+is populated; the GPU-free command above produces a conspicuously labelled
+`STUB` result. The viewer normalizes geometry for inspection and does not invent
+millimetres.*
 
 ## Run the research model
 
@@ -88,6 +91,8 @@ are substantially narrower than the neural profile.
 
 ## Main result: cameras and per-view scale are the bottleneck
 
+![Measured bottleneck decomposition for camera pose, per-view depth scale and segmentation](docs/assets/readme/bottleneck_decomposition.png)
+
 The adapted decoder is healthy on its training-distribution input. What fails
 is turning uncalibrated DA3 views into one surface-consistent decoder cloud.
 On the same N=8 rendered slice, exact renderer cameras nearly double
@@ -123,6 +128,26 @@ metric depth in general cannot help.
 | Metric-depth checkpoint with exact cameras | 0.3008 → 0.1406 | 74 | 20260810 → per-object SHA-256 | DA3METRIC-L `4010e39` | `b82d0bf` | negative for this out-of-distribution checkpoint |
 | `use_ray_pose=True` improves recovered cameras | 0.3008 → 0.2930 | 74 | 20260810 → per-object SHA-256 | DA3-L `c54c26b` | `b82d0bf` | effectively neutral |
 | One global axis/diagonal scale fixes the cloud | 0.3008 → 0.3867 / 0.3750 | 74 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `b82d0bf` | negative; 39/74 and 47/74 fits hit bounds |
+
+## Frozen showcase: successes, partial recovery and failure
+
+The showcase is regenerated from the same 20-record Phase-D pilot. The
+committed rule selects the highest valid best-of-10 input-CD IoU separately for
+DeepCAD and Fusion 360, the valid record nearest the pooled median IoU, and the
+first invalid fixed single decode. IDs, exact metrics, source commit,
+checkpoints and seed live in
+[`benchmarks/showcase/manifest.json`](benchmarks/showcase/manifest.json); no
+case is selected by visual preference. All panels below are labelled
+**Rendered benchmark**, visually separating them from the real-camera T-LESS
+rows.
+
+![Frozen DeepCAD success with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_success_deepcad.png)
+
+![Frozen Fusion 360 success with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_success_fusion360.png)
+
+![Frozen partial recovery with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_partial.png)
+
+![Frozen explicit failure with input views, cloud, absent solid and parameters, GT overlay, and N/A metrics](docs/assets/readme/showcase_failure.png)
 
 ## How many photographs?
 
@@ -279,6 +304,18 @@ fails release generation if the complete all-30 T-LESS report is absent:
 ```bash
 ./.venv/bin/python scripts/build_release_facts.py
 ```
+
+README visuals are likewise code-generated. Regeneration requires the ignored
+Phase-D runtime artefacts plus local Firefox/Xephyr for the genuine viewer
+screenshot; verification needs only the committed files:
+
+```bash
+./.venv/bin/python scripts/generate_readme_figures.py
+./.venv/bin/python scripts/generate_readme_figures.py --verify
+```
+
+Output SHA-256, dimensions and source-report hashes are frozen in
+[`benchmarks/showcase/assets.json`](benchmarks/showcase/assets.json).
 
 T-LESS acquisition and evaluation are explicit opt-ins and write only ignored
 runtime data:

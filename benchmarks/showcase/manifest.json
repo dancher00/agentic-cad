@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "protocol": "da3-cad-readme-showcase-v1",
+  "global_seed": 20260810,
+  "view_count": 8,
+  "source": {
+    "pilot_root": "data/benchmark_runs/pilot_33c0003",
+    "mesh_root": "data/benchmarks",
+    "repository_commit": "33c00039b46ddba6af46e10da5a1c313b9def0c3",
+    "da3_checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+    "cadrille_checkpoint": "maksimko123/cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a"
+  },
+  "selection_rule": {
+    "population": "all 20 records in the frozen Phase-D N=8 pilot",
+    "success": "highest valid best-of-10 input-CD IoU within each dataset",
+    "partial": "valid best-of-10 input-CD record closest to the pooled median IoU; ties by dataset then item ID",
+    "failure": "first invalid single-decode record ordered by dataset then item ID",
+    "hero": "the Fusion360 success"
+  },
+  "items": [
+    {
+      "role": "success-deepcad",
+      "dataset": "deepcad",
+      "item_id": "00529471",
+      "candidate_row": "best-of-10-input-CD",
+      "selected_candidate": 7,
+      "expected_valid": true,
+      "expected_chamfer_x1000": 6.798969525631481,
+      "expected_iou_percent": 13.352995671962223
+    },
+    {
+      "role": "success-fusion360",
+      "dataset": "fusion360",
+      "item_id": "21941_1a683ec2_0009",
+      "candidate_row": "best-of-10-input-CD",
+      "selected_candidate": 5,
+      "expected_valid": true,
+      "expected_chamfer_x1000": 14.670557194368577,
+      "expected_iou_percent": 13.678215518751607
+    },
+    {
+      "role": "partial",
+      "dataset": "deepcad",
+      "item_id": "00747106",
+      "candidate_row": "best-of-10-input-CD",
+      "selected_candidate": 8,
+      "expected_valid": true,
+      "expected_chamfer_x1000": 73.2223775563446,
+      "expected_iou_percent": 1.0125269121708418
+    },
+    {
+      "role": "failure",
+      "dataset": "deepcad",
+      "item_id": "00722082",
+      "candidate_row": "single-decode",
+      "selected_candidate": null,
+      "expected_valid": false,
+      "expected_chamfer_x1000": null,
+      "expected_iou_percent": null,
+      "expected_invalid_reason": "all decoder candidates invalid"
+    }
+  ]
+}
