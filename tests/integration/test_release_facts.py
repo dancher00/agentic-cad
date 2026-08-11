@@ -6,6 +6,56 @@ import sys
 from pathlib import Path
 
 
+def _complete_tless_report() -> dict[str, object]:
+    checkpoints = {"cadrille-rl": "cadrille-revision", "da3-large": "da3-revision"}
+    commit = "a" * 40
+    rows: list[dict[str, object]] = []
+    for view_count in (1, 2, 4, 8, 16):
+        for row_name in ("single-decode", "best-of-10-input-CD"):
+            rows.append(
+                {
+                    "N": view_count,
+                    "row": row_name,
+                    "objects_planned": 30,
+                    "seed": 20260810,
+                    "repository_commit": commit,
+                    "checkpoints": checkpoints,
+                    "metrics": {
+                        "normative": {
+                            "requested": 30,
+                            "valid": 29,
+                            "invalidity_ratio_percent": 100.0 / 30.0,
+                            "iou_mean_percent": 12.5,
+                            "chamfer_median_x1000": 3.25,
+                        }
+                    },
+                    "segmentation_audit": {
+                        "complete_objects": 30,
+                        "complete_views": 30 * view_count,
+                        "micro_precision": 0.5,
+                        "micro_recall": 0.75,
+                    },
+                    "timing": {
+                        "records": 30,
+                        "median_wall_seconds": 4.5,
+                        "max_peak_vram_allocated_bytes": 1024,
+                    },
+                }
+            )
+    return {
+        "status": "real-camera-all-30",
+        "objects": 30,
+        "reconstruction_gt_access": False,
+        "view_counts": [1, 2, 4, 8, 16],
+        "candidate_budgets": [1, 10],
+        "repository_commit": commit,
+        "checkpoint_revisions": checkpoints,
+        "gpu": "test GPU",
+        "torch": "test torch",
+        "rows": rows,
+    }
+
+
 def test_release_facts_are_derived_with_complete_provenance(tmp_path: Path) -> None:
     output = tmp_path / "release_facts.json"
     subprocess.run(
@@ -80,3 +130,29 @@ def test_release_facts_reject_partial_tless_sweep(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert "wrong frozen view-count sweep" in result.stderr
+
+
+def test_release_facts_accept_nested_normative_tless_metrics(tmp_path: Path) -> None:
+    report = tmp_path / "complete_tless.json"
+    report.write_text(json.dumps(_complete_tless_report()), encoding="utf-8")
+    output = tmp_path / "release_facts.json"
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_release_facts.py",
+            "--tless-report",
+            str(report),
+            "--output",
+            str(output),
+        ],
+        check=True,
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    facts = [item for item in payload["facts"] if item["id"].startswith("tless-")]
+
+    assert payload["tless_status"] == "complete"
+    assert len(facts) == 10
+    assert {fact["metrics"]["requested"] for fact in facts} == {30}
+    assert {fact["metrics"]["valid"] for fact in facts} == {29}
+    assert {fact["metrics"]["mean_iou_percent"] for fact in facts} == {12.5}
+    assert {fact["metrics"]["median_chamfer_x1000"] for fact in facts} == {3.25}

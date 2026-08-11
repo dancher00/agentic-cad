@@ -376,7 +376,8 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for row in report["rows"]:
         view_count = int(row["N"])
-        if int(row["objects_planned"]) != 30 or int(row["metrics"]["requested"]) != 30:
+        metrics = row["metrics"]["normative"]
+        if int(row["objects_planned"]) != 30 or int(metrics["requested"]) != 30:
             raise ValueError("every T-LESS release row must retain all 30 requested objects")
         if int(row["seed"]) != GLOBAL_SEED:
             raise ValueError("T-LESS release row seed differs from the frozen global seed")
@@ -394,7 +395,7 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
             _fact(
                 f"tless-n{view_count}-{row['row']}",
                 objects=int(row["objects_planned"]),
-                records=int(row["metrics"]["requested"]),
+                records=int(metrics["requested"]),
                 seed=str(row["seed"]),
                 checkpoint="; ".join(
                     f"{key}@{value}" for key, value in sorted(row["checkpoints"].items())
@@ -405,11 +406,11 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
                 metrics={
                     "views": view_count,
                     "candidate_row": str(row["row"]),
-                    "valid": int(row["metrics"]["valid"]),
-                    "requested": int(row["metrics"]["requested"]),
-                    "ir_percent": float(row["metrics"]["invalidity_ratio_percent"]),
-                    "mean_iou_percent": row["metrics"]["iou_mean_percent"],
-                    "median_chamfer_x1000": row["metrics"]["chamfer_median_x1000"],
+                    "valid": int(metrics["valid"]),
+                    "requested": int(metrics["requested"]),
+                    "ir_percent": float(metrics["invalidity_ratio_percent"]),
+                    "mean_iou_percent": metrics["iou_mean_percent"],
+                    "median_chamfer_x1000": metrics["chamfer_median_x1000"],
                     "mask_micro_precision": row["segmentation_audit"]["micro_precision"],
                     "mask_micro_recall": row["segmentation_audit"]["micro_recall"],
                     "median_wall_seconds": row["timing"]["median_wall_seconds"],
