@@ -156,3 +156,11 @@ def test_release_facts_accept_nested_normative_tless_metrics(tmp_path: Path) -> 
     assert {fact["metrics"]["valid"] for fact in facts} == {29}
     assert {fact["metrics"]["mean_iou_percent"] for fact in facts} == {12.5}
     assert {fact["metrics"]["median_chamfer_x1000"] for fact in facts} == {3.25}
+    assert {fact["metrics"]["mask_complete_objects"] for fact in facts} == {30}
+    assert {fact["metrics"]["mask_complete_views"] for fact in facts} == {
+        30,
+        60,
+        120,
+        240,
+        480,
+    }

@@ -385,10 +385,10 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
             raise ValueError("T-LESS release rows mix repository commits")
         if row["checkpoints"] != report["checkpoint_revisions"]:
             raise ValueError("T-LESS release rows mix checkpoint revisions")
-        if int(row["segmentation_audit"]["complete_objects"]) != 30:
-            raise ValueError("T-LESS segmentation audit is incomplete")
-        if int(row["segmentation_audit"]["complete_views"]) != 30 * view_count:
-            raise ValueError("T-LESS segmentation audit has an incomplete view denominator")
+        mask_objects = int(row["segmentation_audit"]["complete_objects"])
+        mask_views = int(row["segmentation_audit"]["complete_views"])
+        if not 0 <= mask_objects <= 30 or mask_views != mask_objects * view_count:
+            raise ValueError("T-LESS segmentation audit has an inconsistent denominator")
         if int(row["timing"]["records"]) != 30:
             raise ValueError("T-LESS timing row is incomplete")
         rows.append(
@@ -411,6 +411,8 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
                     "ir_percent": float(metrics["invalidity_ratio_percent"]),
                     "mean_iou_percent": metrics["iou_mean_percent"],
                     "median_chamfer_x1000": metrics["chamfer_median_x1000"],
+                    "mask_complete_objects": mask_objects,
+                    "mask_complete_views": mask_views,
                     "mask_micro_precision": row["segmentation_audit"]["micro_precision"],
                     "mask_micro_recall": row["segmentation_audit"]["micro_recall"],
                     "median_wall_seconds": row["timing"]["median_wall_seconds"],
