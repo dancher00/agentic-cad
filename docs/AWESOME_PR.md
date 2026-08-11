@@ -44,8 +44,11 @@ evaluation, and a real-camera T-LESS Primesense benchmark.
 ## Evidence boundary
 
 The README reports both successful decoder controls and negative domain-gap
-results. It does not claim production reverse engineering, metric dimensions,
-or measured accuracy on arbitrary phone photos.
+results. The T-LESS table labels automatic segmentation separately from an
+official-mask oracle; the oracle improves mean IoU from 6.29% to 8.91% but
+remains a poor, non-deployable upper bound. The project does not claim
+production reverse engineering, metric dimensions, or measured accuracy on
+arbitrary phone photos.
 
 ## Checklist
 
@@ -63,7 +66,6 @@ or measured accuracy on arbitrary phone photos.
 2. Confirm the public default branch contains `README.md`, `LICENSE`,
    `benchmarks/release_facts.json`, and `docs/TLESS_RESULTS.md`.
 3. Run `python scripts/build_release_facts.py`; it must reject a missing or
-   partial all-30 T-LESS report.
+   partial all-30 automatic or GT-mask-oracle T-LESS report.
 4. Keep the Awesome-list description qualitative. Do not copy GT-only oracle
    precision into the upstream one-line entry as product accuracy.
-

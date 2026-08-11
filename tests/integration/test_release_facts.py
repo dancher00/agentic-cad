@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _complete_tless_report() -> dict[str, object]:
     checkpoints = {"cadrille-rl": "cadrille-revision", "da3-large": "da3-revision"}
@@ -72,6 +74,18 @@ def test_release_facts_are_derived_with_complete_provenance(tmp_path: Path) -> N
     facts = {item["id"]: item for item in payload["facts"]}
 
     assert facts["decoder-control"]["metrics"]["mean_iou_percent"] == 92.06083857517498
+    assert (
+        facts["tless-gt-mask-oracle-n8-best-of-10-input-CD"]["metrics"][
+            "mean_iou_percent"
+        ]
+        == 8.913444189145197
+    )
+    segmentation = facts["tless-segmentation-control-n8-best-of-10-input-CD"]
+    assert segmentation["metrics"]["automatic_mean_iou_percent"] == 6.2933392177150465
+    assert segmentation["metrics"]["mean_iou_gain_percentage_points"] == pytest.approx(
+        2.620104971430151
+    )
+    assert segmentation["metrics"]["material_gain"] is False
     assert facts["bottleneck-uncalibrated"]["metrics"]["precision_at_0.05"] == 0.21875
     assert facts["bottleneck-exact-cameras"]["metrics"]["precision_at_0.05"] == 0.4296875
     assert (
@@ -132,6 +146,28 @@ def test_release_facts_reject_partial_tless_sweep(tmp_path: Path) -> None:
     assert "wrong frozen view-count sweep" in result.stderr
 
 
+def test_release_facts_reject_missing_tless_oracle(tmp_path: Path) -> None:
+    automatic = tmp_path / "complete_tless.json"
+    automatic.write_text(json.dumps(_complete_tless_report()), encoding="utf-8")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_release_facts.py",
+            "--tless-report",
+            str(automatic),
+            "--tless-oracle-report",
+            str(tmp_path / "missing_oracle.json"),
+            "--output",
+            str(tmp_path / "release_facts.json"),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "missing_oracle.json" in result.stderr
+
+
 def test_release_facts_accept_nested_normative_tless_metrics(tmp_path: Path) -> None:
     report = tmp_path / "complete_tless.json"
     report.write_text(json.dumps(_complete_tless_report()), encoding="utf-8")
@@ -142,6 +178,9 @@ def test_release_facts_accept_nested_normative_tless_metrics(tmp_path: Path) -> 
             "scripts/build_release_facts.py",
             "--tless-report",
             str(report),
+            "--tless-oracle-report",
+            str(tmp_path / "missing_oracle.json"),
+            "--allow-missing-tless",
             "--output",
             str(output),
         ],
@@ -151,13 +190,15 @@ def test_release_facts_accept_nested_normative_tless_metrics(tmp_path: Path) -> 
     facts = [item for item in payload["facts"] if item["id"].startswith("tless-")]
 
     assert payload["tless_status"] == "complete"
-    assert len(facts) == 10
-    assert {fact["metrics"]["requested"] for fact in facts} == {30}
-    assert {fact["metrics"]["valid"] for fact in facts} == {29}
-    assert {fact["metrics"]["mean_iou_percent"] for fact in facts} == {12.5}
-    assert {fact["metrics"]["median_chamfer_x1000"] for fact in facts} == {3.25}
-    assert {fact["metrics"]["mask_complete_objects"] for fact in facts} == {30}
-    assert {fact["metrics"]["mask_complete_views"] for fact in facts} == {
+    assert payload["tless_oracle_status"] == "missing-development-only"
+    automatic = [fact for fact in facts if fact["id"].startswith("tless-n")]
+    assert len(automatic) == 10
+    assert {fact["metrics"]["requested"] for fact in automatic} == {30}
+    assert {fact["metrics"]["valid"] for fact in automatic} == {29}
+    assert {fact["metrics"]["mean_iou_percent"] for fact in automatic} == {12.5}
+    assert {fact["metrics"]["median_chamfer_x1000"] for fact in automatic} == {3.25}
+    assert {fact["metrics"]["mask_complete_objects"] for fact in automatic} == {30}
+    assert {fact["metrics"]["mask_complete_views"] for fact in automatic} == {
         30,
         60,
         120,

@@ -115,6 +115,14 @@ For a bad result, inspect in this order:
 | Shape is right but physical dimensions are wrong | coordinate spaces and scale evidence | metric scale is unresolved |
 | Edit changes an incidental feature | primary/implementation parameter split | decoder supplied no engineering feature schema |
 
+The all-30 T-LESS control quantifies the first failure mode. In cluttered full
+frames, the automatic N=8 mask reached 4.42% precision despite 90.28% recall.
+Replacing it with the official visible-instance mask improved mean IoU from
+6.29% to 8.91%, below the frozen 5-point materiality gate. Therefore reject or
+recapture any run whose overlay includes most of the background, but do not
+assume that a clean silhouette alone solves camera/scale disagreement. The
+official mask path is a benchmark oracle, not a user-photo feature.
+
 The current Cadrille path deliberately rejects `--known-dimension`: lifted AST
 literals are replay parameters, not honestly identified engineering features.
 The flag works only where an explicit primary length exists, currently the

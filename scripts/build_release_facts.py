@@ -426,15 +426,193 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
     return rows
 
 
-def build(root: Path, tless_report: Path, *, allow_missing_tless: bool) -> dict[str, object]:
+def _tless_oracle_rows(
+    root: Path,
+    report_path: Path,
+    automatic_report_path: Path,
+) -> list[dict[str, object]]:
+    path = root / report_path
+    report = _load(path)
+    if (
+        report.get("status") != "real-camera-all-30-gt-mask-oracle-n8"
+        or report.get("protocol") != "da3-cad-tless-primesense-gt-mask-oracle-v1"
+        or report.get("objects") != 30
+    ):
+        raise ValueError("release facts require the complete all-30 T-LESS GT-mask oracle")
+    if report.get("segmentation_mode") != "gt-mask-oracle":
+        raise ValueError("T-LESS oracle report must identify its segmentation mode")
+    if report.get("reconstruction_gt_access") is not True:
+        raise ValueError("T-LESS oracle report must explicitly declare reconstruction GT access")
+    if report.get("oracle_access") != {
+        "visible_instance_mask": True,
+        "bop_depth": False,
+        "gt_intrinsics": False,
+        "gt_pose": False,
+        "crop": False,
+        "cad_before_candidate_selection": False,
+    }:
+        raise ValueError("T-LESS oracle report has access beyond the frozen visible mask")
+    if report.get("view_counts") != [8] or report.get("candidate_budgets") != [1, 10]:
+        raise ValueError("T-LESS oracle report differs from the frozen N=8 candidate protocol")
+
+    expected_pairs = {
+        (8, "single-decode"),
+        (8, "best-of-10-input-CD"),
+    }
+    actual_pairs = {(int(row["N"]), str(row["row"])) for row in report["rows"]}
+    if len(report["rows"]) != 2 or actual_pairs != expected_pairs:
+        raise ValueError("T-LESS oracle report must contain exactly the two frozen N=8 rows")
+
+    rows: list[dict[str, object]] = []
+    for row in report["rows"]:
+        metrics = row["metrics"]["normative"]
+        audit = row["segmentation_audit"]
+        if int(row["objects_planned"]) != 30 or int(metrics["requested"]) != 30:
+            raise ValueError("every T-LESS oracle row must retain all 30 requested objects")
+        if int(row["seed"]) != GLOBAL_SEED:
+            raise ValueError("T-LESS oracle row seed differs from the frozen global seed")
+        if str(row["repository_commit"]) != str(report["repository_commit"]):
+            raise ValueError("T-LESS oracle rows mix repository commits")
+        if row["checkpoints"] != report["checkpoint_revisions"]:
+            raise ValueError("T-LESS oracle rows mix checkpoint revisions")
+        if audit != {
+            "complete_objects": 30,
+            "complete_views": 240,
+            "micro_iou": 1.0,
+            "micro_precision": 1.0,
+            "micro_recall": 1.0,
+        }:
+            raise ValueError("T-LESS oracle masks do not exactly match the official masks")
+        if int(row["timing"]["records"]) != 30:
+            raise ValueError("T-LESS oracle timing row is incomplete")
+        rows.append(
+            _fact(
+                f"tless-gt-mask-oracle-n8-{row['row']}",
+                objects=30,
+                records=30,
+                seed=str(row["seed"]),
+                checkpoint="; ".join(
+                    f"{key}@{value}" for key, value in sorted(row["checkpoints"].items())
+                ),
+                commit=str(row["repository_commit"]),
+                source=path,
+                scope=(
+                    "T-LESS Primesense real camera; full-frame RGB plus official "
+                    "visible-instance GT-mask oracle; unposed"
+                ),
+                metrics={
+                    "views": 8,
+                    "candidate_row": str(row["row"]),
+                    "valid": int(metrics["valid"]),
+                    "requested": int(metrics["requested"]),
+                    "ir_percent": float(metrics["invalidity_ratio_percent"]),
+                    "mean_iou_percent": float(metrics["iou_mean_percent"]),
+                    "median_chamfer_x1000": float(metrics["chamfer_median_x1000"]),
+                    "mask_complete_objects": 30,
+                    "mask_complete_views": 240,
+                    "mask_micro_iou": 1.0,
+                    "mask_micro_precision": 1.0,
+                    "mask_micro_recall": 1.0,
+                    "median_wall_seconds": row["timing"]["median_wall_seconds"],
+                    "max_peak_vram_allocated_bytes": row["timing"][
+                        "max_peak_vram_allocated_bytes"
+                    ],
+                },
+                hardware=f"{report['gpu']}; torch {report['torch']}",
+            )
+        )
+
+    automatic_path = root / automatic_report_path
+    automatic = _load(automatic_path)
+    if automatic.get("objects") != 30 or automatic.get("global_seed") != report["global_seed"]:
+        raise ValueError("T-LESS automatic/oracle reports have different populations or seeds")
+    if automatic.get("dataset_revision") != report.get("dataset_revision"):
+        raise ValueError("T-LESS automatic/oracle reports have different dataset revisions")
+    if automatic.get("split_sha256") != report.get("split_sha256"):
+        raise ValueError("T-LESS automatic/oracle reports have different frozen splits")
+    if automatic.get("checkpoint_revisions") != report.get("checkpoint_revisions"):
+        raise ValueError("T-LESS automatic/oracle reports have different checkpoints")
+    automatic_row = next(
+        row
+        for row in automatic["rows"]
+        if int(row["N"]) == 8 and row["row"] == "best-of-10-input-CD"
+    )
+    oracle_row = next(row for row in report["rows"] if row["row"] == "best-of-10-input-CD")
+    if automatic_row["metrics"]["normative"]["item_ids"] != oracle_row["metrics"][
+        "normative"
+    ]["item_ids"]:
+        raise ValueError("T-LESS automatic/oracle rows are not paired on identical objects")
+    if automatic_row["evaluator_sha256"] != oracle_row["evaluator_sha256"]:
+        raise ValueError("T-LESS automatic/oracle rows use different evaluators")
+    automatic_metrics = automatic_row["metrics"]["normative"]
+    oracle_metrics = oracle_row["metrics"]["normative"]
+    gain = float(oracle_metrics["iou_mean_percent"]) - float(
+        automatic_metrics["iou_mean_percent"]
+    )
+    comparison = _fact(
+        "tless-segmentation-control-n8-best-of-10-input-CD",
+        objects=30,
+        records=30,
+        seed=str(report["global_seed"]),
+        checkpoint="; ".join(
+            f"{key}@{value}" for key, value in sorted(report["checkpoint_revisions"].items())
+        ),
+        commit=str(report["repository_commit"]),
+        source=path,
+        scope="paired automatic segmentation versus official GT visible-mask oracle at N=8",
+        metrics={
+            "automatic_mean_iou_percent": float(automatic_metrics["iou_mean_percent"]),
+            "oracle_mean_iou_percent": float(oracle_metrics["iou_mean_percent"]),
+            "mean_iou_gain_percentage_points": gain,
+            "material_gain_threshold_percentage_points": 5.0,
+            "material_gain": gain >= 5.0,
+            "automatic_median_chamfer_x1000": float(
+                automatic_metrics["chamfer_median_x1000"]
+            ),
+            "oracle_median_chamfer_x1000": float(oracle_metrics["chamfer_median_x1000"]),
+            "automatic_mask_micro_precision": float(
+                automatic_row["segmentation_audit"]["micro_precision"]
+            ),
+            "automatic_mask_micro_recall": float(
+                automatic_row["segmentation_audit"]["micro_recall"]
+            ),
+            "oracle_mask_micro_precision": 1.0,
+            "oracle_mask_micro_recall": 1.0,
+        },
+        hardware=f"{report['gpu']}; torch {report['torch']}",
+    )
+    comparison["comparison_source"] = {
+        "path": automatic_path.as_posix(),
+        "sha256": _sha256(automatic_path),
+        "commit": str(automatic["repository_commit"]),
+    }
+    rows.append(comparison)
+    return rows
+
+
+def build(
+    root: Path,
+    tless_report: Path,
+    tless_oracle_report: Path,
+    *,
+    allow_missing_tless: bool,
+) -> dict[str, object]:
     facts, evaluator = _build_core(root)
-    if (root / tless_report).is_file():
+    automatic_exists = (root / tless_report).is_file()
+    if automatic_exists:
         facts.extend(_tless_rows(root, tless_report))
         tless_status = "complete"
     elif allow_missing_tless:
         tless_status = "missing-development-only"
     else:
         raise FileNotFoundError(root / tless_report)
+    if automatic_exists and (root / tless_oracle_report).is_file():
+        facts.extend(_tless_oracle_rows(root, tless_oracle_report, tless_report))
+        tless_oracle_status = "complete"
+    elif allow_missing_tless:
+        tless_oracle_status = "missing-development-only"
+    else:
+        raise FileNotFoundError(root / tless_oracle_report)
     ids = [str(item["id"]) for item in facts]
     if len(ids) != len(set(ids)):
         raise ValueError("release fact IDs must be unique")
@@ -443,6 +621,7 @@ def build(root: Path, tless_report: Path, *, allow_missing_tless: bool) -> dict[
         "status": "release-evidence-ledger",
         "global_seed": GLOBAL_SEED,
         "tless_status": tless_status,
+        "tless_oracle_status": tless_oracle_status,
         "facts": facts,
         "evaluator_audit": evaluator,
     }
@@ -454,10 +633,20 @@ def main() -> int:
     parser.add_argument(
         "--tless-report", type=Path, default=Path("benchmarks/tless_primesense/report.json")
     )
+    parser.add_argument(
+        "--tless-oracle-report",
+        type=Path,
+        default=Path("benchmarks/tless_primesense/gt_mask_oracle_report.json"),
+    )
     parser.add_argument("--output", type=Path, default=Path("benchmarks/release_facts.json"))
     parser.add_argument("--allow-missing-tless", action="store_true")
     args = parser.parse_args()
-    payload = build(args.root, args.tless_report, allow_missing_tless=args.allow_missing_tless)
+    payload = build(
+        args.root,
+        args.tless_report,
+        args.tless_oracle_report,
+        allow_missing_tless=args.allow_missing_tless,
+    )
     output = args.root / args.output
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

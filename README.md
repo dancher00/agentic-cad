@@ -13,6 +13,12 @@ views. Arbitrary handheld-phone accuracy has not been measured, neural output
 has no reliable metric scale, and Cadrille's lifted literals are implementation
 parameters rather than proven engineering design intent.
 
+On T-LESS, replacing a failed automatic mask (4.42% precision at N=8) with the
+official visible-instance mask raises mean IoU only from 6.29% to 8.91%. The
+`+2.62` percentage-point gain is below the preregistered `+5`-point materiality
+threshold: segmentation is visibly broken in clutter, but correcting it does
+not remove the dominant camera/scale domain gap.
+
 Supported geometric controls cover boxes, planar or circular extrusions and
 circular through-holes. Neural code can express a broader CadQuery vocabulary,
 but threads, gears, freeform surfacing, assemblies, tolerances and GD&T are not
@@ -168,14 +174,18 @@ where the diagnostic oracle requires extreme, incompatible corrections.
 
 ## Real-camera CAD ground truth: T-LESS Primesense
 
-The real-camera run uses all 30 texture-less T-LESS objects. Reconstruction
-receives full-frame Primesense RGB only—no BOP depth, crop, GT mask, intrinsics
-or extrinsics. Pose/visibility metadata is used only once to freeze nested,
-well-separated view IDs. Official visible masks audit segmentation afterward;
-official CAD meshes drive the same centred evaluator used above.
+The paired real-camera evaluation uses all 30 texture-less T-LESS objects. The
+automatic configuration receives full-frame Primesense RGB only—no BOP depth,
+crop, GT mask, intrinsics or extrinsics. The separately labelled GT-mask oracle
+replaces only the segmentation gate with the official visible-instance mask;
+it remains unposed and receives no BOP depth, crop, intrinsics or extrinsics.
+The oracle is an upper-bound diagnostic unavailable for ordinary user photos.
+Official CAD meshes drive the same centred evaluator in both configurations.
 
 All rows ran on the RTX 5080 with torch `2.13.0+cu130`; candidate selection is
 GT-blind. Checkpoint labels are `DA3-L c54c26b` and `Cadrille-RL 712489b`.
+
+### Automatic segmentation
 
 | Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
 |---:|---|---:|---:|---:|---:|---:|---|---|---|
@@ -190,15 +200,25 @@ GT-blind. Checkpoint labels are `DA3-L c54c26b` and `Cadrille-RL 712489b`.
 | 16 | single | 5.66% | 44.236 | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
 | 16 | best-of-10 input-CD | 5.81% | **42.892** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
 
-This is a negative product result, not evidence that the pipeline works well on
-real scenes. IoU peaks at N=8 and remains only 6.29%; the best median CD is
-42.892 at N=16. The post-hoc visible-mask audit explains a major input failure:
-micro recall is high (89.41–94.49%) but precision is only 4.29–5.19%, so the
-fixed full-frame segmenter includes mostly clutter/background. The healthy
-92.06% decoder control rules out the adapted Cadrille path as the main cause;
-the render diagnostics independently expose unresolved camera/per-view-scale
-agreement. These measurements do not isolate how much of T-LESS error belongs
-to segmentation versus camera/scale.
+### Official GT-mask oracle
+
+| Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
+|---:|---|---:|---:|---:|---:|---:|---|---|---|
+| 8 | single | 8.46% | 42.876 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+| 8 | best-of-10 input-CD | **8.91%** | **33.944** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+
+This is still a negative product result. For the paired N=8 best-of-10 row,
+perfect visible masks move mean IoU `6.293 → 8.913%` (`+2.620` points) and
+median CD×10³ `46.174 → 33.944`. The IoU gain misses the frozen `+5`-point
+materiality gate. Automatic mask precision/recall is `4.42%/90.28%`, proving
+that the weight-free full-frame segmenter selects mostly clutter; oracle mask
+precision/recall is exactly `100%/100%`. Yet correct segmentation is
+insufficient: the oracle upper bound remains only 8.91%. The healthy 92.06%
+decoder control and rendered camera/scale controls therefore remain the main
+explanation of the downstream gap, while segmentation is a measured, smaller
+third lever rather than an unmeasured confound.
+The pose/scale and segmentation interventions use different diagnostic domains
+and metrics, so their gains are causal clues, not additive percentages.
 
 The result also does not beat the earlier approximately 0.4-IoU attempt
 described in the project brief. That attempt used hand-declared per-object
@@ -268,6 +288,11 @@ runtime data:
 ./.venv/bin/python scripts/prepare_tless_ground_truth.py
 ./.venv/bin/python scripts/build_tless_split.py
 ./.venv/bin/python scripts/run_tless_primesense.py \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+./.venv/bin/python scripts/run_tless_primesense.py \
+  --config configs/tless_gt_mask_oracle.yaml --segmentation-mode gt-mask-oracle \
+  --view-count 8 --output-root data/benchmark_runs/tless_primesense_gt_mask_oracle \
+  --report benchmarks/tless_primesense/gt_mask_oracle_report.json \
   --accept-noncommercial-weights --accept-license cc-by-nc-4.0
 ```
 

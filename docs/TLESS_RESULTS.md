@@ -2,12 +2,14 @@
 
 This is the release real-camera table, not a rendered-domain proxy. It evaluates
 all 30 physical T-LESS objects observed by a Primesense Carmine 1.09 in the
-cluttered BOP19 test scenes. The reconstruction path receives full-frame RGB
-only. BOP depth, crops, masks, intrinsics and extrinsics are unavailable to
-DA3-CAD; official masks are opened only for a post-hoc segmentation audit and
-official CAD is opened only after GT-blind candidate selection.
+cluttered BOP19 test scenes. Two configurations are reported. The automatic
+path receives full-frame RGB only; BOP depth, crops, masks, intrinsics and
+extrinsics are unavailable. The GT-mask oracle replaces only the segmentation
+gate with the official visible-instance mask and remains unposed, without BOP
+depth, crop, intrinsics or extrinsics. Official CAD is opened only after
+GT-blind candidate selection in both configurations.
 
-## Result
+## Automatic-segmentation result
 
 | Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
 |---:|---|---:|---:|---:|---:|---:|---|---|---|
@@ -46,8 +48,8 @@ The failure is upstream of a healthy decoder adapter: exact mesh-sampled input
 gives 92.06% mean IoU on the 20-object decoder control. On rendered inputs,
 exact cameras raise precision@.05 from 21.9% to 43.0%, and forbidden per-view
 GT scale/shift reaches 62.7%, establishing camera/scale agreement as a major
-source. T-LESS adds a severe segmentation failure documented below. This run
-does not identify a causal percentage for segmentation versus camera/scale.
+source. T-LESS adds a severe segmentation failure documented below; the paired
+oracle then measures how much correcting that mask changes the final result.
 
 This scope is deliberately narrow: it is evidence for the pinned Primesense
 capture protocol, not for arbitrary phone photographs. Kinect v2 and Canon
@@ -69,10 +71,38 @@ non-target pixels as target pixels. In these cluttered full frames the default
 weight-free central-component segmentation is not an object detector. Mask
 overlays are mandatory evidence before interpreting a reconstructed solid.
 
-The mask audit is diagnostic only. It resizes the official visible-instance
+For the automatic configuration, the mask audit is diagnostic only. It resizes
+the official visible-instance
 mask to DA3's processed resolution with nearest-neighbour sampling, then reports
 micro precision and recall across every selected view. It never modifies an
 input mask or reconstruction after seeing GT.
+
+## Official GT-mask oracle
+
+This preregistered control uses the identical all-30 N=8 prefixes, DA3 depth,
+recovered cameras, confidence, canonicalizer, fixed candidate budgets and
+evaluator. Only the segmentation mask before fusion is replaced. Every binary
+oracle mask is checked against its official source after nearest-neighbour
+resize; aggregate precision, recall and IoU are exactly 100% over 30 objects
+and 240 views. This input is unavailable for ordinary user-photo inference.
+
+| Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
+|---:|---|---:|---:|---:|---:|---:|---|---|---|
+| 8 | single | 8.46% | 42.876 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+| 8 | best-of-10 input-CD | **8.91%** | **33.944** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+
+On the primary paired best-of-10 row, automatic versus oracle segmentation is
+`6.293 → 8.913%` mean IoU (`+2.620` percentage points) and `46.174 → 33.944`
+median CD×10³. The IoU gain is below the frozen `+5`-point materiality gate.
+The mask failure is therefore real and CD-relevant, but it is not sufficient
+to explain the low-IoU product result: even the correct-mask upper bound is
+only 8.91%. In the measured decomposition, segmentation is a smaller third
+lever; camera pose and per-view depth-scale agreement remain the dominant
+identified bottlenecks. The automatic 6.29% row is accordingly retained as a
+negative method result, not discarded as a mask-only artifact.
+The pose/scale controls use rendered objects and precision@.05, whereas this
+segmentation control uses T-LESS and mesh IoU/CD; their gains must not be added
+as if they were one same-population variance decomposition.
 
 ## Frozen protocol
 
@@ -92,6 +122,9 @@ input mask or reconstruction after seeing GT.
   no ICP, trimming, axis oracle or metric alignment.
 - Run hardware: RTX 5080 16 GiB, Python 3.12, torch `2.13.0+cu130`, CUDA 13,
   `sm_120`, without FlashAttention.
+- Paired segmentation control: N=8 only; official `mask_visib` replaces only
+  automatic segmentation; all other GT channels remain withheld; protocol
+  committed before implementation in `docs/TLESS_GT_MASK_ORACLE_PROTOCOL.md`.
 
 The full split SHA-256, evaluator digest, per-row commit/checkpoints and source
 report SHA-256 are copied into `benchmarks/release_facts.json` by
@@ -140,6 +173,11 @@ not redistribute weights.
 ./.venv/bin/python scripts/build_tless_split.py
 ./.venv/bin/python scripts/run_tless_primesense.py \
   --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+./.venv/bin/python scripts/run_tless_primesense.py \
+  --config configs/tless_gt_mask_oracle.yaml --segmentation-mode gt-mask-oracle \
+  --view-count 8 --output-root data/benchmark_runs/tless_primesense_gt_mask_oracle \
+  --report benchmarks/tless_primesense/gt_mask_oracle_report.json \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
 ./.venv/bin/python scripts/build_release_facts.py
 ```
 
@@ -150,10 +188,16 @@ retains failures in IR. The normative tracked artifacts are:
 - `benchmarks/splits/tless_primesense.json`;
 - `benchmarks/tless_primesense/gt_mesh_audit.json`;
 - `benchmarks/tless_primesense/report.json`;
+- `benchmarks/tless_primesense/gt_mask_oracle_protocol.json`;
+- `benchmarks/tless_primesense/gt_mask_oracle_report.json`;
 - `benchmarks/release_facts.json`.
 
-The immutable report SHA-256 is
+The immutable automatic report SHA-256 is
 `e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc`.
 It was generated from a clean tree at
 `cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359` and committed, with its exact
-contract test and generated release ledger, at `4d22338`.
+contract test, at `4d22338`. The GT-mask oracle report SHA-256 is
+`6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8`;
+it was generated from clean commit
+`aa793b926279f9436c23a54527bf7ed1638736b5` and frozen with its contract test
+at `7583ed3`.

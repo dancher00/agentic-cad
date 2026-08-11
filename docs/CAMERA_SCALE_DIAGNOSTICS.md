@@ -110,3 +110,15 @@ and is forbidden at inference. Protocol and result are in
 `docs/PER_VIEW_DEPTH_ORACLE_PROTOCOL.md` and
 `docs/PER_VIEW_DEPTH_ORACLE.md`. The scientific branch stops here; no long
 campaign is authorized.
+
+## Real-camera segmentation control
+
+The later all-30 T-LESS N=8 paired control closes the segmentation confound
+without changing this rendered diagnostic. Automatic masks have 4.42% micro
+precision and 90.28% recall; official visible-instance masks are exactly
+100%/100%. On the same best-of-10 objects they move mean IoU only
+`6.293 → 8.913%` (`+2.620` points, below the preregistered `+5`-point gate),
+although median CD×10³ improves `46.174 → 33.944`. Segmentation is therefore a
+real but smaller third lever on T-LESS. It does not overturn the central
+camera/per-view-scale diagnosis, and the oracle mask is unavailable in normal
+user-photo inference. See `docs/TLESS_RESULTS.md`.

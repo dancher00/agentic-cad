@@ -160,11 +160,30 @@ the non-comparability of the prior hand-tuned T-LESS attempt are documented in
 `docs/TLESS_RESULTS.md`. The report SHA-256 is
 `e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc`.
 
+The paired GT-mask oracle is a distinct preregistered N=8 configuration. It
+supplies the official visible-instance mask only; BOP depth, crop, intrinsics
+and pose remain withheld, and candidate selection remains GT-blind:
+
+```bash
+./.venv/bin/python scripts/run_tless_primesense.py \
+  --config configs/tless_gt_mask_oracle.yaml --segmentation-mode gt-mask-oracle \
+  --view-count 8 --output-root data/benchmark_runs/tless_primesense_gt_mask_oracle \
+  --report benchmarks/tless_primesense/gt_mask_oracle_report.json \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+```
+
+All 30 objects completed. N=8 best-of-10 reaches 8.91% mean IoU, 33.944
+median CD×10³ and 0% IR, versus 6.29%, 46.174 and 0% for automatic
+segmentation. The `+2.620`-point IoU gain is below the preregistered `+5`-point
+materiality gate. This verifies that gross mask contamination is not the sole
+cause of the low reconstruction accuracy. The oracle report SHA-256 is
+`6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8`.
+
 ## Release evidence ledger
 
-`scripts/build_release_facts.py` reads the immutable machine reports and writes
-`benchmarks/release_facts.json`. It fails by default unless the complete all-30
-T-LESS report exists. Every result-table fact has:
+`scripts/build_release_facts.py` reads both immutable T-LESS machine reports and
+writes `benchmarks/release_facts.json`. It fails by default unless the complete
+all-30 automatic and GT-mask-oracle reports exist. Every result-table fact has:
 
 - object and record counts;
 - the global/per-object seed scheme;

@@ -636,10 +636,103 @@
         "path": "benchmarks/tless_primesense/report.json",
         "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
       }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "aa793b926279f9436c23a54527bf7ed1638736b5",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-gt-mask-oracle-n8-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 6.666666666666667,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 240,
+        "mask_micro_iou": 1.0,
+        "mask_micro_precision": 1.0,
+        "mask_micro_recall": 1.0,
+        "max_peak_vram_allocated_bytes": 4908911616,
+        "mean_iou_percent": 8.456333421405075,
+        "median_chamfer_x1000": 42.87603830106451,
+        "median_wall_seconds": 8.596983936498873,
+        "requested": 30,
+        "valid": 28,
+        "views": 8
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB plus official visible-instance GT-mask oracle; unposed",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/gt_mask_oracle_report.json",
+        "sha256": "6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "aa793b926279f9436c23a54527bf7ed1638736b5",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-gt-mask-oracle-n8-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 0.0,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 240,
+        "mask_micro_iou": 1.0,
+        "mask_micro_precision": 1.0,
+        "mask_micro_recall": 1.0,
+        "max_peak_vram_allocated_bytes": 5320295936,
+        "mean_iou_percent": 8.913444189145197,
+        "median_chamfer_x1000": 33.94442375578266,
+        "median_wall_seconds": 27.411731829983182,
+        "requested": 30,
+        "valid": 30,
+        "views": 8
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB plus official visible-instance GT-mask oracle; unposed",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/gt_mask_oracle_report.json",
+        "sha256": "6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "aa793b926279f9436c23a54527bf7ed1638736b5",
+      "comparison_source": {
+        "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      },
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-segmentation-control-n8-best-of-10-input-CD",
+      "metrics": {
+        "automatic_mask_micro_precision": 0.04422194382760941,
+        "automatic_mask_micro_recall": 0.9027917617876627,
+        "automatic_mean_iou_percent": 6.2933392177150465,
+        "automatic_median_chamfer_x1000": 46.17444360313144,
+        "material_gain": false,
+        "material_gain_threshold_percentage_points": 5.0,
+        "mean_iou_gain_percentage_points": 2.620104971430151,
+        "oracle_mask_micro_precision": 1.0,
+        "oracle_mask_micro_recall": 1.0,
+        "oracle_mean_iou_percent": 8.913444189145197,
+        "oracle_median_chamfer_x1000": 33.94442375578266
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "paired automatic segmentation versus official GT visible-mask oracle at N=8",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/gt_mask_oracle_report.json",
+        "sha256": "6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8"
+      }
     }
   ],
   "global_seed": 20260810,
   "schema_version": "1.0",
   "status": "release-evidence-ledger",
+  "tless_oracle_status": "complete",
   "tless_status": "complete"
 }

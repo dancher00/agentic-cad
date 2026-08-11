@@ -51,3 +51,27 @@ automatic 6.29% as primarily downstream of segmentation, but must still label
 the oracle as unavailable on user photographs. No upstream Awesome PR is sent
 before this control is complete.
 
+## Executed result
+
+The protocol was committed at `3c60a17` before implementation. The runner was
+then committed at `aa793b9` with 237 passing tests, two expected GPU-test skips,
+clean ruff and clean `mypy src`. The all-30 report was generated from that clean
+commit and frozen at `7583ed3`.
+
+| Configuration / selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
+|---|---:|---:|---:|---:|---:|---|---|---|
+| GT-mask oracle / single | 8.46% | 42.876 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+| GT-mask oracle / best-of-10 input-CD | **8.91%** | **33.944** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
+
+The primary paired automatic/oracle result is `6.293 → 8.913%` mean IoU,
+`+2.620` percentage points, and `46.174 → 33.944` median CD×10³. The IoU gain
+does not pass the preregistered `+5`-point materiality threshold. Oracle mask
+precision, recall and IoU are exactly 1.0 across 30 objects and 240 views, so
+the replacement itself is verified. Correct segmentation helps CD and modestly
+helps IoU, but the correct-mask upper bound remains poor; the automatic 6.29%
+row is retained as a negative method result rather than rejected as a mask-only
+artifact.
+
+Immutable report:
+`benchmarks/tless_primesense/gt_mask_oracle_report.json`, SHA-256
+`6e7a16fad9a00e330530a9e393cac0479110e56623fa93a7cc733be38cef1fc8`.
