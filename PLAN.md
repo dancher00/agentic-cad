@@ -430,19 +430,24 @@ Implement the evaluator before long runs, as specified in section 6. Then add:
 
 ### Phase E — experiments, real-camera validation and presentation
 
-1. Run the approved fixed render subset and all required controls/ablations.
-2. Only consider a full 9,771-model configuration if the measured pilot predicts
-   completion within 24 hours.
-3. Run T-LESS Primesense as a separate real-camera table. Do not use GT masks,
+1. The approved long render subset was cancelled after the frozen 20-object
+   pilot exposed a two-order input-domain gap. The completed render work is
+   limited to decoder controls and bounded causal diagnostics; none is promoted
+   to a headline SOTA comparison.
+2. The full 9,771-model configuration and the 150/500-object campaign are closed
+   unless a later authorization supplies a deployable correction that passes a
+   new preregistered pilot.
+3. Run T-LESS Primesense as the release real-camera table. Do not use GT masks,
    intrinsics or poses in reconstruction. Pose metadata may choose separated
    views; GT masks only audit segmentation. Use a fixed largest-central-object
    policy and report ambiguity/failures rather than GT-guided crops.
 4. Treat Kinect v2 and Canon as optional follow-up data from CTU, not a release
    blocker.
-5. Generate all tables, overlays, failure examples and the hero animation from
-   committed IDs and scripts. Never hand-edit a reported figure.
-6. Add the thin local viewer, complete user-photo diagnostics and shooting guide,
-   and finalize README/Awesome PR language only after measured results exist.
+5. Generate every reported number from committed machine-readable reports and
+   the release-facts builder. Never hand-edit a reported metric.
+6. Add the self-contained local viewer, complete user-photo diagnostics and
+   shooting guide, and finalize README/Awesome PR language only after the
+   all-30 T-LESS report exists.
 
 ## 6. Normative evaluator design
 
@@ -825,8 +830,12 @@ The high-view extension completed from preregistration commit `fa0a853` in
 failures are the same frozen Fusion360 mask failure. On the common 19-object
 set, GT-oracle precision@0.05 was 0.6094, 0.7500, 0.7031 and 0.7344 at
 N=8/16/24/32, with paired adjacent changes +0.0625, -0.0078 and +0.0195.
-The frozen rule therefore returns `non-monotone-no-numeric-capture-threshold`:
-there is no measured plateau or defensible numeric capture recommendation yet.
+The preregistered pairwise decision returned
+`non-monotone-no-numeric-capture-threshold`; the later product decision uses the
+whole controlled curve rather than inventing a minimum. Its maximum is N=16,
+and N=24/32 do not improve on it. Therefore 16 is the measured saturation point
+over the tested range, not a claim that 16 views are sufficient or minimal for
+an arbitrary real scene.
 N=32 used at most 7.64 GiB allocated and 10.51 GiB reserved CUDA memory, and
 all model tensors were moved off GPU. The immutable report SHA-256 is
 `29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072`;
@@ -860,8 +869,10 @@ gate at any N, scale sign agreement remained below 55% at N=32, and the oracle
 median scale max/min expanded to 13.89 versus blind 2.51/2.39. Product precision
 therefore remained locked. The immutable supplemental report SHA-256 is
 `fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6`.
-There is still no numeric minimum/recommended capture count; doctor and
-`docs/REAL_PHOTO_VALIDATION.md` say so explicitly.
+There is still no numeric minimum or universal recommended capture count.
+`doctor` warns below the measured N=16 saturation point while explicitly
+leaving minimum and recommended values unset; `docs/REAL_PHOTO_VALIDATION.md`
+uses the same wording.
 
 ## 8. Licensing and acquisition behavior
 
@@ -944,39 +955,32 @@ Each implementation commit must leave its included paths runnable and tested:
 Exact commit boundaries may split if a reviewable change becomes too large, but
 the ordering and stop-point gates will not be bypassed.
 
-## 11. Still unverified and required before claims
+## 11. Remaining limits after bounded research closure
 
-- The 20-item resolution-504 pilot measured throughput under a concurrent GPU
-  workload with only 7.64--7.87 GiB free. Representative idle-GPU throughput
-  remains unverified; BASE/LARGE compatibility and real inference are verified.
-- SFT and RL loading, greedy SDPA generation and model-tensor unload are
-  verified on torch 2.13/sm_120. SFT emitted an invalid solid on the stop-point
-  fixture. The RL pilot validated 709/740 generated candidates, but the timing
-  split is too small for a checkpoint-quality claim.
-- The pinned CadQuery version executed and equivalence-checked the 740-program
-  RL pilot distribution; 31 invalid candidates remained explicit. Broader
-  compatibility and engineering-semantic parameter quality remain unverified.
-- The pilot measured up to 6.26 GiB own-process peak across N and best-10.
-  All recorded model tensors moved off CUDA. DA3 retained small allocator
-  buffers and therefore did not satisfy the stricter allocator-baseline flag.
-- Multi-view consistency collapsed 15/20 N=2 and 10/20 N=4 canonical clouds
-  before decode. That behavior must be diagnosed before the 150-object sweep.
-- One Fusion360 N=16 combination failed the explicit border-mask component
-  contract on an edge view; the mask policy needs a deterministic repair before
-  the long run.
-- Robust mesh boolean behavior and the exact root cause/reproduction range of
-  cadrille issue #19.
-- Broader normalization validation beyond the committed five DeepCAD and five
-  Fusion360 real-mesh parity samples; the source contract and sampled gate are
-  verified.
-- Recovered DA3 pose accuracy against ground truth, global metric scale and
-  T-LESS coordinate alignment end to end.
-- Segmentation quality without GT assistance, particularly target ambiguity in
-  cluttered T-LESS scenes; the verified border-color smoke mask is intentionally
-  limited to render/studio backgrounds.
-- Whether DA3-GIANT can run usefully inside 16 GB; it remains optional and must
-  never weaken the required configurations to fit.
-
-No README quality claim, benchmark number or Awesome-list PR text will be written
-as fact until the corresponding committed command and provenance-bearing run
-exist.
+- The release evidence supports Python 3.12, torch 2.13/CUDA 13, `sm_120`,
+  DA3-BASE/LARGE, Cadrille-RL through SDPA, and staged GPU unloading. DA3-GIANT
+  and the refreshed DA3-LARGE-1.1 checkpoint are not evaluated claims.
+- GT-mesh sampling shows the adapted decoder is healthy, but unposed DA3 clouds
+  remain far outside its training distribution. Exact cameras and forbidden
+  per-view GT-affine corrections isolate camera/scale agreement as the dominant
+  measured bottleneck; no deployable GT-blind correction passed its frozen gate.
+- The oracle scale max/min grows from 1.497 at primary N=8 to 13.89 at common
+  N=32. This is fundamental inter-view scale disagreement, not a small global
+  calibration error, and explains why mutual consistency converges to a
+  compromise instead of the oracle parameters.
+- The controlled oracle curve 0.609/0.750/0.703/0.734 at N=8/16/24/32 establishes
+  saturation at 16 over that range. It does not establish a universal minimum
+  or sufficiency guarantee for user photographs.
+- The neural output is replayable CadQuery and can be a valid solid, but lifted
+  AST literals are not a recovered semantic feature tree. Absolute metric scale,
+  tolerances, GD&T, assemblies and broad freeform CAD remain unsupported.
+- The corrected evaluator removes the released evaluator's nondeterministic
+  sampling, impossible pairwise IoU, suppressed Boolean errors, worst-row
+  trimming and GT-oracle candidate selection. Exact reproduction of cadrille
+  issue #19 remains impossible from the information supplied in that issue.
+- Real-camera claims are restricted to the frozen all-30 T-LESS Primesense
+  protocol. Arbitrary phone photos, different optics, hands, fixtures and
+  user-selected backgrounds have no geometric GT measurement.
+- Every release number must appear in `benchmarks/release_facts.json`, generated
+  from a committed provenance-bearing report. Missing complete T-LESS evidence
+  is a release-generation error, not a reason to fill a README table manually.
