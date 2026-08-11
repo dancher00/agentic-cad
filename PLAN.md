@@ -449,6 +449,18 @@ Implement the evaluator before long runs, as specified in section 6. Then add:
    shooting guide, and finalize README/Awesome PR language only after the
    all-30 T-LESS report exists.
 
+Phase E completed the authorized scope. The offline viewer landed at `2d43161`;
+it accepts generated output plus arbitrary local image folders and exposes the
+cloud, solid, parameter classes, downloads and provenance without a CDN. The
+all-30 T-LESS Primesense run was generated from clean commit `cc7e3e5` and
+frozen at `4d22338`; report SHA-256 is
+`e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc`.
+Its best mean IoU is 6.29% (N=8 best-of-10) and best median CD is 42.892
+(N=16 best-of-10); this is an explicit negative product result. Post-hoc mask
+precision is only 4.29--5.19% at 89.41--94.49% recall, showing that the frozen
+full-frame segmenter includes mostly scene clutter. README and the release
+ledger retain all ten rows and all 30 requested objects per row.
+
 ## 6. Normative evaluator design
 
 ### 6.1 Geometry preparation
@@ -979,8 +991,10 @@ the ordering and stop-point gates will not be bypassed.
   trimming and GT-oracle candidate selection. Exact reproduction of cadrille
   issue #19 remains impossible from the information supplied in that issue.
 - Real-camera claims are restricted to the frozen all-30 T-LESS Primesense
-  protocol. Arbitrary phone photos, different optics, hands, fixtures and
-  user-selected backgrounds have no geometric GT measurement.
+  protocol. Its best mean IoU is only 6.29%; high mask recall paired with below
+  5.2% precision exposes a severe clutter-segmentation failure in addition to
+  the camera/scale domain gap. Arbitrary phone photos, different optics, hands,
+  fixtures and user-selected backgrounds have no geometric GT measurement.
 - Every release number must appear in `benchmarks/release_facts.json`, generated
   from a committed provenance-bearing report. Missing complete T-LESS evidence
   is a release-generation error, not a reason to fill a README table manually.

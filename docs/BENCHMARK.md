@@ -113,5 +113,70 @@ through the pinned cadrille reference functions at five recorded seeds; paired
 deltas and upstream `skip=0..4` rows are retained, but only the normative result
 is eligible for claims. See `EVALUATOR_AUDIT.md`.
 
-No Phase D timing pilot or quality result is presented as a final benchmark
-claim. T-LESS Primesense acquisition and experiment execution remain Phase E.
+No Phase D timing pilot or quality result is presented as a final SOTA
+benchmark claim. The proposed 150/500-object campaign was cancelled after the
+pilot exposed the DA3-to-decoder domain gap; later render runs are bounded
+causal diagnostics or decoder controls only.
+
+## Frozen T-LESS Primesense real-camera protocol
+
+The Phase E release table uses all 30 T-LESS objects from the pinned
+Primesense BOP19 test archive. It is deliberately separate from the rendered
+diagnostics. Reconstruction sees copied full-frame RGB only: no BOP depth,
+crop, GT mask, intrinsics or extrinsics. Pose/visibility metadata is used once,
+before inference, to freeze one instance and deterministic nested
+`N={1,2,4,8,16}` view prefixes. Official visible masks audit segmentation
+post hoc; official `models_cad` meshes are opened only by the evaluator after
+GT-blind candidate selection.
+
+```bash
+./.venv/bin/python scripts/fetch_tless.py --accept-license cc-by-4.0
+./.venv/bin/python scripts/prepare_tless_ground_truth.py
+./.venv/bin/python scripts/build_tless_split.py
+./.venv/bin/python scripts/run_tless_primesense.py \
+  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+```
+
+The run is frozen to seed `20260810`, T-LESS revision
+`5fd309a04476a842d93abfb584fba9ee7caecdf1`, DA3-LARGE revision
+`c54c26b16ec04d218e8d584ecf4bce082a9fcc20`, and Cadrille-RL revision
+`712489b5890a0ce81b18cf441e14b2ed2eadc02a`. Each of the ten aggregate rows
+must retain 30 requested objects and carry its split digest, evaluator digest,
+checkpoints, seed, hardware and clean-start repository commit. Single decode
+and fixed-budget best-of-10 input-CD selection are both reported; failures stay
+in IR and no worst case is removed.
+
+The exact protocol and result interpretation are in `docs/TLESS_PROTOCOL.md`
+and `docs/TLESS_RESULTS.md`. Kinect v2 and Canon are optional extensions, not
+missing release rows.
+
+The all-30 run completed from clean commit `cc7e3e5`. Its ten rows retain 30
+requested objects each. Mean IoU peaks at 6.29% for N=8 best-of-10 input-CD;
+median CD reaches its smallest value, 42.892, for N=16 best-of-10, where IR is
+0%. This is a negative real-camera result. The post-hoc mask audit has only
+4.29–5.19% precision despite 89.41–94.49% recall, so the fixed full-frame
+proposal includes mostly non-target scene content. Exact rows, timing/VRAM and
+the non-comparability of the prior hand-tuned T-LESS attempt are documented in
+`docs/TLESS_RESULTS.md`. The report SHA-256 is
+`e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc`.
+
+## Release evidence ledger
+
+`scripts/build_release_facts.py` reads the immutable machine reports and writes
+`benchmarks/release_facts.json`. It fails by default unless the complete all-30
+T-LESS report exists. Every result-table fact has:
+
+- object and record counts;
+- the global/per-object seed scheme;
+- exact checkpoint revisions;
+- tested hardware/runtime;
+- the producing repository commit;
+- source report path and SHA-256.
+
+```bash
+./.venv/bin/python scripts/build_release_facts.py
+```
+
+`--allow-missing-tless` is a development-only option used before the real-camera
+run exists; it is forbidden for a release ledger. README figures are checked
+against this generated artifact rather than transcribed from console output.
