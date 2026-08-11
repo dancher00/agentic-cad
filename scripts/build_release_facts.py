@@ -359,11 +359,40 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
     report = _load(path)
     if report["status"] != "real-camera-all-30" or report["objects"] != 30:
         raise ValueError("release facts require the complete all-30 T-LESS report")
+    if report.get("reconstruction_gt_access") is not False:
+        raise ValueError("T-LESS release report must explicitly deny reconstruction GT access")
+    if report.get("view_counts") != [1, 2, 4, 8, 16]:
+        raise ValueError("T-LESS release report has the wrong frozen view-count sweep")
+    if report.get("candidate_budgets") != [1, 10]:
+        raise ValueError("T-LESS release report has the wrong candidate budgets")
+    expected_pairs = {
+        (view_count, row)
+        for view_count in (1, 2, 4, 8, 16)
+        for row in ("single-decode", "best-of-10-input-CD")
+    }
+    actual_pairs = {(int(row["N"]), str(row["row"])) for row in report["rows"]}
+    if len(report["rows"]) != 10 or actual_pairs != expected_pairs:
+        raise ValueError("T-LESS release report must contain exactly the ten frozen rows")
     rows: list[dict[str, object]] = []
     for row in report["rows"]:
+        view_count = int(row["N"])
+        if int(row["objects_planned"]) != 30 or int(row["metrics"]["requested"]) != 30:
+            raise ValueError("every T-LESS release row must retain all 30 requested objects")
+        if int(row["seed"]) != GLOBAL_SEED:
+            raise ValueError("T-LESS release row seed differs from the frozen global seed")
+        if str(row["repository_commit"]) != str(report["repository_commit"]):
+            raise ValueError("T-LESS release rows mix repository commits")
+        if row["checkpoints"] != report["checkpoint_revisions"]:
+            raise ValueError("T-LESS release rows mix checkpoint revisions")
+        if int(row["segmentation_audit"]["complete_objects"]) != 30:
+            raise ValueError("T-LESS segmentation audit is incomplete")
+        if int(row["segmentation_audit"]["complete_views"]) != 30 * view_count:
+            raise ValueError("T-LESS segmentation audit has an incomplete view denominator")
+        if int(row["timing"]["records"]) != 30:
+            raise ValueError("T-LESS timing row is incomplete")
         rows.append(
             _fact(
-                f"tless-n{int(row['N'])}-{row['row']}",
+                f"tless-n{view_count}-{row['row']}",
                 objects=int(row["objects_planned"]),
                 records=int(row["metrics"]["requested"]),
                 seed=str(row["seed"]),
@@ -374,7 +403,7 @@ def _tless_rows(root: Path, report_path: Path) -> list[dict[str, object]]:
                 source=path,
                 scope="T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
                 metrics={
-                    "views": int(row["N"]),
+                    "views": view_count,
                     "candidate_row": str(row["row"]),
                     "valid": int(row["metrics"]["valid"]),
                     "requested": int(row["metrics"]["requested"]),
