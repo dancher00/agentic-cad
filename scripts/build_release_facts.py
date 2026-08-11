@@ -243,14 +243,20 @@ def _build_core(root: Path) -> tuple[list[dict[str, object]], dict[str, object]]
     )
 
     hypothesis_sources = [
-        ("ray-gate", "ray_gate"),
-        ("reliability-scoring", "scoring"),
-        ("self-local-plane", "local_plane"),
+        ("ray-gate", "ray_gate", "baseline", "cross_view_ray"),
+        ("reliability-scoring", "scoring", "baseline", "reliability_selection"),
+        ("self-local-plane", "local_plane", "scoring_selection", "local_plane_projection"),
     ]
-    for fact_id, source_id in hypothesis_sources:
+    for fact_id, source_id, baseline_key, candidate_key in hypothesis_sources:
         report = sources[source_id]
         stop = report["stop_decision"]
         values = stop["values"]
+        baseline_precision = report["curve_overall"][baseline_key]["gt_axis_oracle"][
+            "point_precision_fraction"
+        ]["0.05"]["median"]
+        candidate_precision = report["curve_overall"][candidate_key]["gt_axis_oracle"][
+            "point_precision_fraction"
+        ]["0.05"]["median"]
         facts.append(
             _fact(
                 f"hypothesis-{fact_id}",
@@ -262,6 +268,8 @@ def _build_core(root: Path) -> tuple[list[dict[str, object]], dict[str, object]]
                 scope=str(stop["primary_frame"]),
                 metrics={
                     "passed": bool(stop["passed"]),
+                    "baseline_precision_at_0.05": float(baseline_precision),
+                    "candidate_precision_at_0.05": float(candidate_precision),
                     "precision_change": float(values["precision_gain"]),
                     "normal_residual_ratio": float(values["normal_residual_ratio"]),
                 },
