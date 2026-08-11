@@ -48,3 +48,35 @@ def test_release_facts_are_derived_with_complete_provenance(tmp_path: Path) -> N
         assert fact["checkpoint"]
         assert len(fact["commit"]) == 40
         assert len(fact["source"]["sha256"]) == 64
+
+
+def test_release_facts_reject_partial_tless_sweep(tmp_path: Path) -> None:
+    report = tmp_path / "partial_tless.json"
+    report.write_text(
+        json.dumps(
+            {
+                "status": "real-camera-all-30",
+                "objects": 30,
+                "reconstruction_gt_access": False,
+                "view_counts": [1, 2],
+                "candidate_budgets": [1, 10],
+                "rows": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/build_release_facts.py",
+            "--tless-report",
+            str(report),
+            "--output",
+            str(tmp_path / "release_facts.json"),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "wrong frozen view-count sweep" in result.stderr
