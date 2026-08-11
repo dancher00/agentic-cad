@@ -1,0 +1,645 @@
+{
+  "evaluator_audit": {
+    "aggregation_skip_values": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "gt_candidate_oracle": "run() selects minimum candidate CD to GT and independently maximum candidate IoU to GT; these may be different candidates",
+    "impossible_pairwise_iou": 2.0,
+    "sampling_parity_seeds": [
+      11,
+      29,
+      47,
+      83,
+      131
+    ],
+    "silent_boolean_omission": "compute_iou catches every exception and returns None; run() omits that item from the IoU list without surfacing the error",
+    "source": {
+      "path": "benchmarks/evaluator/synthetic_audit.json",
+      "project_commit": "2c1258c90dd7695cafe80fc0c468ce8a4433f5dc",
+      "sha256": "3f4a05a2a89751d806fb14a9c1458384d8064a5bdf7ee7931c00d2f8f42b746f",
+      "upstream_commit": "338db111a1612e8e3a61309f71db138c09474eec"
+    }
+  },
+  "facts": [
+    {
+      "checkpoint": "maksimko123/cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a",
+      "commit": "51ca4d0c322b67d2683ef91c390bd70bd5e13171",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "decoder-control",
+      "metrics": {
+        "mean_iou_percent": 92.06083857517498,
+        "median_chamfer_x1000": 0.1650148216945334,
+        "median_iou_percent": 96.77623949818799,
+        "valid": 20
+      },
+      "objects": 20,
+      "records": 20,
+      "scope": "GT-mesh-sampled Cadrille input; DeepCAD 12 + Fusion360 8",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/coordinate_frame_audit/report.json",
+        "sha256": "9e83c7844f2d2e2042c956d1b88fce7ddcb861af2ba45a963c6769c26bd381b3"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "bottleneck-uncalibrated",
+      "metrics": {
+        "precision_at_0.05": 0.21875
+      },
+      "objects": 20,
+      "records": 20,
+      "scope": "same 20-object rendered N=8 slice; GT proper-axis diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/camera_scale_diagnostics/report.json",
+        "sha256": "a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "bottleneck-exact-cameras",
+      "metrics": {
+        "precision_at_0.05": 0.4296875
+      },
+      "objects": 20,
+      "records": 20,
+      "scope": "same 20-object rendered N=8 slice; GT proper-axis diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/camera_scale_diagnostics/report.json",
+        "sha256": "a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "71d7deedfc4963443aa3304f811d6a79e689cb3e",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "bottleneck-exact-cameras-per-view-gt-affine",
+      "metrics": {
+        "precision_at_0.05": 0.626953125
+      },
+      "objects": 20,
+      "records": 20,
+      "scope": "same 20-object rendered N=8 slice; GT proper-axis diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/per_view_depth_oracle/report.json",
+        "sha256": "dac2f2fb617adb99167ea8c77dc068dc40c5e91bbc2f7ffe55f3f0c423c83569"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "fa0a853498be5d99c041e4491c8d973f95ebc789",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "view-saturation-n8",
+      "metrics": {
+        "precision_at_0.05": 0.609375,
+        "views": 8
+      },
+      "objects": 19,
+      "records": 19,
+      "scope": "common-19 exact-camera plus GT-only per-view affine diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/high_view_sweep/report.json",
+        "sha256": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "fa0a853498be5d99c041e4491c8d973f95ebc789",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "view-saturation-n16",
+      "metrics": {
+        "precision_at_0.05": 0.75,
+        "views": 16
+      },
+      "objects": 19,
+      "records": 19,
+      "scope": "common-19 exact-camera plus GT-only per-view affine diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/high_view_sweep/report.json",
+        "sha256": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "fa0a853498be5d99c041e4491c8d973f95ebc789",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "view-saturation-n24",
+      "metrics": {
+        "precision_at_0.05": 0.703125,
+        "views": 24
+      },
+      "objects": 19,
+      "records": 19,
+      "scope": "common-19 exact-camera plus GT-only per-view affine diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/high_view_sweep/report.json",
+        "sha256": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "fa0a853498be5d99c041e4491c8d973f95ebc789",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "view-saturation-n32",
+      "metrics": {
+        "precision_at_0.05": 0.734375,
+        "views": 32
+      },
+      "objects": 19,
+      "records": 19,
+      "scope": "common-19 exact-camera plus GT-only per-view affine diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/high_view_sweep/report.json",
+        "sha256": "29c1f3a77954b01ca3937f37b8d209a168a683537556d706548942927a743072"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "d748ba35232034fc7bffe6cd17000847111337ec",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "oracle-scale-spread-n8",
+      "metrics": {
+        "median_within_object_max_min_scale": 1.496859774861361
+      },
+      "objects": 20,
+      "records": 20,
+      "scope": "primary N=8 gauge-fixed per-view GT oracle",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/gt_blind_depth_alignment/report.json",
+        "sha256": "58972ea7f26f275262653530fe8e90501c1760ece32db9f411629edd704389b5"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "7018d5c3d75c7a414a898c377c86fd5665960034",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "gt-blind-n32-projected",
+      "metrics": {
+        "blind_median_within_object_max_min_scale": 2.513428559253632,
+        "oracle_median_within_object_max_min_scale": 13.891397050194614,
+        "scale_sign_agreement": 0.5449915110356537,
+        "scale_spearman_rho": 0.40614209542761
+      },
+      "objects": 19,
+      "records": 589,
+      "scope": "projected-local-depth criterion at N=32",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/gt_blind_view_curve/report.json",
+        "sha256": "fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "7018d5c3d75c7a414a898c377c86fd5665960034",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "gt-blind-n32-fixed-plane",
+      "metrics": {
+        "blind_median_within_object_max_min_scale": 2.3862363896730896,
+        "scale_sign_agreement": 0.533106960950764,
+        "scale_spearman_rho": 0.524424224738193
+      },
+      "objects": 19,
+      "records": 589,
+      "scope": "fixed-local-plane criterion at N=32",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/gt_blind_view_curve/report.json",
+        "sha256": "fee8e65a31608fcaf5bd24673b4eb587578c6afb22e18e4edb9325f3c5f4e5e6"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "53628bd95198482502abc55ea99e4f4cd3aac0bf",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "hypothesis-ray-gate",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.33203125,
+        "candidate_precision_at_0.05": 0.296875,
+        "normal_residual_ratio": 1.1892506386006456,
+        "passed": false,
+        "precision_change": -0.03515625
+      },
+      "objects": 20,
+      "records": 71,
+      "scope": "GT-aware proper-axis oracle; diagnostic only",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/canonicalizer_precision_ablation/step1_ray.json",
+        "sha256": "ea167f4dde4a7d40e0560ba0712929dcf3026db3233ff85b609c1371dc757474"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "a7e2614319cec824e5d2ee7b3121bf6a55b185b4",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "hypothesis-reliability-scoring",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.330078125,
+        "candidate_precision_at_0.05": 0.30078125,
+        "normal_residual_ratio": 1.0873537109011842,
+        "passed": false,
+        "precision_change": -0.029296875
+      },
+      "objects": 20,
+      "records": 74,
+      "scope": "GT-aware proper-axis oracle; diagnostic only",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/canonicalizer_precision_ablation/step1b_scoring.json",
+        "sha256": "da608c3b3b9a4c02884bf9c255c007d127ae8a5de9a4bda98a9a3fc512d5e7f0"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "fd22fe754f0a872b0fcf84a93ea347ea0e610d79",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "hypothesis-self-local-plane",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.30078125,
+        "candidate_precision_at_0.05": 0.30078125,
+        "normal_residual_ratio": 1.0000791289323092,
+        "passed": false,
+        "precision_change": 0.0
+      },
+      "objects": 20,
+      "records": 74,
+      "scope": "GT-aware proper-axis oracle; diagnostic only",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/canonicalizer_precision_ablation/step2_local_plane.json",
+        "sha256": "672f8369328d53dbf28efa7b73e79db9a1379995740c5fb792cdbf00dfeac54c"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3METRIC-LARGE@4010e39f3634a45bc60553321fb49fb760bd594e",
+      "commit": "b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "hypothesis-metric-sky-checkpoint",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.30078125,
+        "candidate_precision_at_0.05": 0.140625,
+        "passed_0.60_gate": false
+      },
+      "objects": 20,
+      "records": 74,
+      "scope": "74 frozen item/view records; GT proper-axis diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/camera_scale_diagnostics/report.json",
+        "sha256": "a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a"
+      }
+    },
+    {
+      "checkpoint": "depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e",
+      "hardware": "RTX 5080 16 GiB; torch 2.13.0+cu130; Python 3.12",
+      "id": "hypothesis-ray-pose",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.30078125,
+        "candidate_precision_at_0.05": 0.29296875,
+        "passed_0.60_gate": false
+      },
+      "objects": 20,
+      "records": 74,
+      "scope": "74 frozen item/view records; GT proper-axis diagnostic",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/camera_scale_diagnostics/report.json",
+        "sha256": "a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a"
+      }
+    },
+    {
+      "checkpoint": "none; cached depth-anything/DA3-LARGE@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "b82d0bf0d83386f3fab6015cd1eb56a8e76dce3e",
+      "hardware": "CPU; cached DA3 tensors",
+      "id": "hypothesis-global-scale",
+      "metrics": {
+        "baseline_precision_at_0.05": 0.30078125,
+        "diagonal_boundary_hits": 47,
+        "diagonal_precision_at_0.05": 0.375,
+        "one_axis_boundary_hits": 39,
+        "one_axis_precision_at_0.05": 0.38671875,
+        "passed_0.60_gate": false
+      },
+      "objects": 20,
+      "records": 74,
+      "scope": "GT-only one-axis and diagonal scale diagnostics",
+      "seed": "base 20260810; per-object seeds are SHA-256-derived and retained per record",
+      "source": {
+        "path": "benchmarks/camera_scale_diagnostics/report.json",
+        "sha256": "a7fd3f6980e7d034b812da356bb178519d854b6b63f773a0b2815117c7991a8a"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n1-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 6.666666666666667,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 30,
+        "mask_micro_precision": 0.051877937715515694,
+        "mask_micro_recall": 0.9362956871447964,
+        "max_peak_vram_allocated_bytes": 4549127680,
+        "mean_iou_percent": 0.7532812608519981,
+        "median_chamfer_x1000": 60.78051354344392,
+        "median_wall_seconds": 6.972989323025104,
+        "requested": 30,
+        "valid": 28,
+        "views": 1
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n1-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 3.3333333333333335,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 30,
+        "mask_micro_precision": 0.051877937715515694,
+        "mask_micro_recall": 0.9362956871447964,
+        "max_peak_vram_allocated_bytes": 5320295936,
+        "mean_iou_percent": 0.895141931929427,
+        "median_chamfer_x1000": 61.041036846543314,
+        "median_wall_seconds": 25.478506001469214,
+        "requested": 30,
+        "valid": 29,
+        "views": 1
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n2-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 26.666666666666668,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 60,
+        "mask_micro_precision": 0.042897567964022054,
+        "mask_micro_recall": 0.9290622284606644,
+        "max_peak_vram_allocated_bytes": 4549651968,
+        "mean_iou_percent": 2.6440223000426006,
+        "median_chamfer_x1000": 63.037884108757034,
+        "median_wall_seconds": 7.1188718234188855,
+        "requested": 30,
+        "valid": 22,
+        "views": 2
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n2-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 23.333333333333332,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 60,
+        "mask_micro_precision": 0.042897567964022054,
+        "mask_micro_recall": 0.9290622284606644,
+        "max_peak_vram_allocated_bytes": 5320296448,
+        "mean_iou_percent": 2.0685756338545134,
+        "median_chamfer_x1000": 62.971566191075325,
+        "median_wall_seconds": 25.248364352970384,
+        "requested": 30,
+        "valid": 23,
+        "views": 2
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n4-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 6.666666666666667,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 120,
+        "mask_micro_precision": 0.04376335392579924,
+        "mask_micro_recall": 0.9448863076070361,
+        "max_peak_vram_allocated_bytes": 4550180352,
+        "mean_iou_percent": 2.853700664900647,
+        "median_chamfer_x1000": 52.9463040254483,
+        "median_wall_seconds": 9.472680434584618,
+        "requested": 30,
+        "valid": 28,
+        "views": 4
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n4-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 0.0,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 120,
+        "mask_micro_precision": 0.04376335392579924,
+        "mask_micro_recall": 0.9448863076070361,
+        "max_peak_vram_allocated_bytes": 5320295936,
+        "mean_iou_percent": 3.1188229154516685,
+        "median_chamfer_x1000": 53.224840122374545,
+        "median_wall_seconds": 28.81983216892695,
+        "requested": 30,
+        "valid": 30,
+        "views": 4
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n8-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 3.3333333333333335,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 240,
+        "mask_micro_precision": 0.04422194382760941,
+        "mask_micro_recall": 0.9027917617876627,
+        "max_peak_vram_allocated_bytes": 4908911616,
+        "mean_iou_percent": 5.977840272319418,
+        "median_chamfer_x1000": 44.230465134924195,
+        "median_wall_seconds": 13.53504649194656,
+        "requested": 30,
+        "valid": 29,
+        "views": 8
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n8-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 0.0,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 240,
+        "mask_micro_precision": 0.04422194382760941,
+        "mask_micro_recall": 0.9027917617876627,
+        "max_peak_vram_allocated_bytes": 5320296448,
+        "mean_iou_percent": 6.2933392177150465,
+        "median_chamfer_x1000": 46.17444360313144,
+        "median_wall_seconds": 32.76043085491983,
+        "requested": 30,
+        "valid": 30,
+        "views": 8
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n16-single-decode",
+      "metrics": {
+        "candidate_row": "single-decode",
+        "ir_percent": 0.0,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 480,
+        "mask_micro_precision": 0.04549587033431754,
+        "mask_micro_recall": 0.8941436795022012,
+        "max_peak_vram_allocated_bytes": 5467395584,
+        "mean_iou_percent": 5.655984942649237,
+        "median_chamfer_x1000": 44.23553134743636,
+        "median_wall_seconds": 27.192330931138713,
+        "requested": 30,
+        "valid": 30,
+        "views": 16
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    },
+    {
+      "checkpoint": "cadrille-rl@712489b5890a0ce81b18cf441e14b2ed2eadc02a; da3-large@c54c26b16ec04d218e8d584ecf4bce082a9fcc20",
+      "commit": "cc7e3e5583d2b99f5cb4cd8040f11a27fa4ec359",
+      "hardware": "NVIDIA GeForce RTX 5080; torch 2.13.0+cu130",
+      "id": "tless-n16-best-of-10-input-CD",
+      "metrics": {
+        "candidate_row": "best-of-10-input-CD",
+        "ir_percent": 0.0,
+        "mask_complete_objects": 30,
+        "mask_complete_views": 480,
+        "mask_micro_precision": 0.04549587033431754,
+        "mask_micro_recall": 0.8941436795022012,
+        "max_peak_vram_allocated_bytes": 5467395584,
+        "mean_iou_percent": 5.8086601944220355,
+        "median_chamfer_x1000": 42.89177317867913,
+        "median_wall_seconds": 45.841911891067866,
+        "requested": 30,
+        "valid": 30,
+        "views": 16
+      },
+      "objects": 30,
+      "records": 30,
+      "scope": "T-LESS Primesense real camera; full-frame RGB; unposed; GT-blind",
+      "seed": "20260810",
+      "source": {
+        "path": "benchmarks/tless_primesense/report.json",
+        "sha256": "e9f2c84512a86149743d526a2920ec4044f52dbc0c99733daa5cd1bbfbae97cc"
+      }
+    }
+  ],
+  "global_seed": 20260810,
+  "schema_version": "1.0",
+  "status": "release-evidence-ledger",
+  "tless_status": "complete"
+}
