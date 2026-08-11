@@ -10,11 +10,11 @@ from da3_cad.cli import app
 runner = CliRunner()
 
 
-def test_cli_lists_phase_a_commands() -> None:
+def test_cli_lists_product_commands() -> None:
     result = runner.invoke(app, ["--help"])
 
     assert result.exit_code == 0
-    for command in ("reconstruct", "inspect", "edit", "doctor", "benchmark"):
+    for command in ("reconstruct", "inspect", "edit", "viewer", "doctor", "benchmark"):
         assert command in result.stdout
 
 
