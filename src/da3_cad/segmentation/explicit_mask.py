@@ -1,4 +1,4 @@
-"""Explicit-mask segmentation for preregistered oracle controls."""
+"""Explicit-mask segmentation for user input and preregistered oracle controls."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ from da3_cad.segmentation.depth_foreground import SegmentationResult
 def segment_explicit_masks(
     prediction: DepthPrediction,
     mask_paths: tuple[Path, ...],
+    *,
+    oracle: bool = True,
 ) -> SegmentationResult:
     """Load one binary mask per view and resize it to the DA3 prediction grid."""
 
@@ -33,16 +35,23 @@ def segment_explicit_masks(
             resized = grayscale.resize((width, height), resample=Image.Resampling.NEAREST)
             mask = np.asarray(resized, dtype=np.uint8) > 0
         if not np.any(mask):
-            raise ValueError(
-                f"Explicit mask for view {view_index} is empty after resizing: {path}"
-            )
+            raise ValueError(f"Explicit mask for view {view_index} is empty after resizing: {path}")
         masks.append(mask)
 
+    backend = "gt-visible-mask-oracle-v1" if oracle else "explicit-user-mask-v1"
+    warning = (
+        (
+            "GT visible-instance masks are an evaluation oracle and are unavailable "
+            "for ordinary user-photo inference."
+        )
+        if oracle
+        else (
+            "masks were supplied by the user; their source and geometric accuracy "
+            "are not independently verified"
+        )
+    )
     return SegmentationResult(
         masks=np.stack(masks, axis=0),
-        backend="gt-visible-mask-oracle-v1",
-        warnings=(
-            "GT visible-instance masks are an evaluation oracle and are unavailable "
-            "for ordinary user-photo inference.",
-        ),
+        backend=backend,
+        warnings=(warning,),
     )

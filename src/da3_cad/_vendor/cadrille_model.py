@@ -1,8 +1,8 @@
-"""Minimal point-cloud Cadrille model adapted from the pinned upstream source.
+"""Minimal inference-only Cadrille model adapted from the pinned upstream source.
 
 Derived from https://github.com/col14m/cadrille/blob/
 338db111a1612e8e3a61309f71db138c09474eec/cadrille.py under Apache-2.0.
-Modified by DA3-CAD: point-cloud inference only; see third_party/cadrille/PROVENANCE.md.
+Modified by DA3-CAD; see third_party/cadrille/PROVENANCE.md.
 """
 
 # mypy: ignore-errors
@@ -43,9 +43,7 @@ class FourierEmbedder(nn.Module):
         self.include_input = include_input
 
     def forward(self, values: torch.Tensor) -> torch.Tensor:
-        embedded = (values[..., None].contiguous() * self.frequencies).view(
-            *values.shape[:-1], -1
-        )
+        embedded = (values[..., None].contiguous() * self.frequencies).view(*values.shape[:-1], -1)
         if self.include_input:
             return torch.cat((values, embedded.sin(), embedded.cos()), dim=-1)
         return torch.cat((embedded.sin(), embedded.cos()), dim=-1)
@@ -64,7 +62,7 @@ class FourierPointEncoder(nn.Module):
 
 
 class CadrilleForConditionalGeneration(Qwen2VLForConditionalGeneration):
-    """Inference-only upstream Cadrille class without image/training dependencies."""
+    """Inference-only Cadrille with point injection and inherited Qwen2-VL vision."""
 
     def __init__(self, config: Any) -> None:
         super().__init__(config)
@@ -85,15 +83,27 @@ class CadrilleForConditionalGeneration(Qwen2VLForConditionalGeneration):
         self,
         input_ids: torch.Tensor | None = None,
         attention_mask: torch.Tensor | None = None,
+        position_ids: torch.Tensor | None = None,
         past_key_values: Any = None,
         inputs_embeds: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+        use_cache: bool | None = None,
+        output_attentions: bool | None = None,
+        output_hidden_states: bool | None = None,
+        return_dict: bool | None = None,
+        pixel_values: torch.Tensor | None = None,
+        pixel_values_videos: torch.Tensor | None = None,
+        image_grid_thw: torch.Tensor | None = None,
+        video_grid_thw: torch.Tensor | None = None,
+        rope_deltas: torch.Tensor | None = None,
+        cache_position: torch.Tensor | None = None,
         point_clouds: torch.Tensor | None = None,
         is_pc: torch.Tensor | None = None,
         is_img: torch.Tensor | None = None,
         **kwargs: Any,
     ) -> Any:
-        if is_img is not None and bool(is_img.any()):
-            raise ValueError("vendored Cadrille path supports point-cloud inference only")
+        if is_pc is not None and is_img is not None and bool((is_pc & is_img).any()):
+            raise ValueError("Cadrille samples cannot be point-cloud and image simultaneously")
         if (
             inputs_embeds is None
             and input_ids is not None
@@ -124,8 +134,20 @@ class CadrilleForConditionalGeneration(Qwen2VLForConditionalGeneration):
         return super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
+            position_ids=position_ids,
             past_key_values=past_key_values,
             inputs_embeds=inputs_embeds,
+            labels=labels,
+            use_cache=use_cache,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            pixel_values=pixel_values,
+            pixel_values_videos=pixel_values_videos,
+            image_grid_thw=image_grid_thw,
+            video_grid_thw=video_grid_thw,
+            rope_deltas=rope_deltas,
+            cache_position=cache_position,
             **kwargs,
         )
 

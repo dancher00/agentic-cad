@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
 
 import numpy as np
@@ -18,6 +18,15 @@ class ScaleChannel:
     status: Literal["unresolved", "known"] = "unresolved"
     units: str = "normalized"
     world_units_to_mm: float | None = None
+    source: str = "none"
+    evidence: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.status == "known":
+            if self.world_units_to_mm is None or self.world_units_to_mm <= 0.0:
+                raise ValueError("known scale requires positive world_units_to_mm")
+        elif self.world_units_to_mm is not None:
+            raise ValueError("unresolved scale cannot carry world_units_to_mm")
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +158,7 @@ def fuse_prediction(
     minimum_confidence: float | None = None,
     require_confidence: bool = True,
     extrinsic_convention: ExtrinsicConvention = "world_to_camera",
+    scale: ScaleChannel | None = None,
 ) -> FusedPointCloud:
     """Fuse views in stable view-major, row-major order with explicit gates."""
 
@@ -229,4 +239,5 @@ def fuse_prediction(
         view_indices=np.concatenate(view_parts, axis=0).astype(np.int32),
         pixel_xy=np.concatenate(pixel_parts, axis=0).astype(np.int32),
         report=report,
+        scale=scale if scale is not None else ScaleChannel(),
     )

@@ -1,9 +1,17 @@
-# Exact direct Cadrille point-cloud inference dependencies tested on CPython 3.12,
+# Exact direct Cadrille point/image inference dependencies tested on CPython 3.12,
 # torch 2.13.0+cu130 and sm_120 on 2026-08-10. Install the base lock and
 # cu130 overlay first, then this file and the local project with --no-deps.
-# No FlashAttention, PyTorch3D, Open3D, qwen-vl-utils or accelerate is required.
+# No FlashAttention, PyTorch3D, Open3D or accelerate is required. qwen-vl-utils
+# and PyAV are used only to construct the released four-view image prompt.
+av==18.0.0
+certifi==2026.7.22
+charset-normalizer==3.4.9
 huggingface-hub==0.36.2
+idna==3.18
+qwen-vl-utils==0.0.10
 regex==2026.7.19
+requests==2.34.2
 safetensors==0.8.0
 tokenizers==0.21.4
 transformers==4.50.3
+urllib3==2.7.0

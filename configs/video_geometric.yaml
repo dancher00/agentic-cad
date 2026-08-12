@@ -1,0 +1,27 @@
+profile: permissive
+device: cuda
+seed: 20260810
+debug_artefacts: true
+depth_backend: da3-base
+cad_backend: geometric-fitter
+da3:
+  checkpoint: base
+  source_dir: data/upstream/Depth-Anything-3
+  cache_dir: data/hf
+  process_resolution: 504
+  process_resolution_method: upper_bound_resize
+  local_files_only: false
+  use_ray_pose: false
+geometry:
+  segmentation_backend: explicit-mask
+  segmentation_confidence_percentile: 25.0
+  segmentation_depth_percentile: 75.0
+  fusion_confidence_percentile: 40.0
+  minimum_confidence: null
+  depth_alignment_criterion: null
+canonicalizer:
+  symmetry_completion_enabled: false
+sandbox:
+  memory_limit_mb: 8192
+  cpu_seconds: 30
+  wall_seconds: 45

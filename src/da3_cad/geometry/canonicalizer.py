@@ -17,7 +17,12 @@ from da3_cad.geometry.normalization import BboxNormalization, normalize_bbox_for
 from da3_cad.geometry.orientation import OrientationResult, orient_canonical_frame
 from da3_cad.geometry.outliers import filter_outliers
 from da3_cad.geometry.sampling import farthest_point_indices
-from da3_cad.geometry.scale import KnownDimension, ScaleDecision, unresolved_scale
+from da3_cad.geometry.scale import (
+    KnownDimension,
+    ScaleDecision,
+    resolve_camera_bundle_scale,
+    unresolved_scale,
+)
 from da3_cad.geometry.symmetry import (
     SymmetryPlane,
     complete_across_symmetry,
@@ -257,6 +262,9 @@ class PointCloudCanonicalizer:
                     "measured_points": int(len(state.points)),
                     "input_scale_status": cloud.scale.status,
                     "input_units": cloud.scale.units,
+                    "input_world_units_to_mm": cloud.scale.world_units_to_mm,
+                    "input_scale_source": cloud.scale.source,
+                    "input_scale_evidence": cloud.scale.evidence,
                 },
             )
         ]
@@ -439,7 +447,25 @@ class PointCloudCanonicalizer:
             _snapshot("normalization", config.normalization_enabled, state, normalization_report)
         )
 
-        scale = unresolved_scale(known_dimension)
+        if cloud.scale.status == "known":
+            if known_dimension is not None:
+                raise ValueError(
+                    "camera-bundle metric scale and --known-dimension cannot be combined; "
+                    "provide exactly one scale source"
+                )
+            if cloud.scale.world_units_to_mm is None:
+                raise RuntimeError("known fused-cloud scale lost world_units_to_mm")
+            world_units_per_decoder_unit = (
+                normalization.largest_extent / 2.0 if normalization is not None else 1.0
+            )
+            scale = resolve_camera_bundle_scale(
+                world_units_to_mm=cloud.scale.world_units_to_mm,
+                world_units_per_decoder_unit=world_units_per_decoder_unit,
+                camera_source=cloud.scale.source,
+                evidence=cloud.scale.evidence,
+            )
+        else:
+            scale = unresolved_scale(known_dimension)
         stages.append(
             _snapshot(
                 "scale-channel",

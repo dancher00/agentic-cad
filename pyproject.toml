@@ -51,8 +51,13 @@ da3 = [
   "opencv-python-headless==4.11.0.86",
   "safetensors>=0.6,<1",
 ]
+video = [
+  "opencv-python-headless==4.11.0.86",
+  "pycolmap>=3.13,<3.14",
+]
 cadrille = [
   "huggingface-hub>=0.36,<1",
+  "qwen-vl-utils==0.0.10",
   "safetensors>=0.6,<1",
   "transformers==4.50.3",
 ]

@@ -15,9 +15,12 @@ from da3_cad.benchmark.candidates import (
     candidate_seeds,
     select_by_input_chamfer,
 )
+from da3_cad.benchmark.pilot import validate_candidate_batch
+from da3_cad.config import SandboxConfig
 from da3_cad.evaluation.surface_sampling import sample_surface_area_weighted
 from da3_cad.geometry.normalization import normalize_bbox_for_decoder
 from da3_cad.geometry.sampling import farthest_point_indices
+from da3_cad.models import CadProgram
 
 
 def _box(extents: tuple[float, float, float] = (1.0, 1.0, 1.0)) -> trimesh.Trimesh:
@@ -34,9 +37,7 @@ def test_candidate_sampling_is_repeatable_and_candidate_zero_matches_contract() 
     outputs = build_candidate_inputs(canonical, seeds)
     repeated = build_candidate_inputs(canonical, seeds)
     assert len(outputs) == 10
-    assert [item.decoder_sha256 for item in outputs] == [
-        item.decoder_sha256 for item in repeated
-    ]
+    assert [item.decoder_sha256 for item in outputs] == [item.decoder_sha256 for item in repeated]
     assert len({item.decoder_sha256 for item in outputs}) == 10
 
     expected_indices = farthest_point_indices(pool, 256, seed=seeds[0])
@@ -80,3 +81,33 @@ def test_candidate_seeds_are_budget_frozen() -> None:
     assert len(set(ten)) == 10
     with pytest.raises(ValueError):
         candidate_seeds(99, 0)
+
+
+def test_batch_validation_preserves_shared_disconnected_solid_error(tmp_path: Path) -> None:
+    source = """import cadquery as cq
+left = cq.Workplane('XY').box(1, 1, 1)
+right = cq.Workplane('XY', origin=(3, 0, 0)).box(1, 1, 1)
+r = left.union(right)
+"""
+    backend = SimpleNamespace(
+        last_raw_texts=(source,),
+        last_clean_sources=(source,),
+        last_parameterization_reports=({"mode": "ast-literal-lift"},),
+    )
+    program = CadProgram(
+        source=source,
+        parameters={},
+        backend="test",
+        template_id="disconnected",
+    )
+
+    (result,) = validate_candidate_batch(
+        (program,),
+        backend,
+        tmp_path / "candidates",
+        SandboxConfig(),
+    )
+
+    assert not result.validation.valid
+    assert result.validation.error is not None
+    assert "single-part CAD requires exactly one" in result.validation.error

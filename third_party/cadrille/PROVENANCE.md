@@ -23,10 +23,18 @@ adds a prominent source/revision/license notice and a modification notice.
 
 ## Deliberate modifications
 
-Only the Fourier point encoder and Qwen2-VL point-token injection are retained.
-Training loss code, multimodal collate code, image/video preprocessing and the
-imports of `qwen-vl-utils` are omitted. Consequently the inference path has no
-PyTorch3D or Open3D dependency.
+The Fourier point encoder and Qwen2-VL point-token injection are retained for
+point-cloud inference. The released image modality is also supported by
+delegating its video-token path to pinned Qwen2-VL code in
+`transformers==4.50.3`. DA3-CAD builds the released four-view 2x2 image
+collage deterministically, preserving the released white image background and
+3-pixel black tile border after applying reconstruction masks. It uses
+`qwen-vl-utils==0.0.10` for that input only.
+
+Training loss code and multimodal collate code remain omitted. The runtime does
+not depend on PyTorch3D or Open3D. Point and image prompts are decoded as
+separate candidate modalities, matching the released training/inference
+contract; DA3-CAD does not claim unsupported joint feature fusion.
 
 The adapter also:
 
@@ -34,12 +42,14 @@ The adapter also:
   confined to the point encoder, preserving the two FP32 checkpoint tensors;
 - casts point embeddings to the actual language-model embedding dtype instead
   of hard-coding bfloat16;
-- rejects image-mode input in this minimal path;
+- validates mutually exclusive point/image modality flags and keeps the
+  upstream Qwen2-VL image/video branch for image candidates;
 - delegates unchanged Qwen2-VL language-model and RoPE logic to pinned
   `transformers==4.50.3`;
 - selects PyTorch SDPA in the DA3-CAD loader instead of upstream
   FlashAttention 2;
-- adds shape/range checks and type annotations.
+- adds shape/range checks, deterministic masked collage provenance and type
+  annotations.
 
 Checkpoint weights are separate CC BY-NC 4.0 artifacts. They are downloaded
 only after explicit opt-in, cached outside tracked files and never redistributed.

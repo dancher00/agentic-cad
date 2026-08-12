@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class SandboxConfig(BaseModel):
@@ -35,7 +35,11 @@ class GeometryConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     segmentation_backend: Literal[
-        "border-color", "depth-confidence", "gt-mask-oracle"
+        "border-color",
+        "depth-confidence",
+        "internet-object",
+        "explicit-mask",
+        "gt-mask-oracle",
     ] = "border-color"
     segmentation_confidence_percentile: float = Field(default=25.0, ge=0.0, le=100.0)
     segmentation_depth_percentile: float = Field(default=75.0, ge=0.0, le=100.0)
@@ -90,6 +94,29 @@ class GeometricFitterConfig(BaseModel):
     annular_center_tolerance_fraction: float = Field(default=0.05, ge=0.0, le=0.5)
 
 
+class VisualHullConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    robust_bounds_quantile: float = Field(default=0.01, ge=0.0, lt=0.25)
+    minimum_extent: float = Field(default=1e-4, gt=0.0)
+    grid_resolution: int = Field(default=16, ge=8, le=40)
+    minimum_grid_resolution: int = Field(default=10, ge=6, le=40)
+    minimum_axis_voxels: int = Field(default=6, ge=3, le=24)
+    silhouette_support_fraction: float = Field(default=0.7, gt=0.0, le=1.0)
+    silhouette_dilation_fraction: float = Field(default=0.006, ge=0.0, le=0.05)
+    minimum_visible_views: int = Field(default=2, ge=1, le=64)
+    depth_carving_enabled: bool = True
+    depth_tolerance_fraction: float = Field(default=0.08, ge=0.0, le=0.5)
+    minimum_occupied_voxels: int = Field(default=24, ge=1, le=100000)
+    maximum_cuboids: int = Field(default=160, ge=1, le=512)
+
+    @model_validator(mode="after")
+    def validate_resolution_range(self) -> VisualHullConfig:
+        if self.minimum_grid_resolution > self.grid_resolution:
+            raise ValueError("minimum_grid_resolution must not exceed grid_resolution")
+        return self
+
+
 class CadrilleConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -97,6 +124,12 @@ class CadrilleConfig(BaseModel):
     cache_dir: Path = Path("data/hf")
     local_files_only: bool = False
     max_new_tokens: int = Field(default=768, ge=1, le=2048)
+    candidate_count: int = Field(default=1, ge=1, le=10)
+    image_candidate_count: int = Field(default=0, ge=0, le=4)
+    max_decode_batch_size: int = Field(default=1, ge=1, le=10)
+    selection_mode: Literal["input-chamfer", "input-chamfer-silhouette"] = "input-chamfer"
+    silhouette_weight: float = Field(default=1.0, ge=0.0, le=10.0)
+    silhouette_trim_fraction: float = Field(default=0.1, ge=0.0, lt=0.5)
     attn_implementation: Literal["sdpa"] = "sdpa"
     use_cache: bool = True
 
@@ -115,6 +148,7 @@ class AppConfig(BaseModel):
     geometry: GeometryConfig = Field(default_factory=GeometryConfig)
     canonicalizer: CanonicalizerConfig = Field(default_factory=CanonicalizerConfig)
     geometric_fitter: GeometricFitterConfig = Field(default_factory=GeometricFitterConfig)
+    visual_hull: VisualHullConfig = Field(default_factory=VisualHullConfig)
     cadrille: CadrilleConfig = Field(default_factory=CadrilleConfig)
 
 

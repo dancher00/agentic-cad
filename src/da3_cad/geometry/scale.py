@@ -53,7 +53,7 @@ class KnownDimension:
 @dataclass(frozen=True, slots=True)
 class ScaleDecision:
     status: Literal["unresolved", "pending", "known"]
-    source: Literal["none", "known-dimension", "fiducial", "metric-model"]
+    source: Literal["none", "known-dimension", "fiducial", "metric-model", "camera-bundle"]
     units: Literal["normalized", "mm"]
     millimeters_per_unit: float | None
     reference: dict[str, object] | None
@@ -212,11 +212,11 @@ def cad_coordinate_contract(
         kind: NativeSpaceKind = "decoder-native-training-space"
         units = "decoder-native-training-unit"
         mm_per_native = scale.millimeters_per_unit if scale.status == "known" else None
-    elif backend == "geometric-fitter-v1" and scale.status == "known":
+    elif backend in {"geometric-fitter-v1", "visual-hull-v1"} and scale.status == "known":
         kind = "metric-mm-space"
         units = "mm"
         mm_per_native = 1.0
-    elif backend == "geometric-fitter-v1":
+    elif backend in {"geometric-fitter-v1", "visual-hull-v1"}:
         kind = "canonical-model-space"
         units = "canonical-model-unit"
         mm_per_native = None
@@ -255,6 +255,35 @@ def unresolved_scale(known_dimension: KnownDimension | None = None) -> ScaleDeci
             f"known dimension {known_dimension.original} is pending until the generated "
             "parameter table contains that named feature"
         ),
+    )
+
+
+def resolve_camera_bundle_scale(
+    *,
+    world_units_to_mm: float,
+    world_units_per_decoder_unit: float,
+    camera_source: str,
+    evidence: Mapping[str, object],
+) -> ScaleDecision:
+    """Map a metric external-camera world scale into decoder coordinates."""
+
+    if not np.isfinite(world_units_to_mm) or world_units_to_mm <= 0.0:
+        raise ValueError("world_units_to_mm must be finite and positive")
+    if not np.isfinite(world_units_per_decoder_unit) or world_units_per_decoder_unit <= 0.0:
+        raise ValueError("world_units_per_decoder_unit must be finite and positive")
+    millimeters_per_unit = float(world_units_to_mm * world_units_per_decoder_unit)
+    return ScaleDecision(
+        status="known",
+        source="camera-bundle",
+        units="mm",
+        millimeters_per_unit=millimeters_per_unit,
+        reference={
+            "camera_source": camera_source,
+            "world_units_to_mm": float(world_units_to_mm),
+            "world_units_per_decoder_unit": float(world_units_per_decoder_unit),
+            "evidence": dict(evidence),
+        },
+        warning=None,
     )
 
 

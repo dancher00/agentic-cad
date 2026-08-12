@@ -82,15 +82,27 @@ those fields and the warning must be updated together with the new report SHA.
 
 ## Run and inspect
 
-Run the preflight before allocating GPU memory, then reconstruct with the
-research profile and its two explicit non-commercial acknowledgements:
+Run the preflight before allocating GPU memory. Use the Cadrille profile for
+open-vocabulary research hypotheses:
 
 ```bash
 da3-cad doctor photos/ -o doctor.json
-da3-cad reconstruct photos/ -o output/part --config configs/research.yaml \
+da3-cad reconstruct photos/ -o output/part --config configs/photo_cadrille.yaml \
   --accept-noncommercial-weights --accept-license cc-by-nc-4.0
 da3-cad inspect output/part
 da3-cad viewer output/part --images photos/
+```
+
+For the explicitly supported geometric vocabulary—rectangular/circular
+extrusions and circular through-holes—prefer the inspectable template profile.
+A known dimension is accepted only after the generated schema contains that
+exact feature:
+
+```bash
+da3-cad reconstruct photos/ -o output/part-geometric \
+  --config configs/photo_geometric.yaml \
+  --known-dimension body_width=40mm \
+  --accept-noncommercial-weights
 ```
 
 Open `output/part/viewer.html` locally. It embeds the source thumbnails, fused

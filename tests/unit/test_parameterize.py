@@ -12,6 +12,12 @@ w0 = cq.Workplane('XY', origin=(0, 0, 1))
 r = w0.box(4, 2, 1).faces('>Z').workplane(offset=3/2).hole(0.5)
 """
 
+_DISCONNECTED = """import cadquery as cq
+left = cq.Workplane('XY').box(1, 1, 1)
+right = cq.Workplane('XY', origin=(3, 0, 0)).box(1, 1, 1)
+r = left.union(right)
+"""
+
 
 def test_parameterizer_preserves_geometry_and_exposes_named_operands(tmp_path) -> None:
     source, parameters, report = parameterize_generated_source(_RAW)
@@ -32,6 +38,8 @@ def test_parameterizer_preserves_geometry_and_exposes_named_operands(tmp_path) -
     )
     assert raw_result.valid, raw_result.error
     assert parameterized_result.valid, parameterized_result.error
+    assert raw_result.details["solid_count"] == 1
+    assert parameterized_result.details["solid_count"] == 1
     assert parameterized_result.volume == pytest.approx(raw_result.volume, abs=1e-9)
     assert parameterized_result.bbox == pytest.approx(raw_result.bbox, abs=1e-9)
 
@@ -53,3 +61,11 @@ def test_coordinate_parameter_may_be_negative() -> None:
 
     assert parameters["workplane_1_origin_z"] == -2.0
     assert extract_parameters(edited)["workplane_1_origin_z"] == -2.0
+
+
+def test_sandbox_rejects_disconnected_single_part_output(tmp_path) -> None:
+    result = validate_and_export(_DISCONNECTED, tmp_path, SandboxConfig())
+
+    assert not result.valid
+    assert result.error is not None
+    assert "single-part CAD requires exactly one" in result.error

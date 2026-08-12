@@ -1,24 +1,36 @@
 # DA3-CAD
 
-DA3-CAD turns multiple RGB views of one manufactured part into a validated
-CadQuery program plus STEP and STL exports. [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3)
-recovers unposed multi-view geometry; a deterministic fusion/canonicalization
-stage supplies a 256-point cloud to [cadrille](https://github.com/col14m/cadrille),
-and generated code runs in an AST-constrained, resource-limited subprocess. An
-offline viewer shows the photographs, cloud, solid, parameters and provenance.
+DA3-CAD turns multiple RGB views of one object into a validated CadQuery
+program plus STEP and STL. The current product route is deterministic and
+Cadrille-free: [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3)
+predicts depth, confidence and cameras; automatic object masks constrain a
+multiview visual hull; the resulting voxel volume is converted into editable
+cuboid features and executed in an AST-constrained, resource-limited subprocess.
+
+A valid run writes `model.py`, `model.step`, `model.stl`, `parameters.json`,
+input-fit evidence, a quality report and complete provenance. Without a known
+dimension, output units are explicitly canonical rather than millimetres. The
+result is a coarse editable B-Rep, not recovered design history: hidden
+concavities, exact fillets, holes, threads and tolerances are not inferred
+reliably from arbitrary photographs.
+
+The verified internet-video example uses 24 Google Objectron camera frames and
+no CAD ground truth during reconstruction:
+
+| Input route | Cameras | Masks | Result | Trimmed input-silhouette IoU |
+|---|---|---|---|---:|
+| RGB only | DA3-LARGE | automatic v2 | one watertight STEP/STL solid, 69 cuboids | 82.30% |
+| RGB video | COLMAP recovered from the video | automatic v2 | one watertight STEP/STL solid, 44 cuboids | 85.27% |
+
+These IoUs measure agreement with reconstruction input masks, not accuracy
+against an unknown reference CAD. See
+[Internet photos/video → CAD](docs/INTERNET_PHOTO_TO_CAD.md) for exact commands,
+algorithm details and limitations.
 
 ![DA3-CAD pipeline: rendered input views to fused cloud, recovered solid and implementation parameters](docs/assets/readme/hero.gif)
 
-*Frozen rendered Fusion 360 showcase, N=8, seed 20260810, selected by the
-committed rule—not a hand-picked product claim. CD×10³ 14.671, IoU 13.68%; the
-recovered literals are explicitly not presented as design intent.*
-
-A valid run writes `model.py`, `model.step`, `model.stl`, `parameters.json`, a
-quality report and complete provenance. This is an honest research tool, not a
-production reverse-engineering system: the measured bottleneck is agreement of
-camera pose and depth scale between views. Arbitrary handheld-phone accuracy is
-unmeasured, neural output has no reliable metric scale, and Cadrille literals
-are implementation parameters rather than a recovered semantic feature tree.
+*The animation is an archived rendered decoder-research visualization. It is
+retained as provenance and is not the current visual-hull product result.*
 
 ## Try it without a GPU
 
@@ -54,42 +66,82 @@ millimetres.*
 ## Run the research model
 
 The tested environment is Python 3.12, torch `2.13.0+cu130`, CUDA 13.0 and an
-RTX 5080 (`sm_120`). Cadrille runs with PyTorch SDPA; `flash-attn` is not
-installed. Install the locks in this order so pip does not replace the verified
-CUDA wheel:
+RTX 5080 (`sm_120`). Install the CUDA and DA3 locks in this order so pip does
+not replace the verified CUDA wheel:
 
 ```bash
 ./.venv/bin/python -m pip install -r constraints/cu130-py312.txt
 ./.venv/bin/python -m pip install -r constraints/da3-py312.txt
-./.venv/bin/python -m pip install -r constraints/cadrille-py312.txt
 ./.venv/bin/python scripts/fetch_da3_source.py
-```
-
-Downloaders show the exact upstream terms and verify complete checkpoint
-SHA-256 values. DA3-LARGE and Cadrille-RL are CC BY-NC 4.0 and require explicit
-opt-in; no weights are redistributed:
-
-```bash
 ./.venv/bin/python scripts/fetch_da3_weights.py --profile large \
   --cache-dir data/hf --accept-noncommercial-weights
-./.venv/bin/python scripts/fetch_cadrille_weights.py --profile rl \
-  --cache-dir data/hf --accept-license cc-by-nc-4.0
+```
+
+The downloader shows the exact DA3-LARGE terms and verifies the full checkpoint
+SHA-256. No CAD-decoder weights are used by the internet-photo profile:
+
+```bash
 ./.venv/bin/da3-cad doctor photos/ -o doctor.json
-./.venv/bin/da3-cad reconstruct photos/ -o outputs/part --config configs/research.yaml \
-  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+./.venv/bin/da3-cad reconstruct photos/ -o outputs/part \
+  --config configs/internet_photo.yaml \
+  --accept-noncommercial-weights
 ./.venv/bin/da3-cad viewer outputs/part --images photos/
 ```
 
-DA3 and Cadrille are staged rather than resident together. Reports separate
-peak allocated/reserved VRAM, allocator residue and live model tensors; every
-verified run moved all parameters and buffers off CUDA after its stage.
+The automatic profile requires one prominent near-centred object. If a mask
+overlay includes background or cuts the object, provide explicit masks with
+`configs/internet_photo_masked.yaml`. Supply a measured dimension only when
+its schema name is known:
 
-For a completely permissive stack, `configs/permissive.yaml` combines
-Apache-2.0 DA3-BASE with the Apache-2.0 geometric control. It still performs
-real multi-view DA3 inference, but its CAD vocabulary and measured ambitions
-are substantially narrower than the neural profile.
+```bash
+./.venv/bin/da3-cad reconstruct photos/ -o outputs/part-mm \
+  --config configs/internet_photo.yaml \
+  --known-dimension body_width=40mm \
+  --accept-noncommercial-weights
+```
 
-## Main result: cameras and per-view scale are the bottleneck
+For simple rectangular/circular extrusions and circular through-holes,
+`configs/photo_geometric.yaml` remains a narrower semantic fitter. Both paths
+refuse a mismatched dimension name instead of attaching a measurement to an
+unrelated value.
+
+## Experimental video and external-camera path
+
+The capture path now selects diverse video frames, recovers a named
+world-to-camera bundle with CPU COLMAP, conditions DA3 on those K/E matrices,
+and can use user-supplied masks. The object must remain stationary while the
+camera moves; turntable capture is deliberately rejected by the current
+contract.
+
+```bash
+./.venv/bin/python -m pip install -e '.[video]'
+./.venv/bin/da3-cad prepare-video raw/part.mp4 -o captures/part --views 24
+
+./.venv/bin/da3-cad reconstruct \
+  captures/part/colmap/registered_frames \
+  -o outputs/part-visual-hull \
+  --config configs/internet_photo.yaml \
+  --cameras captures/part/colmap/cameras.npz \
+  --accept-noncommercial-weights
+```
+
+The same automatic masks are used to build and then independently reproject
+the CAD. `artefacts/input_fit_validation.json` records normalized input-cloud
+Chamfer and per-view silhouette IoU with `ground_truth_access: false`. If
+automatic masks fail, switch to `configs/internet_photo_masked.yaml` and add
+`--masks captures/part/masks`.
+
+Capture requirements and exact output semantics are in
+[Internet photos/video → CAD](docs/INTERNET_PHOTO_TO_CAD.md). The lower-level
+capture contract remains in [Video to CAD](docs/VIDEO_TO_CAD.md).
+
+## Archived decoder research: cameras and per-view scale
+
+The sections below preserve earlier generative-decoder experiments and negative
+results for scientific provenance. They are not the current product route; the
+supported internet-photo command above uses deterministic visual hull CAD. In
+that archived study, the measured bottleneck was camera pose and depth scale
+between views.
 
 ![Measured bottleneck decomposition for camera pose, per-view depth scale and segmentation](docs/assets/readme/bottleneck_decomposition.png)
 

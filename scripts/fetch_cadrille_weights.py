@@ -31,8 +31,7 @@ def main() -> None:
     for key in keys:
         print(f"- {cadrille_license_notice(CADRILLE_MODELS[key])}")
     print(
-        f"- processor/tokenizer: {CADRILLE_PROCESSOR_ID}@{CADRILLE_PROCESSOR_REVISION} "
-        "(Apache-2.0)"
+        f"- processor/tokenizer: {CADRILLE_PROCESSOR_ID}@{CADRILLE_PROCESSOR_REVISION} (Apache-2.0)"
     )
     print(f"- target: {args.cache_dir} (ignored runtime cache)")
     print(f"- required acknowledgement: --accept-license {CADRILLE_LICENSE_ACCEPTANCE}")
@@ -47,7 +46,7 @@ def main() -> None:
     args.cache_dir.mkdir(parents=True, exist_ok=True)
     try:
         from huggingface_hub import hf_hub_download
-        from transformers import AutoTokenizer
+        from transformers import AutoProcessor
     except ImportError as error:
         raise RuntimeError("install the 'cadrille' optional dependencies first") from error
 
@@ -69,11 +68,14 @@ def main() -> None:
         reports.append({"model": spec.as_dict(), "checkpoint_file": report})
         print(f"verified {spec.model_id}: {report['sha256']}")
 
-    AutoTokenizer.from_pretrained(
+    AutoProcessor.from_pretrained(
         CADRILLE_PROCESSOR_ID,
         revision=CADRILLE_PROCESSOR_REVISION,
         cache_dir=args.cache_dir,
+        min_pixels=256 * 28 * 28,
+        max_pixels=1280 * 28 * 28,
         padding_side="left",
+        use_fast=False,
     )
     receipt_dir = args.cache_dir / "da3-cad-license-receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)

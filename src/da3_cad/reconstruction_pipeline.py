@@ -13,7 +13,27 @@ from da3_cad.backends.cadrille import (
     CadrilleBackend,
     cadrille_license_notice,
 )
+from da3_cad.backends.cadrille_image import CadrilleImageBackend
+from da3_cad.backends.cadrille_images import (
+    build_cadrille_image_inputs,
+    write_cadrille_image_inputs,
+)
 from da3_cad.backends.geometric_fitter import GeometricCadBackend
+from da3_cad.backends.visual_hull import VisualHullCadBackend
+from da3_cad.benchmark.candidates import (
+    CandidateArtifact,
+    CandidateSelection,
+    build_candidate_inputs,
+    candidate_seeds,
+    canonical_input_pool,
+    select_by_input_chamfer,
+)
+from da3_cad.benchmark.pilot import validate_candidate_batch
+from da3_cad.benchmark.silhouette_selection import (
+    MultiviewCandidateSelection,
+    score_candidate_silhouettes,
+    select_by_input_and_silhouette,
+)
 from da3_cad.cad.equivalence import compare_validation_geometry
 from da3_cad.cad.parameter_semantics import (
     ParameterizationMode,
@@ -44,6 +64,13 @@ class FullReconstructionResult:
     report: dict[str, object]
 
 
+@dataclass(frozen=True, slots=True)
+class _CandidateEvidence:
+    last_raw_texts: tuple[str, ...]
+    last_clean_sources: tuple[str, ...]
+    last_parameterization_reports: tuple[dict[str, object], ...]
+
+
 def _write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -59,7 +86,7 @@ def _parameter_payload(
         backend=program.backend,
         mode=parameterization_mode,
     )
-    if program.backend.startswith("cadrille-point-cloud-"):
+    if program.backend.startswith("cadrille-"):
         units = "decoder-native-training-unit"
     elif scale.status == "known":
         units = "mm"
@@ -147,6 +174,8 @@ def reconstruct_full(
     accepted_da3_noncommercial: bool,
     accepted_cadrille_license: str | None,
     known_dimension_text: str | None = None,
+    camera_bundle_path: Path | None = None,
+    segmentation_mask_dir: Path | None = None,
 ) -> FullReconstructionResult:
     """Run staged real inference without a silent backend substitution."""
 
@@ -154,12 +183,22 @@ def reconstruct_full(
         raise ValueError(f"output directory already exists: {output_dir}")
     if config.depth_backend not in {"da3-base", "da3-large"}:
         raise ValueError("full reconstruction requires depth_backend da3-base or da3-large")
-    supported_cad = {"geometric-fitter", "cadrille-sft", "cadrille-rl"}
+    supported_cad = {"geometric-fitter", "visual-hull", "cadrille-sft", "cadrille-rl"}
     if config.cad_backend not in supported_cad:
         raise ValueError(
             f"full reconstruction requires cad_backend in {sorted(supported_cad)}, "
             f"got {config.cad_backend!r}"
         )
+    total_candidates = config.cadrille.candidate_count + config.cadrille.image_candidate_count
+    if total_candidates > 1 and not config.cad_backend.startswith("cadrille-"):
+        raise ValueError("multiple Cadrille candidates require a Cadrille CAD backend")
+    if config.cadrille.selection_mode == "input-chamfer-silhouette":
+        if total_candidates < 2:
+            raise ValueError("silhouette reranking requires at least two Cadrille candidates")
+        if config.geometry.segmentation_backend == "gt-mask-oracle":
+            raise ValueError(
+                "silhouette reranking refuses gt-mask-oracle masks during reconstruction"
+            )
     known_dimension = (
         KnownDimension.parse(known_dimension_text) if known_dimension_text is not None else None
     )
@@ -185,6 +224,8 @@ def reconstruct_full(
         artefacts / "geometry",
         config,
         accepted_noncommercial=accepted_da3_noncommercial,
+        camera_bundle_path=camera_bundle_path,
+        segmentation_mask_dir=segmentation_mask_dir,
     )
     provenance.stages.append(
         StageRecord(
@@ -196,6 +237,12 @@ def reconstruct_full(
                 "report": "artefacts/geometry/geometry_report.json",
                 "point_count": len(geometry.cloud.points),
                 "fusion": geometry.cloud.report.as_dict(),
+                "camera_conditioning": geometry.report["camera_conditioning"],
+                "segmentation_mask_dir": (
+                    str(segmentation_mask_dir.resolve())
+                    if segmentation_mask_dir is not None
+                    else None
+                ),
             },
         )
     )
@@ -224,6 +271,11 @@ def reconstruct_full(
             },
         )
     )
+    if canonical.scale.status == "known" and config.cad_backend.startswith("cadrille-"):
+        raise ValueError(
+            "metric camera scale cannot yet be transferred through the Cadrille decoder "
+            "without an output-space calibration; use cad_backend=geometric-fitter"
+        )
 
     started = time.monotonic()
     raw_transport_text: str
@@ -247,6 +299,25 @@ def reconstruct_full(
             "report": geometric_backend.last_report.as_dict(),
             "license": "DA3-CAD Apache-2.0 code; no CAD decoder weights",
         }
+    elif config.cad_backend == "visual-hull":
+        visual_hull_backend = VisualHullCadBackend(config.visual_hull)
+        program = visual_hull_backend.generate(
+            canonical,
+            geometry.prediction,
+            geometry.masks,
+            seed=config.seed,
+            known_dimension=known_dimension,
+        )
+        if visual_hull_backend.last_report is None:
+            raise RuntimeError("visual-hull backend did not produce its required report")
+        scale = visual_hull_backend.last_report.scale
+        raw_transport_text = program.source
+        clean_decoder_source = program.source
+        decoder_details = {
+            "mode": "deterministic-visual-hull",
+            "report": visual_hull_backend.last_report.as_dict(),
+            "license": "DA3-CAD Apache-2.0 code; no CAD decoder weights",
+        }
     else:
         expected_profile = config.cad_backend.removeprefix("cadrille-")
         if config.cadrille.checkpoint != expected_profile:
@@ -259,7 +330,174 @@ def reconstruct_full(
             accepted_license=accepted_cadrille_license,
             device=config.device,
         )
-        program = cadrille_backend.generate(canonical, seed=config.seed)
+        image_runtime: dict[str, object] | None = None
+        if total_candidates == 1:
+            program = cadrille_backend.generate(canonical, seed=config.seed)
+            candidate_details: dict[str, object] = {
+                "enabled": False,
+                "candidate_count": 1,
+                "rule": "single greedy candidate; no reranking",
+                "ground_truth_access": False,
+            }
+        else:
+            seeds = candidate_seeds(config.seed, total_candidates)
+            point_seeds = seeds[: config.cadrille.candidate_count]
+            candidate_inputs = build_candidate_inputs(canonical, point_seeds)
+            point_programs = cadrille_backend.generate_many(
+                candidate_inputs,
+                seeds=point_seeds,
+                preserve_first_candidate=True,
+                max_decode_batch_size=config.cadrille.max_decode_batch_size,
+            )
+            programs = point_programs
+            evidence = _CandidateEvidence(
+                last_raw_texts=cadrille_backend.last_raw_texts,
+                last_clean_sources=cadrille_backend.last_clean_sources,
+                last_parameterization_reports=cadrille_backend.last_parameterization_reports,
+            )
+            candidate_input_reports: list[dict[str, object]] = [
+                {
+                    "index": candidate.index,
+                    "seed": candidate.seed,
+                    "modality": "point-cloud",
+                    "decoder_sha256": candidate.decoder_sha256,
+                }
+                for candidate in candidate_inputs
+            ]
+            if config.cadrille.image_candidate_count > 0:
+                image_inputs = build_cadrille_image_inputs(
+                    geometry.prediction.processed_images,
+                    geometry.masks,
+                    candidate_count=config.cadrille.image_candidate_count,
+                )
+                write_cadrille_image_inputs(
+                    artefacts / "cadrille_image_inputs",
+                    image_inputs,
+                )
+                image_backend = CadrilleImageBackend(
+                    config.cadrille,
+                    accepted_license=accepted_cadrille_license,
+                    device=config.device,
+                )
+                image_seeds = seeds[len(point_programs) :]
+                image_programs = image_backend.generate_image_many(
+                    image_inputs,
+                    seeds=image_seeds,
+                )
+                programs = point_programs + image_programs
+                evidence = _CandidateEvidence(
+                    last_raw_texts=(cadrille_backend.last_raw_texts + image_backend.last_raw_texts),
+                    last_clean_sources=(
+                        cadrille_backend.last_clean_sources + image_backend.last_clean_sources
+                    ),
+                    last_parameterization_reports=(
+                        cadrille_backend.last_parameterization_reports
+                        + image_backend.last_parameterization_reports
+                    ),
+                )
+                if (
+                    image_backend.last_runtime_report is None
+                    or image_backend.last_lifecycle is None
+                ):
+                    raise RuntimeError("Cadrille image backend did not produce runtime evidence")
+                image_runtime = image_backend.last_runtime_report
+                offset = len(point_programs)
+                candidate_input_reports.extend(
+                    {
+                        "index": offset + index,
+                        "seed": image_seeds[index],
+                        **item.as_dict(),
+                    }
+                    for index, item in enumerate(image_inputs)
+                )
+            validated_candidates = validate_candidate_batch(
+                programs,
+                evidence,
+                artefacts / "candidates",
+                config.sandbox,
+            )
+            candidate_artifacts = tuple(
+                CandidateArtifact(
+                    index=candidate.index,
+                    mesh=(candidate.validation.stl_path if candidate.validation.valid else None),
+                    invalid_reason=(
+                        candidate.validation.error if not candidate.validation.valid else None
+                    ),
+                )
+                for candidate in validated_candidates
+            )
+            input_selection = select_by_input_chamfer(
+                canonical_input_pool(canonical),
+                candidate_artifacts,
+                item_id=observations.digest,
+                global_seed=config.seed,
+            )
+            selection: CandidateSelection | MultiviewCandidateSelection
+            silhouette_details: dict[str, object] = {"enabled": False}
+            if config.cadrille.selection_mode == "input-chamfer-silhouette":
+                silhouette_scores = score_candidate_silhouettes(
+                    candidate_artifacts,
+                    canonical,
+                    geometry.prediction,
+                    geometry.masks,
+                    trim_fraction=config.cadrille.silhouette_trim_fraction,
+                    output_root=artefacts / "candidate_silhouettes",
+                )
+                selection = select_by_input_and_silhouette(
+                    input_selection,
+                    silhouette_scores,
+                    silhouette_weight=config.cadrille.silhouette_weight,
+                )
+                silhouette_details = {
+                    "enabled": True,
+                    "trim_fraction": config.cadrille.silhouette_trim_fraction,
+                    "weight": config.cadrille.silhouette_weight,
+                    "ground_truth_access": False,
+                    "mask_source": geometry.cloud.report.mask_source,
+                    "scores": [score.as_dict() for score in silhouette_scores],
+                }
+                _write_json(
+                    artefacts / "candidate_silhouette_selection.json",
+                    {**silhouette_details, "selection": selection.as_dict()},
+                )
+            else:
+                selection = input_selection
+            candidate_details = {
+                "enabled": True,
+                "candidate_count": len(programs),
+                "candidate_seeds": list(seeds),
+                "decode_batch_size": config.cadrille.max_decode_batch_size,
+                "selection_mode": config.cadrille.selection_mode,
+                "silhouette": silhouette_details,
+                "input_variation": (
+                    "deterministic farthest-point subsamples plus temporally offset masked "
+                    "four-view collages"
+                ),
+                "point_candidate_count": len(point_programs),
+                "image_candidate_count": len(programs) - len(point_programs),
+                "candidate_inputs": candidate_input_reports,
+                "validation": [
+                    {
+                        **candidate.as_dict(),
+                        "artifact_dir": f"artefacts/candidates/candidate_{candidate.index:02d}",
+                    }
+                    for candidate in validated_candidates
+                ],
+                "selection": selection.as_dict(),
+            }
+            _write_json(artefacts / "candidate_selection.json", candidate_details)
+            if selection.selected_index is None:
+                raise RuntimeError(
+                    "all Cadrille candidates were invalid; evidence is in "
+                    "artefacts/candidate_selection.json"
+                )
+            selected_index = selection.selected_index
+            program = programs[selected_index]
+            cadrille_backend.last_raw_text = evidence.last_raw_texts[selected_index]
+            cadrille_backend.last_clean_source = evidence.last_clean_sources[selected_index]
+            cadrille_backend.last_parameterization_report = evidence.last_parameterization_reports[
+                selected_index
+            ]
         if (
             cadrille_backend.last_runtime_report is None
             or cadrille_backend.last_lifecycle is None
@@ -281,6 +519,8 @@ def reconstruct_full(
             "explicit_license_acceptance": accepted_cadrille_license,
             "weights_redistributed": False,
             "runtime": cadrille_backend.last_runtime_report,
+            "image_candidate_runtime": image_runtime,
+            "candidate_selection": candidate_details,
         }
     generation_seconds = time.monotonic() - started
     (artefacts / "raw_decoder_output.txt").write_text(
@@ -344,6 +584,35 @@ def reconstruct_full(
             "equivalent": True,
             "parameterized_validation": validation.as_dict(),
         }
+
+    if config.cad_backend == "visual-hull":
+        output_candidate = CandidateArtifact(
+            index=0,
+            mesh=validation.stl_path if validation.valid else None,
+            invalid_reason=validation.error if not validation.valid else None,
+        )
+        input_evidence = select_by_input_chamfer(
+            canonical_input_pool(canonical),
+            (output_candidate,),
+            item_id=observations.digest,
+            global_seed=config.seed,
+        )
+        silhouette_evidence = score_candidate_silhouettes(
+            (output_candidate,),
+            canonical,
+            geometry.prediction,
+            geometry.masks,
+            trim_fraction=0.1,
+            output_root=artefacts / "visual_hull_silhouettes",
+        )
+        fit_evidence = {
+            "ground_truth_access": False,
+            "mask_source": geometry.cloud.report.mask_source,
+            "input_chamfer": input_evidence.as_dict(),
+            "input_silhouette": silhouette_evidence[0].as_dict(),
+        }
+        decoder_details["input_fit_validation"] = fit_evidence
+        _write_json(artefacts / "input_fit_validation.json", fit_evidence)
 
     _write_json(artefacts / "decoder_report.json", decoder_details)
     _write_json(artefacts / "validation.json", validation.as_dict())
@@ -411,6 +680,12 @@ def reconstruct_full(
         "seed": config.seed,
         "input_digest": observations.digest,
         "input_views": len(observations.images),
+        "camera_bundle": (
+            str(camera_bundle_path.resolve()) if camera_bundle_path is not None else None
+        ),
+        "segmentation_mask_dir": (
+            str(segmentation_mask_dir.resolve()) if segmentation_mask_dir is not None else None
+        ),
         "depth_backend": config.depth_backend,
         "cad_backend": config.cad_backend,
         "fallback_used": False,

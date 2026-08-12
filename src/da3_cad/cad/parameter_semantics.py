@@ -76,7 +76,11 @@ def classify_parameters(
 ) -> ParameterSemantics:
     """Expose only parameters backed by a hand-defined engineering schema as primary."""
 
-    if mode == "explicit-template" and backend in {"geometric-fitter-v1", "stub"}:
+    if mode == "explicit-template" and backend in {
+        "geometric-fitter-v1",
+        "visual-hull-v1",
+        "stub",
+    }:
         primary = tuple(
             _entry(
                 name,

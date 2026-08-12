@@ -7,11 +7,10 @@ import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, Protocol, cast
 
 import numpy as np
 
-from da3_cad.backends.cadrille import CadrilleBackend
 from da3_cad.cad.equivalence import compare_validation_geometry
 from da3_cad.cad.sandbox import validate_and_export
 from da3_cad.config import SandboxConfig
@@ -49,9 +48,7 @@ def load_fused_cloud(geometry_output: Path) -> FusedPointCloud:
         confidence = np.asarray(payload["confidence"], dtype=np.float32)
         view_indices = np.asarray(payload["view_indices"], dtype=np.int32)
         pixel_xy = np.asarray(payload["pixel_xy"], dtype=np.int32)
-    fusion_payload = json.loads(
-        (artifact_root / "fusion_report.json").read_text(encoding="utf-8")
-    )
+    fusion_payload = json.loads((artifact_root / "fusion_report.json").read_text(encoding="utf-8"))
     report_payload = fusion_payload["fusion"]
     views = tuple(
         ViewFusionStats(
@@ -103,6 +100,17 @@ def load_fused_cloud(geometry_output: Path) -> FusedPointCloud:
     )
 
 
+class CandidateDecoderEvidence(Protocol):
+    @property
+    def last_raw_texts(self) -> tuple[str, ...]: ...
+
+    @property
+    def last_clean_sources(self) -> tuple[str, ...]: ...
+
+    @property
+    def last_parameterization_reports(self) -> tuple[dict[str, object], ...]: ...
+
+
 @dataclass(frozen=True, slots=True)
 class ValidatedCandidate:
     index: int
@@ -142,7 +150,7 @@ def _invalid_equivalence_result(
 
 def validate_candidate_batch(
     programs: tuple[CadProgram, ...],
-    backend: CadrilleBackend,
+    backend: CandidateDecoderEvidence,
     output_root: Path,
     sandbox: SandboxConfig,
 ) -> tuple[ValidatedCandidate, ...]:
@@ -178,7 +186,7 @@ def validate_candidate_batch(
                 )
             equivalence = compare_validation_geometry(raw_validation, validation)
             equivalence["raw_validation"] = raw_validation.as_dict()
-            if equivalence["equivalent"] is not True:
+            if equivalence["equivalent"] is False:
                 validation = _invalid_equivalence_result(
                     validation,
                     "AST parameterization changed decoder geometry or validity",

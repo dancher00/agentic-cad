@@ -121,6 +121,11 @@ def validate_and_export(
             bbox_values[4],
             bbox_values[5],
         )
+        solid_count = int(payload.get("solid_count", 0))
+        if solid_count != 1:
+            raise ValueError(
+                "sandbox worker returned a successful result without exactly one solid"
+            )
         return ValidationResult(
             valid=True,
             error=None,
@@ -132,6 +137,7 @@ def validate_and_export(
             details={
                 "stage": "complete",
                 "worker_returncode": process.returncode,
+                "solid_count": solid_count,
                 "limits": config.model_dump(),
             },
         )

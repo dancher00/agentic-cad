@@ -52,6 +52,13 @@ def run(source_path: Path, output_dir: Path) -> int:
         shape = result.val() if hasattr(result, "val") else result
         if shape is None or not hasattr(shape, "isValid") or not shape.isValid():
             raise ValueError("program did not produce a valid CadQuery solid")
+        solids = shape.Solids()
+        solid_count = len(solids)
+        if solid_count != 1:
+            raise ValueError(
+                f"program produced {solid_count} disconnected solids; "
+                "single-part CAD requires exactly one"
+            )
         volume = float(shape.Volume())
         if not volume > 0.0:
             raise ValueError("program produced a non-positive-volume shape")
@@ -72,6 +79,7 @@ def run(source_path: Path, output_dir: Path) -> int:
                 "valid": True,
                 "volume": volume,
                 "bbox": [float(value) for value in bbox_values],
+                "solid_count": solid_count,
             },
         )
         return 0

@@ -14,9 +14,7 @@ def _prediction(*, views: int = 1, height: int = 4, width: int = 4) -> DepthPred
         confidence=np.ones((views, height, width), dtype=np.float64),
         intrinsics=np.repeat(np.eye(3, dtype=np.float64)[None], views, axis=0),
         extrinsics=np.repeat(np.eye(4, dtype=np.float64)[None], views, axis=0),
-        processed_images=tuple(
-            np.zeros((height, width, 3), dtype=np.uint8) for _ in range(views)
-        ),
+        processed_images=tuple(np.zeros((height, width, 3), dtype=np.uint8) for _ in range(views)),
         backend="test",
     )
 
@@ -38,6 +36,17 @@ def test_explicit_mask_uses_nearest_resize_and_is_deterministic(tmp_path: Path) 
     assert int(first.masks.sum()) == 4
     np.testing.assert_array_equal(first.masks, second.masks)
     assert "oracle" in first.warnings[0]
+
+
+def test_explicit_user_mask_is_not_labelled_as_gt_oracle(tmp_path: Path) -> None:
+    path = tmp_path / "view_000.png"
+    _write_mask(path, np.full((2, 2), 255, dtype=np.uint8))
+
+    result = segment_explicit_masks(_prediction(), (path,), oracle=False)
+
+    assert result.backend == "explicit-user-mask-v1"
+    assert "supplied by the user" in result.warnings[0]
+    assert "GT visible-instance" not in result.warnings[0]
 
 
 def test_explicit_mask_rejects_count_mismatch(tmp_path: Path) -> None:

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>DA3-CAD — вход, выход и роль DA3</title>
+<style>
+  @page {
+    size: A4;
+    margin: 11mm 13mm 14mm 13mm;
+    @bottom-left {
+      content: "DA3-CAD · техническая карта текущего прототипа · 12.08.2026";
+      color: #6a7688;
+      font: 7.2pt "DejaVu Sans";
+    }
+    @bottom-right {
+      content: counter(page);
+      color: #6a7688;
+      font: 7.2pt "DejaVu Sans";
+    }
+  }
+
+  :root {
+    --navy: #14213d;
+    --blue: #2f6fed;
+    --cyan: #26a6d1;
+    --orange: #f4a261;
+    --green: #2a9d8f;
+    --red: #d95d55;
+    --pale: #f4f7fb;
+    --line: #d6deea;
+    --muted: #56657a;
+  }
+
+  * { box-sizing: border-box; }
+  html { font-family: "DejaVu Sans", sans-serif; color: #1c2738; }
+  body { margin: 0; font-size: 8.35pt; line-height: 1.29; }
+  section.page { break-after: page; }
+  section.page:last-child { break-after: auto; }
+
+  .kicker {
+    color: var(--blue);
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 2.5mm;
+  }
+  h1 {
+    color: var(--navy);
+    font-size: 20pt;
+    line-height: 1.08;
+    margin: 0 0 2mm 0;
+    letter-spacing: -.02em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 11pt;
+    margin: 0 0 5mm 0;
+  }
+  h2 {
+    color: var(--navy);
+    font-size: 14.5pt;
+    line-height: 1.12;
+    margin: 0 0 4mm 0;
+    padding-bottom: 1.8mm;
+    border-bottom: .6pt solid var(--line);
+  }
+  h3 {
+    color: var(--navy);
+    font-size: 10pt;
+    margin: 4mm 0 2mm;
+  }
+  p { margin: 0 0 2mm; }
+  code {
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: .91em;
+    overflow-wrap: anywhere;
+  }
+
+  .callout {
+    border: .6pt solid #aebfe3;
+    border-radius: 2.2mm;
+    background: #f1f5ff;
+    padding: 3mm 3.5mm;
+    margin: 0 0 4mm;
+  }
+  .callout.green { border-color: #9bcfc7; background: #edf8f6; }
+  .callout.orange { border-color: #ebc48f; background: #fff7ec; }
+  .callout.navy {
+    border-color: var(--navy);
+    background: var(--navy);
+    color: white;
+  }
+  .callout strong { color: var(--navy); }
+  .callout.navy strong { color: white; }
+
+  .flow {
+    display: grid;
+    grid-template-columns: 1fr 5mm 1fr 5mm 1fr 5mm 1fr;
+    align-items: center;
+    margin: 1mm 0 4mm;
+  }
+  .stage {
+    min-height: 23mm;
+    background: var(--pale);
+    border: .8pt solid var(--line);
+    border-radius: 2mm;
+    padding: 3mm;
+  }
+  .stage .label {
+    color: var(--muted);
+    font-size: 6.7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-bottom: 1mm;
+  }
+  .stage b { color: var(--navy); display: block; font-size: 8.6pt; margin-bottom: .7mm; }
+  .arrow { color: var(--blue); text-align: center; font-size: 14pt; font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; break-inside: avoid; }
+  thead th {
+    background: var(--navy);
+    color: white;
+    text-align: left;
+    font-weight: 700;
+    padding: 2.1mm 2mm;
+    vertical-align: top;
+  }
+  tbody td {
+    padding: 1.75mm 2mm;
+    vertical-align: top;
+    border-bottom: .45pt solid var(--line);
+  }
+  tbody tr:nth-child(odd) td { background: var(--pale); }
+  .main-table { table-layout: fixed; font-size: 7.55pt; line-height: 1.25; }
+  .main-table th:nth-child(1) { width: 14%; }
+  .main-table th:nth-child(2) { width: 22%; }
+  .main-table th:nth-child(3) { width: 31%; }
+  .main-table th:nth-child(4) { width: 33%; }
+  .small-table { font-size: 7.55pt; line-height: 1.22; }
+  .small-table th, .small-table td { padding: 1.45mm 1.7mm; }
+  .metric-table { font-size: 7.45pt; line-height: 1.2; }
+  .metric-table th, .metric-table td { padding: 1.4mm 1.5mm; }
+
+  .status-good { color: var(--green); font-weight: 700; }
+  .status-exp { color: #be7620; font-weight: 700; }
+  .status-no { color: var(--red); font-weight: 700; }
+  .fine {
+    color: var(--muted);
+    font-size: 7.15pt;
+    line-height: 1.25;
+    margin-top: 2mm;
+  }
+
+  .two {
+    display: grid;
+    grid-template-columns: 56% 41.5%;
+    gap: 2.5%;
+    align-items: start;
+  }
+  .two-even {
+    display: grid;
+    grid-template-columns: 49% 48.5%;
+    gap: 2.5%;
+    align-items: start;
+  }
+  ul {
+    margin: 1.5mm 0 0 0;
+    padding-left: 4.2mm;
+  }
+  li { margin: 0 0 1mm; }
+  .formula {
+    font-family: "DejaVu Serif", serif;
+    font-size: 10.2pt;
+    text-align: center;
+    color: var(--navy);
+    margin: 2mm 0 1mm;
+  }
+
+  .stage-strip {
+    width: 100%;
+    display: block;
+    margin: 1mm 0 2.5mm;
+  }
+  .comparison-image {
+    width: 100%;
+    display: block;
+    margin-top: 1mm;
+  }
+  .rule-table thead th { background: var(--blue); }
+  .output-list { columns: 1; }
+  .capture { margin-top: 3mm; }
+
+  .page-2 { font-size: 8pt; }
+  .page-3 { font-size: 7.9pt; }
+</style>
+</head>
+<body>
+
+<section class="page page-1">
+  <div class="kicker">DA3-CAD / продуктовая схема</div>
+  <h1>DA3-CAD: вход, выход и роль DA3</h1>
+  <div class="subtitle">От фотографий и видео до редактируемой CAD-модели</div>
+
+  <div class="callout">
+    <strong>Главная мысль.</strong>
+    DA3 восстанавливает <b>геометрические наблюдения</b> — глубину, уверенность и камеры.
+    Он не создаёт STEP и не знает конструкторского замысла. Наш продукт превращает эти
+    наблюдения в единое облако, строит CAD-гипотезу, проверяет её и экспортирует
+    редактируемые параметры и производственные форматы.
+  </div>
+
+  <div class="flow">
+    <div class="stage">
+      <div class="label">1 · вход</div>
+      <b>RGB-фото / кадры</b>
+      маски, камеры и один известный размер — опционально
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage">
+      <div class="label">2 · DA3</div>
+      <b>Глубина + камеры</b>
+      depth, confidence, intrinsics K, extrinsics E
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage">
+      <div class="label">3 · DA3-CAD</div>
+      <b>Единая геометрия</b>
+      маска, 3D-развёртка, фильтрация, слияние, ориентация
+    </div>
+    <div class="arrow">→</div>
+    <div class="stage">
+      <div class="label">4 · выход</div>
+      <b>Проверенный CAD</b>
+      CadQuery, STEP, STL, параметры, отчёт и viewer
+    </div>
+  </div>
+
+  <h2>Сравнение входов и фактического выхода продукта</h2>
+
+  <table class="main-table">
+    <thead>
+      <tr>
+        <th>Вход пользователя</th>
+        <th>Что делает DA3</th>
+        <th>Что добавляет DA3-CAD</th>
+        <th>Что реально получается</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>1 фотография</b></td>
+        <td>Оценивает глубину видимой поверхности, уверенность и одну камеру.</td>
+        <td>Строит частичную 3D-геометрию и может сгенерировать CAD-гипотезу.</td>
+        <td><span class="status-exp">Эксперимент.</span> Скрытая сторона, толщина и масштаб неоднозначны. Результат нельзя считать точным обратным проектированием.</td>
+      </tr>
+      <tr>
+        <td><b>Серия фото</b><br>обычно 8–16 видов</td>
+        <td>Совместно оценивает глубины и относительные положения камер для всех кадров.</td>
+        <td>Отделяет объект, разворачивает пиксели в 3D, фильтрует и сливает виды, затем строит CAD.</td>
+        <td><code>model.py</code>, STEP, STL, таблица параметров, quality/provenance и offline-viewer. Точность зависит прежде всего от камер и согласования масштаба глубин.</td>
+      </tr>
+      <tr>
+        <td><b>Видео</b><br>неподвижный объект, движется камера</td>
+        <td>Получает не видео целиком, а выбранные разнообразные кадры; может быть обусловлен камерами COLMAP.</td>
+        <td>Извлекает кадры, проверяет разнообразие, при возможности восстанавливает K/E; далее работает как с серией фото.</td>
+        <td>Тот же набор CAD-артефактов. Поворотный стол, где движется объект, текущим контрактом не поддержан.</td>
+      </tr>
+      <tr>
+        <td><b>Фото + маски + K/E</b></td>
+        <td>Использует внешние intrinsics/extrinsics вместо полностью свободной оценки поз.</td>
+        <td>Маски ограничивают объект; известные камеры делают многовидовое слияние устойчивее.</td>
+        <td>Более надёжное облако и CAD-гипотеза, но метрический масштаб всё ещё не появляется автоматически.</td>
+      </tr>
+      <tr>
+        <td><b>+ известный размер</b><br>например, ширина 40 мм</td>
+        <td><b>Не использует</b> этот размер: вывод DA3 остаётся без абсолютного масштаба.</td>
+        <td>После распознавания одноимённого CAD-параметра масштабирует всю модель и параметры.</td>
+        <td>Размеры в миллиметрах. Ссылка должна совпасть с именем параметра, например <code>body_width=40mm</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="fine">
+    В inference не подаётся эталонный CAD. Он используется только отдельно для оценки качества.
+    На RTX 5080 16 ГБ помещается DA3-LARGE; сегментация, visual hull и экспорт CadQuery/STEP выполняются на CPU.
+  </p>
+</section>
+
+<section class="page page-2">
+  <h2>Как DA3 работает внутри конвейера</h2>
+
+  <div class="two">
+    <div>
+      <h3 style="margin-top:0">Контракт DA3 в нашей реализации</h3>
+      <table class="small-table rule-table">
+        <thead><tr><th style="width:36%">Поле</th><th>Смысл</th></tr></thead>
+        <tbody>
+          <tr><td><code>depth[N,H,W]</code></td><td>z-глубина каждого пикселя в системе соответствующей камеры.</td></tr>
+          <tr><td><code>confidence[N,H,W]</code></td><td>Относительная надёжность; менее уверенные пиксели отбрасываются.</td></tr>
+          <tr><td><code>intrinsics[N,3,3]</code></td><td>Матрица K: фокусные параметры и главная точка камеры.</td></tr>
+          <tr><td><code>extrinsics[N,4,4]</code></td><td>Матрица E, интерпретируемая как world-to-camera.</td></tr>
+          <tr><td><code>processed_images</code></td><td>Изображения после внутреннего ресайза и предобработки DA3.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top:3mm">
+        Для пикселя (u,v) продукт вычисляет точку камеры:
+        <div class="formula">x<sub>cam</sub> = z K<sup>−1</sup>[u,v,1]<sup>T</sup>, &nbsp;&nbsp; x<sub>world</sub> = E<sup>−1</sup>x<sub>cam</sub>.</div>
+        Затем применяются маска и порог уверенности; точки всех видов объединяются.
+      </div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0">Чего DA3 не выдаёт</h3>
+      <ul>
+        <li>не STEP, STL, B-Rep или CadQuery;</li>
+        <li>не отверстия, карманы и фаски как признаки;</li>
+        <li>не дерево построения и не design intent;</li>
+        <li>не допуски, посадки, резьбы и GD&amp;T;</li>
+        <li>не гарантированный абсолютный масштаб в мм;</li>
+        <li>не достоверную невидимую геометрию из одного кадра.</li>
+      </ul>
+      <div class="callout orange" style="margin-top:4mm">
+        <strong>Роль DA3:</strong> дать геометрическое измерение сцены.<br>
+        <strong>Роль DA3-CAD:</strong> интерпретировать его как редактируемую деталь.
+      </div>
+    </div>
+  </div>
+
+  <h3>Граница ответственности по этапам</h3>
+  <table class="small-table">
+    <thead>
+      <tr><th style="width:5%">№</th><th style="width:20%">Этап</th><th style="width:15%">Исполнитель</th><th>Результат этапа</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Захват и подготовка</td><td>DA3-CAD</td><td>RGB-кадры, опционально маски и внешний пакет камер.</td></tr>
+      <tr><td>2</td><td>Any-view depth</td><td><b>DA3</b></td><td>Глубины, confidence, K/E; глобальный масштаб может быть неизвестен.</td></tr>
+      <tr><td>3</td><td>3D-развёртка и fusion</td><td>DA3-CAD</td><td>Единое фильтрованное облако в общей системе координат.</td></tr>
+      <tr><td>4</td><td>Канонизация</td><td>DA3-CAD</td><td>Ориентация, robust bbox, нормализация и отдельный масштабный канал.</td></tr>
+      <tr><td>5</td><td>Синтез CAD</td><td>DA3-CAD</td><td>Visual hull с depth carving или узкий геометрический шаблон.</td></tr>
+      <tr><td>6</td><td>Безопасная проверка</td><td>DA3-CAD</td><td>Запуск в ограниченном subprocess, требование ровно одного валидного solid.</td></tr>
+      <tr><td>7</td><td>Проверка и экспорт</td><td>DA3-CAD</td><td>Input Chamfer + multiview silhouette, STEP, STL, параметры и provenance.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Измеренный узкий участок: камеры и масштаб между видами</h3>
+  <table class="small-table">
+    <thead><tr><th>Геометрия на одном rendered-срезе</th><th style="width:19%">Precision@0.05</th><th style="width:31%">Что показывает</th></tr></thead>
+    <tbody>
+      <tr><td>Непозированный DA3-LARGE</td><td>0,2188</td><td>Текущая свободная оценка.</td></tr>
+      <tr><td>Точные K/E рендера</td><td>0,4297</td><td>Почти двукратный рост от верных камер.</td></tr>
+      <tr><td>Точные K/E + GT-only scale/shift каждого вида</td><td>0,6270</td><td>Остаточная проблема — несогласованный масштаб глубин.</td></tr>
+    </tbody>
+  </table>
+  <p class="fine">
+    Диагностика на 20 синтетических объектах, не метрика готового продукта. Последняя строка использует
+    запрещённую для inference GT-коррекцию и нужна только для локализации причины ошибки.
+  </p>
+</section>
+
+<section class="page page-3">
+  <h2>Что получилось на проверенном примере</h2>
+
+  <div class="callout green">
+    <strong>Условия:</strong> четыре синтетических RGB-вида пластины, DA3-LARGE,
+    известная ширина <code>body_width=40mm</code>, детерминированный geometric fitter.
+    Эталонный STL не участвовал в реконструкции — только в последующей оценке.
+  </div>
+
+  <img class="stage-strip" src="assets/product_io_da3/plate_stage_strip.png" alt="Этапы: RGB, глубина DA3, маска, облако, CAD">
+
+  <div class="two-even">
+    <div>
+      <img class="comparison-image" src="assets/product_io_da3/plate_gt_vs_prediction.png" alt="Эталон и результат">
+      <p class="fine">
+        Слева — эталон, справа — результат. Визуализация нормализована только для показа;
+        таблица справа содержит метрические значения.
+      </p>
+    </div>
+
+    <div>
+      <table class="metric-table rule-table">
+        <thead><tr><th>Параметр</th><th>Эталон</th><th>CAD</th><th>Ошибка</th></tr></thead>
+        <tbody>
+          <tr><td>Ширина*</td><td>40,00 мм</td><td>40,00 мм</td><td>ссылка</td></tr>
+          <tr><td>Глубина</td><td>28,00 мм</td><td>26,67 мм</td><td>−4,75%</td></tr>
+          <tr><td>Толщина</td><td>6,00 мм</td><td>6,25 мм</td><td>+4,09%</td></tr>
+          <tr><td>Диаметр отверстия</td><td>8,00 мм</td><td>6,95 мм</td><td>−13,13%</td></tr>
+          <tr><td>Смещение центра</td><td>0,00 мм</td><td>0,97 мм</td><td>+0,97 мм</td></tr>
+        </tbody>
+      </table>
+
+      <table class="metric-table" style="margin-top:3mm">
+        <thead><tr><th>Проверка формы</th><th style="width:39%">Результат</th></tr></thead>
+        <tbody>
+          <tr><td>Manifold mesh IoU</td><td><b>90,06%</b></td></tr>
+          <tr><td>Chamfer, squared ×1000</td><td>0,2817</td></tr>
+          <tr><td>Валидность</td><td>1 solid, watertight</td></tr>
+          <tr><td>CAD-шаблон</td><td>box + through-hole</td></tr>
+        </tbody>
+      </table>
+      <p class="fine">* Ширина задана пользователем и поэтому не является независимой оценкой точности.</p>
+    </div>
+  </div>
+
+  <h3>Два CAD-режима продукта</h3>
+  <table class="small-table">
+    <thead><tr><th style="width:17%">Режим</th><th style="width:22%">Сильная сторона</th><th>Текущая граница</th><th style="width:19%">Статус примера</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Geometric fitter</b></td>
+        <td>Именованные инженерные параметры; воспроизводимый результат.</td>
+        <td>Только прямоугольные/круглые экструзии и круглые сквозные отверстия.</td>
+        <td><span class="status-good">Да: IoU 90,06%</span></td>
+      </tr>
+      <tr>
+        <td><b>Visual hull</b></td>
+        <td>Произвольная грубая внешняя форма без category-specific CAD-весов.</td>
+        <td>Скрытые вогнутости заполняются; cuboid B-Rep не равен design history.</td>
+        <td><span class="status-good">Да:</span> интернет-видео, 1 watertight solid, input silhouette 85,27%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="two-even" style="margin-top:3mm">
+    <div>
+      <h3 style="margin-top:0">Файлы валидного выхода</h3>
+      <ul class="output-list">
+        <li><code>model.py</code> — редактируемый CadQuery;</li>
+        <li><code>model.step</code>, <code>model.stl</code>;</li>
+        <li><code>parameters.json</code>;</li>
+        <li><code>quality.json</code>, <code>provenance.json</code>;</li>
+        <li><code>viewer.html</code> и диагностические artefacts.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Что можно обещать сейчас</h3>
+      <ul>
+        <li><span class="status-good">Да</span> — простые детали из поддержанных шаблонов при хороших видах и одном известном размере;</li>
+        <li><span class="status-exp">Эксперимент</span> — грубый cuboid B-Rep произвольного центрального объекта через visual hull;</li>
+        <li><span class="status-no">Нет</span> — универсальное «одно фото → точный production CAD», design history, резьбы, сборки, допуски и свободные поверхности.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout navy capture">
+    <strong>Практический вход для следующего реального теста:</strong>
+    12–24 фото неподвижного объекта, фиксированный зум, объект около центра,
+    круговой набор ракурсов + верхние/нижние наклонные виды и один точно измеренный размер.
+  </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+profile: research
+device: cuda
+seed: 20260810
+debug_artefacts: true
+depth_backend: da3-large
+cad_backend: visual-hull
+da3:
+  checkpoint: large
+  source_dir: data/upstream/Depth-Anything-3
+  cache_dir: data/hf
+  process_resolution: 504
+  process_resolution_method: upper_bound_resize
+  local_files_only: true
+  use_ray_pose: false
+geometry:
+  segmentation_backend: internet-object
+  segmentation_confidence_percentile: 20.0
+  segmentation_depth_percentile: 85.0
+  fusion_confidence_percentile: 35.0
+  minimum_confidence: null
+  depth_alignment_criterion: null
+canonicalizer:
+  symmetry_completion_enabled: false
+visual_hull:
+  robust_bounds_quantile: 0.01
+  grid_resolution: 16
+  minimum_grid_resolution: 10
+  minimum_axis_voxels: 6
+  silhouette_support_fraction: 0.7
+  silhouette_dilation_fraction: 0.006
+  minimum_visible_views: 2
+  depth_carving_enabled: true
+  depth_tolerance_fraction: 0.08
+  minimum_occupied_voxels: 24
+  maximum_cuboids: 160
+sandbox:
+  memory_limit_mb: 8192
+  cpu_seconds: 90
+  wall_seconds: 120

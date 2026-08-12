@@ -1,4 +1,4 @@
-"""Pinned Cadrille point-cloud decoder with SDPA and explicit NC opt-in."""
+"""Pinned Cadrille point/image decoder with SDPA and explicit NC opt-in."""
 
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Literal, Protocol
 
 import numpy as np
+from PIL import Image
 
+from da3_cad.backends.cadrille_images import CadrilleImageInput
 from da3_cad.cad.parameterize import parameterize_generated_source
 from da3_cad.cad.program import extract_parameters
 from da3_cad.config import CadrilleConfig
@@ -203,6 +205,65 @@ def prepare_point_cloud_prompt(points: FloatArray, tokenizer: Any) -> dict[str, 
     }
 
 
+def prepare_image_prompt(
+    image_input: CadrilleImageInput,
+    processor: Any,
+) -> dict[str, Any]:
+    """Build the released Cadrille four-view video-token prompt."""
+
+    try:
+        import torch
+    except ImportError as error:
+        raise RuntimeError("Cadrille inference requires the pinned torch overlay") from error
+    try:
+        from qwen_vl_utils import process_vision_info  # type: ignore[import-untyped]
+    except ImportError as error:
+        raise RuntimeError("Cadrille image inference requires qwen-vl-utils==0.0.10") from error
+
+    collage = Image.fromarray(image_input.collage, mode="RGB")
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "video", "video": [collage], "fps": 1.0},
+                {"type": "text", "text": "Generate cadquery code"},
+            ],
+        }
+    ]
+    chat = processor.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+    image_inputs, video_inputs = process_vision_info(messages)
+    tokenized = processor(
+        text=[chat],
+        images=image_inputs,
+        videos=video_inputs,
+        padding=True,
+        return_tensors="pt",
+    )
+    required = {
+        "input_ids",
+        "attention_mask",
+        "pixel_values_videos",
+        "video_grid_thw",
+    }
+    missing = required.difference(tokenized)
+    if missing:
+        raise ValueError(f"Cadrille image processor omitted tensors: {sorted(missing)}")
+    pixel_values = tokenized["pixel_values_videos"]
+    video_grid = tokenized["video_grid_thw"]
+    if pixel_values.ndim != 2 or video_grid.shape != (1, 3):
+        raise ValueError("Cadrille image processor returned an unexpected video tensor shape")
+    return {
+        **tokenized,
+        "point_clouds": torch.zeros((1, 256, 3), dtype=torch.float32),
+        "is_pc": torch.tensor([False], dtype=torch.bool),
+        "is_img": torch.tensor([True], dtype=torch.bool),
+    }
+
+
 def clean_generated_source(text: str) -> str:
     """Remove only transport-level Markdown around model-generated Python."""
 
@@ -248,10 +309,34 @@ def _default_tokenizer_loader(
     )
 
 
+def _default_processor_loader(
+    cache_dir: Path,
+    local_files_only: bool,
+) -> Any:
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    try:
+        from transformers import AutoProcessor
+    except ImportError as error:
+        raise RuntimeError(
+            "Cadrille image inference dependencies are missing; install the 'cadrille' extra"
+        ) from error
+    return AutoProcessor.from_pretrained(
+        CADRILLE_PROCESSOR_ID,
+        revision=CADRILLE_PROCESSOR_REVISION,
+        cache_dir=cache_dir,
+        local_files_only=local_files_only,
+        min_pixels=256 * 28 * 28,
+        max_pixels=1280 * 28 * 28,
+        padding_side="left",
+        use_fast=False,
+    )
+
+
 class CadrilleBackend:
-    """Generate one greedy point-cloud candidate and fully unload the model."""
+    """Generate greedy point or four-view image candidates with staged GPU use."""
 
     name = "cadrille-point-cloud"
+    image_name = "cadrille-image"
 
     def __init__(
         self,
@@ -261,6 +346,7 @@ class CadrilleBackend:
         device: str = "cuda",
         model_class_loader: Callable[[], type[Any]] = _default_model_class_loader,
         tokenizer_loader: Callable[[Path, bool], Any] = _default_tokenizer_loader,
+        processor_loader: Callable[[Path, bool], Any] = _default_processor_loader,
         checkpoint_verifier: Callable[..., dict[str, object]] = verified_cadrille_checkpoint,
     ) -> None:
         self.config = config
@@ -268,6 +354,7 @@ class CadrilleBackend:
         require_cadrille_terms(self.spec, accepted_license=accepted_license)
         self._model_class_loader = model_class_loader
         self._tokenizer_loader = tokenizer_loader
+        self._processor_loader = processor_loader
         self._checkpoint_verifier = checkpoint_verifier
         self.device = device
         self.last_lifecycle: ModelLifecycleReport | None = None
@@ -552,9 +639,7 @@ class CadrilleBackend:
                     clean_up_tokenization_spaces=False,
                 )
                 if len(decoded) != len(group):
-                    raise RuntimeError(
-                        "Cadrille grouped decode returned the wrong candidate count"
-                    )
+                    raise RuntimeError("Cadrille grouped decode returned the wrong candidate count")
                 decoded_all.extend(str(value) for value in decoded)
             if len(decoded_all) != len(canonicals):
                 raise RuntimeError("Cadrille batch decode returned the wrong candidate count")

@@ -18,6 +18,7 @@ from da3_cad.geometry.canonicalizer import PointCloudCanonicalizer
 from da3_cad.geometry.fusion import (
     FusedPointCloud,
     FusionReport,
+    ScaleChannel,
     ViewFusionStats,
 )
 from da3_cad.geometry.scale import KnownDimension
@@ -53,7 +54,7 @@ def _plate_surface(*, with_hole: bool) -> np.ndarray:
     return np.concatenate(parts).astype(np.float32)
 
 
-def _canonical_plate(*, with_hole: bool):
+def _canonical_plate(*, with_hole: bool, metric: bool = False):
     one_view = _plate_surface(with_hole=with_hole)
     points = np.concatenate((one_view, one_view))
     count = len(one_view)
@@ -76,6 +77,17 @@ def _canonical_plate(*, with_hole: bool):
         view_indices=views,
         pixel_xy=np.zeros((len(points), 2), dtype=np.int32),
         report=report,
+        scale=(
+            ScaleChannel(
+                status="known",
+                units="calibrated-world-unit",
+                world_units_to_mm=10.0,
+                source="synthetic-calibrated-cameras",
+                evidence={"test": True},
+            )
+            if metric
+            else ScaleChannel()
+        ),
     )
     config = CanonicalizerConfig(
         confidence_percentile=0.0,
@@ -94,6 +106,25 @@ def test_void_detector_requires_supported_circular_boundary() -> None:
     assert detected.accepted is True
     assert detected.radius == pytest.approx(0.2, abs=0.02)
     assert detected.angular_coverage >= 0.9
+
+
+def test_void_detector_skips_a_larger_unsupported_surface_gap() -> None:
+    points = _plate_surface(with_hole=True)
+    keep = ~(
+        (points[:, 2] > 0.05)
+        & (points[:, 0] > 0.45)
+        & (points[:, 1] > 0.05)
+    )
+    incomplete = points[keep]
+    detected = _detect_circular_void(
+        incomplete,
+        incomplete.min(axis=0),
+        incomplete.max(axis=0),
+        GeometricFitterConfig(),
+    )
+    assert detected.accepted is True
+    assert detected.center_x == pytest.approx(0.0, abs=0.04)
+    assert detected.center_y == pytest.approx(0.0, abs=0.04)
 
 
 def test_geometric_fitter_emits_valid_parameterized_through_hole(tmp_path) -> None:
@@ -128,6 +159,26 @@ def test_known_dimension_scales_every_geometric_parameter() -> None:
     assert fitter.last_report.scale.status == "known"
     assert program.parameters["hole_1_diameter"] == pytest.approx(8.0)
     assert program.parameters["body_width"] == pytest.approx(40.0, abs=3.0)
+
+
+def test_metric_camera_scale_reaches_emitted_cad_parameters() -> None:
+    canonical = _canonical_plate(with_hole=False, metric=True)
+    assert canonical.normalization is not None
+    expected_factor = canonical.normalization.largest_extent * 10.0 / 2.0
+    assert canonical.scale.status == "known"
+    assert canonical.scale.source == "camera-bundle"
+    assert canonical.scale.millimeters_per_unit == pytest.approx(expected_factor)
+
+    fitter = GeometricCadBackend(GeometricFitterConfig())
+    program = fitter.generate(canonical, seed=3)
+
+    assert fitter.last_report is not None
+    report = fitter.last_report
+    assert report.scale.status == "known"
+    assert report.parameters_emitted["body_width"] == pytest.approx(
+        report.parameters_normalized["body_width"] * expected_factor
+    )
+    assert program.parameters["body_width"] == pytest.approx(20.0, abs=0.8)
 
 
 def test_no_void_is_not_silently_invented() -> None:

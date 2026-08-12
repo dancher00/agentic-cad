@@ -11,6 +11,7 @@ import numpy as np
 
 from da3_cad.backends.da3 import Da3Backend, da3_license_notice
 from da3_cad.config import AppConfig
+from da3_cad.geometry.cameras import load_camera_bundle
 from da3_cad.geometry.diagnostics import write_geometry_diagnostics
 from da3_cad.geometry.fusion import FusedPointCloud, fuse_prediction
 from da3_cad.geometry.multiview_depth_alignment import align_multiview_depths
@@ -18,11 +19,12 @@ from da3_cad.geometry.unprojection import (
     as_homogeneous_extrinsic,
     unprojection_roundtrip_errors,
 )
-from da3_cad.models import DepthPrediction
+from da3_cad.models import BoolArray, DepthPrediction
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.segmentation.border_foreground import segment_border_foreground
 from da3_cad.segmentation.depth_foreground import segment_depth_foreground
 from da3_cad.segmentation.explicit_mask import segment_explicit_masks
+from da3_cad.segmentation.internet_object import segment_internet_object
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +32,7 @@ class GeometryRunResult:
     output_dir: Path
     cloud: FusedPointCloud
     prediction: DepthPrediction
+    masks: BoolArray
     report: dict[str, object]
 
 
@@ -67,6 +70,7 @@ def run_geometry(
     *,
     accepted_noncommercial: bool,
     segmentation_mask_dir: Path | None = None,
+    camera_bundle_path: Path | None = None,
 ) -> GeometryRunResult:
     """Run real DA3 inference, segmentation, unprojection and gated fusion."""
 
@@ -82,6 +86,26 @@ def run_geometry(
         raise ValueError(f"output directory already exists: {output_dir}")
 
     observations = load_observations(input_dir)
+    camera_bundle = (
+        load_camera_bundle(camera_bundle_path, observations)
+        if camera_bundle_path is not None
+        else None
+    )
+    if camera_bundle is not None and config.geometry.depth_alignment_criterion is not None:
+        raise ValueError(
+            "external camera conditioning cannot be combined with post-hoc per-view depth "
+            "alignment; disable geometry.depth_alignment_criterion"
+        )
+    camera_conditioning: dict[str, object] = (
+        {
+            "status": "external",
+            "path": str(camera_bundle_path.resolve()),
+            "sha256": hashlib.sha256(camera_bundle_path.read_bytes()).hexdigest(),
+            **camera_bundle.as_dict(),
+        }
+        if camera_bundle is not None and camera_bundle_path is not None
+        else {"status": "unposed-da3"}
+    )
     output_dir.mkdir(parents=True)
     backend = Da3Backend(
         checkpoint=config.da3.checkpoint,
@@ -93,18 +117,43 @@ def run_geometry(
         accepted_noncommercial=accepted_noncommercial,
         use_ray_pose=config.da3.use_ray_pose,
     )
-    prediction = backend.predict(observations, device=config.device, seed=config.seed)
+    if camera_bundle is None:
+        prediction = backend.predict(observations, device=config.device, seed=config.seed)
+    else:
+        prediction = backend.predict(
+            observations,
+            device=config.device,
+            seed=config.seed,
+            extrinsics=camera_bundle.extrinsics,
+            intrinsics=camera_bundle.intrinsics,
+            align_to_input_ext_scale=True,
+        )
     source_masks: list[dict[str, str]] = []
-    if config.geometry.segmentation_backend == "gt-mask-oracle":
+    explicit_backends = {"explicit-mask", "gt-mask-oracle"}
+    if config.geometry.segmentation_backend in explicit_backends:
         if segmentation_mask_dir is None:
             raise ValueError(
-                "geometry.segmentation_backend=gt-mask-oracle requires "
-                "segmentation_mask_dir"
+                f"geometry.segmentation_backend={config.geometry.segmentation_backend} "
+                "requires segmentation_mask_dir"
             )
-        mask_paths = tuple(
-            sorted(segmentation_mask_dir.glob("*.png"), key=lambda path: path.name)
+        available: dict[str, Path] = {}
+        for path in sorted(segmentation_mask_dir.glob("*.png"), key=lambda item: item.name):
+            if path.stem in available:
+                raise ValueError(f"duplicate explicit-mask stem: {path.stem}")
+            available[path.stem] = path
+        expected_stems = tuple(Path(image.relative_path).stem for image in observations.images)
+        missing_stems = [stem for stem in expected_stems if stem not in available]
+        if missing_stems:
+            raise ValueError(
+                "explicit masks must use the input image stems with PNG extension; "
+                f"missing={missing_stems}"
+            )
+        mask_paths = tuple(available[stem] for stem in expected_stems)
+        segmentation = segment_explicit_masks(
+            prediction,
+            mask_paths,
+            oracle=config.geometry.segmentation_backend == "gt-mask-oracle",
         )
-        segmentation = segment_explicit_masks(prediction, mask_paths)
         source_masks = [
             {"name": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
             for path in mask_paths
@@ -112,13 +161,23 @@ def run_geometry(
     elif config.geometry.segmentation_backend == "border-color":
         if segmentation_mask_dir is not None:
             raise ValueError(
-                "segmentation_mask_dir is only valid with the gt-mask-oracle backend"
+                "segmentation_mask_dir requires the explicit-mask or gt-mask-oracle backend"
             )
         segmentation = segment_border_foreground(prediction)
+    elif config.geometry.segmentation_backend == "internet-object":
+        if segmentation_mask_dir is not None:
+            raise ValueError(
+                "segmentation_mask_dir requires the explicit-mask or gt-mask-oracle backend"
+            )
+        segmentation = segment_internet_object(
+            prediction,
+            confidence_percentile=config.geometry.segmentation_confidence_percentile,
+            depth_percentile=config.geometry.segmentation_depth_percentile,
+        )
     else:
         if segmentation_mask_dir is not None:
             raise ValueError(
-                "segmentation_mask_dir is only valid with the gt-mask-oracle backend"
+                "segmentation_mask_dir requires the explicit-mask or gt-mask-oracle backend"
             )
         segmentation = segment_depth_foreground(
             prediction,
@@ -144,6 +203,7 @@ def run_geometry(
         minimum_confidence=config.geometry.minimum_confidence,
         require_confidence=True,
         extrinsic_convention="world_to_camera",
+        scale=camera_bundle.scale if camera_bundle is not None else None,
     )
     write_geometry_diagnostics(
         output_dir / "artefacts",
@@ -205,6 +265,7 @@ def run_geometry(
             ),
             "weights_redistributed": False,
         },
+        "camera_conditioning": camera_conditioning,
         "da3": backend.last_runtime_report,
         "verified_source_contracts": {
             "depth": "z-depth multiplying K^-1 [u,v,1] in the pinned exporter",
@@ -229,6 +290,9 @@ def run_geometry(
             "finite": bool(np.isfinite(cloud.points).all()),
             "scale_status": cloud.scale.status,
             "units": cloud.scale.units,
+            "world_units_to_mm": cloud.scale.world_units_to_mm,
+            "scale_source": cloud.scale.source,
+            "scale_evidence": cloud.scale.evidence,
         },
         "artifacts": [
             "artefacts/camera_prediction.npz",
@@ -251,5 +315,6 @@ def run_geometry(
         output_dir=output_dir,
         cloud=cloud,
         prediction=fusion_prediction,
+        masks=segmentation.masks.copy(),
         report=report,
     )

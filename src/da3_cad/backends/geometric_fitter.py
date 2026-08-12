@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+from scipy.ndimage import maximum_filter
 from scipy.spatial import cKDTree
 
 from da3_cad.config import GeometricFitterConfig
@@ -15,7 +16,6 @@ from da3_cad.geometry.scale import (
     KnownDimension,
     ScaleDecision,
     resolve_known_dimension,
-    unresolved_scale,
 )
 from da3_cad.models import CadProgram, FloatArray
 
@@ -123,59 +123,16 @@ def _primitive_scores(
     }
 
 
-def _detect_circular_void(
-    points: FloatArray,
-    minimum: FloatArray,
-    maximum: FloatArray,
+def _circular_void_candidate(
+    top_xy: FloatArray,
+    center: FloatArray,
+    nearest_distance: float,
+    local_spacing: float,
     config: GeometricFitterConfig,
 ) -> CircularVoid:
-    z_threshold = float(np.quantile(points[:, 2], config.top_surface_quantile))
-    top_xy = np.asarray(points[points[:, 2] >= z_threshold, :2], dtype=np.float64)
-    width = float(maximum[0] - minimum[0])
-    depth = float(maximum[1] - minimum[1])
-    smaller = min(width, depth)
-    if len(top_xy) < 64:
-        return CircularVoid(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, False, "too few top points")
-
-    neighbor_count = min(8, len(top_xy))
-    neighbor_distances, _ = cKDTree(top_xy).query(top_xy, k=neighbor_count, workers=1)
-    local_spacing = float(np.median(neighbor_distances[:, -1]) / np.sqrt(float(neighbor_count)))
-    margin = config.hole_search_margin_fraction
-    xs = np.linspace(
-        minimum[0] + margin * width,
-        maximum[0] - margin * width,
-        config.hole_grid_resolution,
-    )
-    ys = np.linspace(
-        minimum[1] + margin * depth,
-        maximum[1] - margin * depth,
-        config.hole_grid_resolution,
-    )
-    grid_x, grid_y = np.meshgrid(xs, ys, indexing="ij")
-    candidates = np.column_stack((grid_x.ravel(), grid_y.ravel()))
-    nearest, _ = cKDTree(top_xy).query(candidates, k=1, workers=1)
-    best_index = int(np.argmax(nearest))
-    center = candidates[best_index]
-    nearest_distance = float(nearest[best_index])
-    minimum_radius = max(
-        config.hole_min_radius_fraction * smaller,
-        config.hole_spacing_multiplier * local_spacing,
-    )
-    if nearest_distance <= minimum_radius:
-        return CircularVoid(
-            float(center[0]),
-            float(center[1]),
-            nearest_distance,
-            nearest_distance,
-            local_spacing,
-            0.0,
-            False,
-            "largest empty circle is not wider than sampling gaps",
-        )
-
     radial = np.linalg.norm(top_xy - center, axis=1)
-    band = np.abs(radial - nearest_distance) <= max(2.5 * local_spacing, 0.12 * nearest_distance)
-    boundary = top_xy[band]
+    band_width = max(2.5 * local_spacing, 0.12 * nearest_distance)
+    boundary = top_xy[np.abs(radial - nearest_distance) <= band_width]
     if len(boundary) < 12:
         return CircularVoid(
             float(center[0]),
@@ -187,6 +144,7 @@ def _detect_circular_void(
             False,
             "insufficient circular boundary support",
         )
+
     angles = np.mod(
         np.arctan2(boundary[:, 1] - center[1], boundary[:, 0] - center[0]),
         2.0 * np.pi,
@@ -205,19 +163,117 @@ def _detect_circular_void(
         angular_coverage=coverage,
         accepted=accepted,
         reason=(
-            "supported empty circle on the top surface"
+            "supported local empty circle on the top surface"
             if accepted
             else "empty region lacks angular boundary coverage"
         ),
     )
 
 
+def _detect_circular_void(
+    points: FloatArray,
+    minimum: FloatArray,
+    maximum: FloatArray,
+    config: GeometricFitterConfig,
+) -> CircularVoid:
+    z_threshold = float(np.quantile(points[:, 2], config.top_surface_quantile))
+    top_xy = np.asarray(points[points[:, 2] >= z_threshold, :2], dtype=np.float64)
+    width = float(maximum[0] - minimum[0])
+    depth = float(maximum[1] - minimum[1])
+    smaller = min(width, depth)
+    if len(top_xy) < 64:
+        return CircularVoid(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, False, "too few top points")
+
+    neighbor_count = min(8, len(top_xy))
+    tree = cKDTree(top_xy)
+    neighbor_distances, _ = tree.query(top_xy, k=neighbor_count, workers=1)
+    local_spacing = float(np.median(neighbor_distances[:, -1]) / np.sqrt(float(neighbor_count)))
+    margin = config.hole_search_margin_fraction
+    xs = np.linspace(
+        minimum[0] + margin * width,
+        maximum[0] - margin * width,
+        config.hole_grid_resolution,
+    )
+    ys = np.linspace(
+        minimum[1] + margin * depth,
+        maximum[1] - margin * depth,
+        config.hole_grid_resolution,
+    )
+    grid_x, grid_y = np.meshgrid(xs, ys, indexing="ij")
+    candidates = np.column_stack((grid_x.ravel(), grid_y.ravel()))
+    nearest, _ = tree.query(candidates, k=1, workers=1)
+    minimum_radius = max(
+        config.hole_min_radius_fraction * smaller,
+        config.hole_spacing_multiplier * local_spacing,
+    )
+
+    nearest_grid = nearest.reshape((len(xs), len(ys)))
+    local_maximum = nearest_grid == maximum_filter(
+        nearest_grid,
+        size=5,
+        mode="nearest",
+    )
+    local_indices = np.flatnonzero(local_maximum.ravel())
+    plausible = [
+        _circular_void_candidate(
+            top_xy,
+            candidates[index],
+            float(nearest[index]),
+            local_spacing,
+            config,
+        )
+        for index in local_indices
+        if float(nearest[index]) > minimum_radius
+    ]
+    if not plausible:
+        best_index = int(np.argmax(nearest))
+        center = candidates[best_index]
+        nearest_distance = float(nearest[best_index])
+        return CircularVoid(
+            float(center[0]),
+            float(center[1]),
+            nearest_distance,
+            nearest_distance,
+            local_spacing,
+            0.0,
+            False,
+            "largest empty circle is not wider than sampling gaps",
+        )
+
+    body_center = (minimum[:2] + maximum[:2]) / 2.0
+
+    def rank(candidate: CircularVoid) -> tuple[int, float, float, float, float, float]:
+        center = np.asarray([candidate.center_x, candidate.center_y], dtype=np.float64)
+        normalized_center_distance = float(np.linalg.norm(center - body_center) / smaller)
+        return (
+            int(candidate.accepted),
+            candidate.angular_coverage,
+            -normalized_center_distance,
+            candidate.radius,
+            -candidate.center_x,
+            -candidate.center_y,
+        )
+
+    return max(plausible, key=rank)
+
+
 def _scaled_parameters(
     parameters: dict[str, float],
     known_dimension: KnownDimension | None,
+    inherited_scale: ScaleDecision,
 ) -> tuple[dict[str, float], ScaleDecision]:
     if known_dimension is None:
-        return parameters.copy(), unresolved_scale()
+        if inherited_scale.status != "known":
+            return parameters.copy(), inherited_scale
+        factor = inherited_scale.millimeters_per_unit
+        if factor is None:
+            raise RuntimeError("known inherited scale did not return a scale factor")
+        return (
+            {name: float(value * factor) for name, value in parameters.items()},
+            inherited_scale,
+        )
+    if inherited_scale.status == "known":
+        raise ValueError("cannot combine inherited metric scale with a known dimension")
     scale = resolve_known_dimension(known_dimension, parameters)
     factor = scale.millimeters_per_unit
     if factor is None:
@@ -349,7 +405,9 @@ class GeometricCadBackend:
                     template = "circular-extrusion"
             else:
                 template = "circular-extrusion"
-            emitted, scale = _scaled_parameters(normalized_parameters, known_dimension)
+            emitted, scale = _scaled_parameters(
+                normalized_parameters, known_dimension, canonical.scale
+            )
             source = _circular_program(emitted, hole=hole)
         else:
             normalized_parameters = {
@@ -368,7 +426,9 @@ class GeometricCadBackend:
                 template = "rectangular-extrusion-through-hole"
             else:
                 template = "rectangular-extrusion"
-            emitted, scale = _scaled_parameters(normalized_parameters, known_dimension)
+            emitted, scale = _scaled_parameters(
+                normalized_parameters, known_dimension, canonical.scale
+            )
             source = _rectangular_program(emitted, hole=hole)
 
         limitations = (
