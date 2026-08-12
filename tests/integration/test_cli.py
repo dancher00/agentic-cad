@@ -21,6 +21,7 @@ def test_cli_lists_product_commands() -> None:
         "edit",
         "viewer",
         "doctor",
+        "evaluate",
         "benchmark",
     ):
         assert command in result.stdout
@@ -74,9 +75,7 @@ def test_reconstruct_dry_run_does_not_create_output(sample_case: Path, tmp_path:
     assert not output_dir.exists()
 
 
-def test_phase_a_benchmark_is_explicitly_not_a_metric_result(
-    sample_case: Path, tmp_path: Path
-) -> None:
+def test_offline_smoke_is_explicitly_not_a_metric_result(sample_case: Path, tmp_path: Path) -> None:
     output_dir = tmp_path / "benchmark"
     result = runner.invoke(
         app,
@@ -98,6 +97,30 @@ def test_phase_a_benchmark_is_explicitly_not_a_metric_result(
     report = json.loads((output_dir / "results.json").read_text())
     assert report["is_benchmark_result"] is False
     assert report["rows"][0]["metrics"] is None
+
+
+def test_evaluate_command_writes_centered_reference_metrics(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "metrics.json"
+    result = runner.invoke(
+        app,
+        [
+            "evaluate",
+            "sample_data/plate/gt.stl",
+            "sample_data/plate/gt.stl",
+            "--item-id",
+            "self-check",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["valid_prediction"] is True
+    assert payload["iou"]["percent"] == 100.0
+    assert payload["evaluator"]["version"] == "da3-cad-evaluator-v2-centered"
 
 
 def test_geometry_base_dry_run_reports_pinned_model_without_writes(
@@ -124,7 +147,7 @@ def test_geometry_base_dry_run_reports_pinned_model_without_writes(
     assert not output_dir.exists()
 
 
-def test_research_reconstruct_dry_run_displays_both_nc_terms_without_writes(
+def test_latest_reconstruct_dry_run_displays_da3_nc_terms_without_writes(
     sample_case: Path,
     tmp_path: Path,
 ) -> None:
@@ -137,15 +160,14 @@ def test_research_reconstruct_dry_run_displays_both_nc_terms_without_writes(
             "--output",
             str(output_dir),
             "--config",
-            "configs/research_smoke.yaml",
+            "configs/internet_photo.yaml",
             "--dry-run",
         ],
     )
 
     assert result.exit_code == 0, result.stdout
-    assert "depth-anything/DA3-LARGE" in result.stdout
-    assert "maksimko123/cadrille-rl" in result.stdout
-    assert "CC BY-NC 4.0" in result.stdout
+    assert "depth-anything/DA3-LARGE-1.1" in result.stdout
+    assert "CC BY-NC 4.0" in " ".join(result.stdout.split())
     assert "'writes': False" in result.stdout
     assert not output_dir.exists()
 
@@ -162,37 +184,11 @@ def test_geometry_large_refuses_weights_without_explicit_nc_acceptance(
             "--output",
             str(output_dir),
             "--config",
-            "configs/da3_large.yaml",
+            "configs/internet_photo.yaml",
         ],
     )
 
     assert result.exit_code == 1
-    assert "CC BY-NC 4.0" in result.stdout
+    assert "CC BY-NC 4.0" in " ".join(result.stdout.split())
     assert "--accept-noncommercial-weights" in result.stdout
-    assert not output_dir.exists()
-
-
-def test_research_dry_run_applies_cadrille_candidate_override(
-    sample_case: Path,
-    tmp_path: Path,
-) -> None:
-    output_dir = tmp_path / "candidate-dry-run"
-    result = runner.invoke(
-        app,
-        [
-            "reconstruct",
-            str(sample_case / "views"),
-            "--output",
-            str(output_dir),
-            "--config",
-            "configs/research_smoke.yaml",
-            "--cadrille-candidates",
-            "4",
-            "--dry-run",
-        ],
-    )
-
-    assert result.exit_code == 0, result.stdout
-    assert "'candidate_count': 4" in result.stdout
-    assert "'max_decode_batch_size': 1" in result.stdout
     assert not output_dir.exists()

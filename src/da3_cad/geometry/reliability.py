@@ -74,9 +74,7 @@ def _percentile_scores(values: FloatArray, groups: IntArray, *, higher: bool) ->
         if len(group_values) == 1:
             ranks = np.ones(1, dtype=np.float64)
         else:
-            ranks = (rankdata(group_values, method="average") - 1.0) / (
-                len(group_values) - 1.0
-            )
+            ranks = (rankdata(group_values, method="average") - 1.0) / (len(group_values) - 1.0)
         result[selected] = ranks if higher else 1.0 - ranks
     return result.astype(np.float32)
 
@@ -107,9 +105,7 @@ def _local_plane_residuals(
         normals = eigenvectors[:, :, 0]
         displacement = values[start:stop] - centers
         absolute_normal = np.abs(np.einsum("bi,bi->b", displacement, normals))
-        local_radius = np.sqrt(
-            np.mean(np.einsum("bki,bki->bk", centered, centered), axis=1)
-        )
+        local_radius = np.sqrt(np.mean(np.einsum("bki,bki->bk", centered, centered), axis=1))
         residuals[start:stop] = absolute_normal / np.maximum(local_radius, 1e-12)
     if not np.isfinite(residuals).all():
         raise ValueError("local plane scoring produced non-finite residuals")

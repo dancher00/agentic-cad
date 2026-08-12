@@ -13,7 +13,7 @@ import numpy as np
 from da3_cad.config import CanonicalizerConfig
 from da3_cad.geometry.consistency import filter_multiview_support
 from da3_cad.geometry.fusion import FusedPointCloud
-from da3_cad.geometry.normalization import BboxNormalization, normalize_bbox_for_decoder
+from da3_cad.geometry.normalization import BboxNormalization, normalize_bbox_isotropic
 from da3_cad.geometry.orientation import OrientationResult, orient_canonical_frame
 from da3_cad.geometry.outliers import filter_outliers
 from da3_cad.geometry.sampling import farthest_point_indices
@@ -110,9 +110,9 @@ class CanonicalStage:
 
 @dataclass(frozen=True, slots=True)
 class CanonicalCloud:
-    """Exact cadrille input plus complete transformation/provenance trace."""
+    """Canonical object sample plus complete transformation/provenance trace."""
 
-    decoder_points: FloatArray
+    normalized_points: FloatArray
     unit_points: FloatArray
     sampled_oriented_points: FloatArray
     sampled_view_indices: IntArray
@@ -126,24 +126,24 @@ class CanonicalCloud:
 
     def __post_init__(self) -> None:
         expected = (256, 3)
-        if self.decoder_points.shape != expected:
-            raise ValueError(f"decoder points must have shape {expected}")
-        if self.decoder_points.dtype != np.float32:
-            raise ValueError("decoder points must be float32")
-        if not np.isfinite(self.decoder_points).all():
-            raise ValueError("decoder points must be finite")
+        if self.normalized_points.shape != expected:
+            raise ValueError(f"normalized points must have shape {expected}")
+        if self.normalized_points.dtype != np.float32:
+            raise ValueError("normalized points must be float32")
+        if not np.isfinite(self.normalized_points).all():
+            raise ValueError("normalized points must be finite")
         if self.unit_points.shape != expected or self.sampled_oriented_points.shape != expected:
             raise ValueError("sampled/unit point arrays must have shape (256,3)")
         if self.sampled_view_indices.shape != (256,) or self.sampled_inferred.shape != (256,):
             raise ValueError("sampled provenance arrays must have shape (256,)")
 
     @property
-    def decoder_tensor(self) -> FloatArray:
-        return self.decoder_points[np.newaxis, ...].astype(np.float32, copy=False)
+    def normalized_tensor(self) -> FloatArray:
+        return self.normalized_points[np.newaxis, ...].astype(np.float32, copy=False)
 
     def as_dict(self) -> dict[str, object]:
         return {
-            "decoder_contract": {
+            "normalized_sample_contract": {
                 "shape": [1, 256, 3],
                 "dtype": "float32",
                 "channels": ["x", "y", "z"],
@@ -152,7 +152,7 @@ class CanonicalCloud:
                     if self.normalization is not None
                     else "unnormalized ablation"
                 ),
-                "finite": bool(np.isfinite(self.decoder_points).all()),
+                "finite": bool(np.isfinite(self.normalized_points).all()),
             },
             "stages": [stage.as_dict() for stage in self.stages],
             "symmetry": self.symmetry.as_dict(),
@@ -187,7 +187,7 @@ def _require_budget(state: _CloudState, stage: str, count: int) -> None:
     if len(state.points) < count:
         raise ValueError(
             f"canonicalizer stage {stage!r} left {len(state.points)} points; "
-            f"decoder contract requires at least {count}"
+            f"canonicalization requires at least {count}"
         )
 
 
@@ -403,7 +403,7 @@ class PointCloudCanonicalizer:
             sampled_indices = np.arange(config.point_count, dtype=np.int64)
             sampling_report = {
                 "method": "identity-exact-contract",
-                "reason": "input was already selected to the exact decoder point budget",
+                "reason": "input was already selected to the exact canonical point budget",
                 "input_points": len(state.points),
                 "output_points": config.point_count,
             }
@@ -413,7 +413,9 @@ class PointCloudCanonicalizer:
             )
             sampling_report = {
                 "method": "stable-index-adapter",
-                "reason": "FPS disabled by ablation; exact decoder shape remains mandatory",
+                "reason": (
+                    "FPS disabled by ablation; exact canonical sample shape remains mandatory"
+                ),
                 "input_points": len(state.points),
                 "output_points": config.point_count,
             }
@@ -429,19 +431,19 @@ class PointCloudCanonicalizer:
 
         normalization: BboxNormalization | None
         if config.normalization_enabled:
-            unit_points, decoder_points, normalization = normalize_bbox_for_decoder(state.points)
-            state = state.replace_points(decoder_points)
+            unit_points, normalized_points, normalization = normalize_bbox_isotropic(state.points)
+            state = state.replace_points(normalized_points)
             normalization_report = normalization.as_dict()
         else:
             unit_points = state.points.copy()
-            decoder_points = state.points.copy()
+            normalized_points = state.points.copy()
             normalization = None
             normalization_report = {
                 "reason": "disabled by ablation",
                 "coordinate_space": "oriented-unscaled",
             }
             warnings.append(
-                "decoder bbox normalization disabled; tensor is an explicit contract ablation"
+                "canonical bbox normalization disabled; tensor is an explicit contract ablation"
             )
         stages.append(
             _snapshot("normalization", config.normalization_enabled, state, normalization_report)
@@ -455,12 +457,12 @@ class PointCloudCanonicalizer:
                 )
             if cloud.scale.world_units_to_mm is None:
                 raise RuntimeError("known fused-cloud scale lost world_units_to_mm")
-            world_units_per_decoder_unit = (
+            world_units_per_normalized_unit = (
                 normalization.largest_extent / 2.0 if normalization is not None else 1.0
             )
             scale = resolve_camera_bundle_scale(
                 world_units_to_mm=cloud.scale.world_units_to_mm,
-                world_units_per_decoder_unit=world_units_per_decoder_unit,
+                world_units_per_normalized_unit=world_units_per_normalized_unit,
                 camera_source=cloud.scale.source,
                 evidence=cloud.scale.evidence,
             )
@@ -481,7 +483,7 @@ class PointCloudCanonicalizer:
             warnings.append(scale.warning)
 
         return CanonicalCloud(
-            decoder_points=np.asarray(decoder_points, dtype=np.float32),
+            normalized_points=np.asarray(normalized_points, dtype=np.float32),
             unit_points=np.asarray(unit_points, dtype=np.float32),
             sampled_oriented_points=sampled_oriented,
             sampled_view_indices=state.view_indices.copy(),
@@ -496,7 +498,7 @@ class PointCloudCanonicalizer:
 
 
 def write_canonicalizer_artifacts(output_dir: Path, result: CanonicalCloud) -> None:
-    """Write every stage and the exact Bx256x3 decoder tensor."""
+    """Write every stage and the exact Bx256x3 normalized sample."""
 
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError(f"canonicalizer artifact directory is not empty: {output_dir}")
@@ -509,7 +511,7 @@ def write_canonicalizer_artifacts(output_dir: Path, result: CanonicalCloud) -> N
             view_indices=stage.view_indices,
             inferred=stage.inferred,
         )
-    np.save(output_dir / "decoder_input.npy", result.decoder_tensor, allow_pickle=False)
+    np.save(output_dir / "normalized_sample.npy", result.normalized_tensor, allow_pickle=False)
     payload: dict[str, Any] = result.as_dict()
     (output_dir / "canonicalizer_trace.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",

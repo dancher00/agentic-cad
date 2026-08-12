@@ -256,7 +256,7 @@
         <td><span class="status-exp">Эксперимент.</span> Скрытая сторона, толщина и масштаб неоднозначны. Результат нельзя считать точным обратным проектированием.</td>
       </tr>
       <tr>
-        <td><b>Серия фото</b><br>обычно 8–16 видов</td>
+        <td><b>Серия фото</b><br>обычно 8–24 вида</td>
         <td>Совместно оценивает глубины и относительные положения камер для всех кадров.</td>
         <td>Отделяет объект, разворачивает пиксели в 3D, фильтрует и сливает виды, затем строит CAD.</td>
         <td><code>model.py</code>, STEP, STL, таблица параметров, quality/provenance и offline-viewer. Точность зависит прежде всего от камер и согласования масштаба глубин.</td>
@@ -284,7 +284,7 @@
 
   <p class="fine">
     В inference не подаётся эталонный CAD. Он используется только отдельно для оценки качества.
-    На RTX 5080 16 ГБ помещается DA3-LARGE; сегментация, visual hull и экспорт CadQuery/STEP выполняются на CPU.
+    На RTX 5080 16 ГБ помещается DA3-LARGE-1.1; сегментация, visual hull и экспорт CadQuery/STEP выполняются на CPU.
   </p>
 </section>
 
@@ -345,18 +345,19 @@
     </tbody>
   </table>
 
-  <h3>Измеренный узкий участок: камеры и масштаб между видами</h3>
+  <h3>Проверенный реальный прогон DA3-LARGE-1.1</h3>
   <table class="small-table">
-    <thead><tr><th>Геометрия на одном rendered-срезе</th><th style="width:19%">Precision@0.05</th><th style="width:31%">Что показывает</th></tr></thead>
+    <thead><tr><th>24 кадра Objectron camera</th><th style="width:24%">Значение</th><th style="width:37%">Что доказывает</th></tr></thead>
     <tbody>
-      <tr><td>Непозированный DA3-LARGE</td><td>0,2188</td><td>Текущая свободная оценка.</td></tr>
-      <tr><td>Точные K/E рендера</td><td>0,4297</td><td>Почти двукратный рост от верных камер.</td></tr>
-      <tr><td>Точные K/E + GT-only scale/shift каждого вида</td><td>0,6270</td><td>Остаточная проблема — несогласованный масштаб глубин.</td></tr>
+      <tr><td>Камеры COLMAP</td><td>24/24; 0,706 px</td><td>Все кадры зарегистрированы; масштаб остаётся произвольным.</td></tr>
+      <tr><td>DA3 inference</td><td>1,33 с; peak 6,02 ГБ</td><td>RTX 5080 16 ГБ достаточно для 24 видов.</td></tr>
+      <tr><td>Visual-hull CAD</td><td>60 cuboids; 1 solid</td><td>STEP/STL валидны, fallback не использован.</td></tr>
+      <tr><td>Input silhouette IoU</td><td>81,61%</td><td>Согласие со входными масками, не точность к неизвестному CAD.</td></tr>
     </tbody>
   </table>
   <p class="fine">
-    Диагностика на 20 синтетических объектах, не метрика готового продукта. Последняя строка использует
-    запрещённую для inference GT-коррекцию и нужна только для локализации причины ошибки.
+    Источник — Google Objectron camera batch-1/0, C-UDA-1.0. Видео и кадры не распространяются;
+    в репозитории хранится только компактный ledger с хэшами, командами и границами утверждений.
   </p>
 </section>
 
@@ -364,9 +365,10 @@
   <h2>Что получилось на проверенном примере</h2>
 
   <div class="callout green">
-    <strong>Условия:</strong> четыре синтетических RGB-вида пластины, DA3-LARGE,
+    <strong>Условия:</strong> четыре синтетических RGB-вида пластины, DA3-LARGE-1.1,
     известная ширина <code>body_width=40mm</code>, детерминированный geometric fitter.
-    Эталонный STL не участвовал в реконструкции — только в последующей оценке.
+    Эталонный STL открыт только после реконструкции. Fitter построил валидный box, но
+    консервативно отклонил слабую смещённую гипотезу отверстия.
   </div>
 
   <img class="stage-strip" src="assets/product_io_da3/plate_stage_strip.png" alt="Этапы: RGB, глубина DA3, маска, облако, CAD">
@@ -385,20 +387,20 @@
         <thead><tr><th>Параметр</th><th>Эталон</th><th>CAD</th><th>Ошибка</th></tr></thead>
         <tbody>
           <tr><td>Ширина*</td><td>40,00 мм</td><td>40,00 мм</td><td>ссылка</td></tr>
-          <tr><td>Глубина</td><td>28,00 мм</td><td>26,67 мм</td><td>−4,75%</td></tr>
-          <tr><td>Толщина</td><td>6,00 мм</td><td>6,25 мм</td><td>+4,09%</td></tr>
-          <tr><td>Диаметр отверстия</td><td>8,00 мм</td><td>6,95 мм</td><td>−13,13%</td></tr>
-          <tr><td>Смещение центра</td><td>0,00 мм</td><td>0,97 мм</td><td>+0,97 мм</td></tr>
+          <tr><td>Глубина</td><td>28,00 мм</td><td>30,85 мм</td><td>+10,17%</td></tr>
+          <tr><td>Толщина</td><td>6,00 мм</td><td>6,06 мм</td><td>+0,96%</td></tr>
+          <tr><td>Диаметр отверстия</td><td>8,00 мм</td><td>не восстановлен</td><td>ошибка feature</td></tr>
+          <tr><td>Гипотеза void</td><td>центр</td><td>отклонена</td><td>coverage 0,333</td></tr>
         </tbody>
       </table>
 
       <table class="metric-table" style="margin-top:3mm">
         <thead><tr><th>Проверка формы</th><th style="width:39%">Результат</th></tr></thead>
         <tbody>
-          <tr><td>Manifold mesh IoU</td><td><b>90,06%</b></td></tr>
-          <tr><td>Chamfer, squared ×1000</td><td>0,2817</td></tr>
+          <tr><td>Manifold mesh IoU</td><td><b>85,87%</b></td></tr>
+          <tr><td>Chamfer, squared ×1000</td><td>0,6636</td></tr>
           <tr><td>Валидность</td><td>1 solid, watertight</td></tr>
-          <tr><td>CAD-шаблон</td><td>box + through-hole</td></tr>
+          <tr><td>CAD-шаблон</td><td>box; hole rejected</td></tr>
         </tbody>
       </table>
       <p class="fine">* Ширина задана пользователем и поэтому не является независимой оценкой точности.</p>
@@ -413,13 +415,13 @@
         <td><b>Geometric fitter</b></td>
         <td>Именованные инженерные параметры; воспроизводимый результат.</td>
         <td>Только прямоугольные/круглые экструзии и круглые сквозные отверстия.</td>
-        <td><span class="status-good">Да: IoU 90,06%</span></td>
+        <td><span class="status-exp">Частично:</span> IoU 85,87%, отверстие пропущено</td>
       </tr>
       <tr>
         <td><b>Visual hull</b></td>
         <td>Произвольная грубая внешняя форма без category-specific CAD-весов.</td>
         <td>Скрытые вогнутости заполняются; cuboid B-Rep не равен design history.</td>
-        <td><span class="status-good">Да:</span> интернет-видео, 1 watertight solid, input silhouette 85,27%</td>
+        <td><span class="status-good">Да:</span> интернет-видео, 1 solid, input silhouette 81,61%</td>
       </tr>
     </tbody>
   </table>

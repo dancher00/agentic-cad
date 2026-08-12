@@ -1,4 +1,4 @@
-"""Deterministic, software-rendered Phase A sample case."""
+"""Deterministic, software-rendered sample case."""
 
 from __future__ import annotations
 

@@ -2,10 +2,10 @@ profile: research
 device: cuda
 seed: 20260810
 debug_artefacts: true
-depth_backend: da3-large
+depth_backend: da3-large-1.1
 cad_backend: geometric-fitter
 da3:
-  checkpoint: large
+  checkpoint: large-1.1
   source_dir: data/upstream/Depth-Anything-3
   cache_dir: data/hf
   process_resolution: 504

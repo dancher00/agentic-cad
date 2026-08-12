@@ -11,14 +11,11 @@ from rich.console import Console
 from rich.pretty import Pretty
 
 from da3_cad import __version__
-from da3_cad.backends.cadrille import (
-    cadrille_license_notice,
-    get_cadrille_model_spec,
-)
 from da3_cad.backends.da3 import da3_license_notice, get_da3_model_spec, require_weight_terms
 from da3_cad.benchmark.smoke import discover_cases, run_smoke_benchmark
 from da3_cad.capture import extract_video_keyframes
 from da3_cad.config import AppConfig, load_config
+from da3_cad.evaluation.evaluator import EvaluationConfig, EvaluationError, Evaluator
 from da3_cad.geometry.cameras import recover_colmap_cameras
 from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.observations import doctor_report, load_observations
@@ -28,7 +25,7 @@ from da3_cad.viewer import build_viewer
 
 app = typer.Typer(
     name="da3-cad",
-    help="Multi-view RGB to editable CAD research pipeline.",
+    help="Multi-view RGB to editable B-Rep CAD with Depth Anything 3.",
     no_args_is_help=True,
 )
 console = Console()
@@ -185,13 +182,6 @@ def reconstruct_command(
             help="Accept the displayed NC DA3 checkpoint terms for this run.",
         ),
     ] = False,
-    accept_license: Annotated[
-        str | None,
-        typer.Option(
-            "--accept-license",
-            help="Exact neural decoder license acknowledgement, e.g. cc-by-nc-4.0.",
-        ),
-    ] = None,
     known_dimension: Annotated[
         str | None,
         typer.Option(
@@ -212,32 +202,13 @@ def reconstruct_command(
     masks: Annotated[
         Path | None, typer.Option("--masks", exists=True, file_okay=False, readable=True)
     ] = None,
-    cadrille_candidates: Annotated[
-        int | None,
-        typer.Option(
-            "--cadrille-candidates",
-            min=1,
-            max=10,
-            help="Point-cloud Cadrille candidates; configured image candidates are additional.",
-        ),
-    ] = None,
     dry_run: DryRunOption = False,
 ) -> None:
     """Reconstruct a parameterized CAD model from an image directory."""
 
     settings = _config(config, device, seed)
-    if cadrille_candidates is not None:
-        settings = settings.model_copy(
-            update={
-                "cadrille": settings.cadrille.model_copy(
-                    update={"candidate_count": cadrille_candidates}
-                )
-            }
-        )
     is_stub = settings.depth_backend == "stub" and settings.cad_backend == "stub"
     try:
-        if cadrille_candidates is not None and not settings.cad_backend.startswith("cadrille-"):
-            raise ValueError("--cadrille-candidates requires a Cadrille CAD backend")
         observations = load_observations(input_dir)
         if is_stub and (cameras is not None or masks is not None):
             raise ValueError("--cameras and --masks require a real DA3 reconstruction profile")
@@ -246,12 +217,7 @@ def reconstruct_command(
             console.print(f"[bold]Depth checkpoint terms:[/bold] {da3_license_notice(da3_spec)}")
             if settings.depth_backend != f"da3-{da3_spec.key}":
                 raise ValueError("reconstruct config depth_backend and checkpoint disagree")
-            if settings.cad_backend.startswith("cadrille-"):
-                cadrille_spec = get_cadrille_model_spec(settings.cadrille.checkpoint)
-                console.print(
-                    f"[bold]Decoder checkpoint terms:[/bold] "
-                    f"{cadrille_license_notice(cadrille_spec)}"
-                )
+
         if dry_run:
             console.print(
                 Pretty(
@@ -263,7 +229,6 @@ def reconstruct_command(
                         "input_digest": observations.digest,
                         "config": settings.model_dump(),
                         "accepted_da3_noncommercial": accept_noncommercial_weights,
-                        "accepted_decoder_license": accept_license,
                         "known_dimension": known_dimension,
                         "cameras": str(cameras.resolve()) if cameras is not None else None,
                         "masks": str(masks.resolve()) if masks is not None else None,
@@ -273,7 +238,7 @@ def reconstruct_command(
             )
             return
         if is_stub:
-            with console.status("Running explicitly labelled Phase A stub pipeline..."):
+            with console.status("Running the explicitly labelled offline stub pipeline..."):
                 result = reconstruct(input_dir, output_dir, settings)
             backend_label = "stub"
         else:
@@ -290,7 +255,6 @@ def reconstruct_command(
                     output_dir,
                     settings,
                     accepted_da3_noncommercial=accept_noncommercial_weights,
-                    accepted_cadrille_license=accept_license,
                     known_dimension_text=known_dimension,
                     camera_bundle_path=cameras,
                     segmentation_mask_dir=masks,
@@ -537,6 +501,57 @@ def doctor_command(
         console.print(Pretty({"config": settings.model_dump(), "writes": False}))
 
 
+@app.command("evaluate")
+def evaluate_command(
+    prediction: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True, help="Predicted STEP/STL."),
+    ],
+    reference: Annotated[
+        Path,
+        typer.Argument(exists=True, dir_okay=False, readable=True, help="Reference STEP/STL."),
+    ],
+    output: Annotated[
+        Path | None, typer.Option("--output", "-o", help="Optional metrics JSON path.")
+    ] = None,
+    item_id: Annotated[
+        str, typer.Option("--item-id", help="Stable identifier used to derive sampling seeds.")
+    ] = "cad-pair",
+    dry_run: DryRunOption = False,
+) -> None:
+    """Compare a predicted solid with reference CAD in a centered isotropic frame."""
+
+    config = EvaluationConfig()
+    if dry_run:
+        console.print(
+            Pretty(
+                {
+                    "command": "evaluate",
+                    "prediction": str(prediction.resolve()),
+                    "reference": str(reference.resolve()),
+                    "output": str(output.resolve()) if output is not None else None,
+                    "item_id": item_id,
+                    "evaluator": config.as_dict(),
+                    "writes": False,
+                }
+            )
+        )
+        return
+    try:
+        metrics = Evaluator(config).evaluate(item_id, prediction, reference)
+    except (EvaluationError, OSError, ValueError) as error:
+        console.print(f"[red]Evaluation failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    payload = metrics.as_dict()
+    console.print(Pretty(payload))
+    if output is not None:
+        if output.exists():
+            console.print(f"[red]Evaluation failed:[/red] output already exists: {output}")
+            raise typer.Exit(1)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 @app.command("benchmark")
 def benchmark_command(
     input_root: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
@@ -548,7 +563,7 @@ def benchmark_command(
     seed: SeedOption = None,
     dry_run: DryRunOption = False,
 ) -> None:
-    """Run the Phase A smoke harness (no CD/IoU claims yet)."""
+    """Run the offline stub smoke harness (no quality-metric claims)."""
 
     settings = _config(config, device, seed)
     try:
@@ -558,7 +573,7 @@ def benchmark_command(
                 Pretty(
                     {
                         "command": "benchmark",
-                        "protocol": "phase-a-stub-smoke-v1",
+                        "protocol": "offline-stub-smoke-v2",
                         "cases": [case_id for case_id, _ in cases],
                         "output": str(output_dir.resolve()),
                         "config": settings.model_dump(),

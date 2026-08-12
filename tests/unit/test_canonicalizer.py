@@ -82,14 +82,14 @@ def test_full_canonicalizer_contract_and_similarity_invariance() -> None:
         known_dimension=KnownDimension.parse("hole_1_diameter=8mm"),
     )
 
-    assert first.decoder_tensor.shape == (1, 256, 3)
-    assert first.decoder_points.dtype == np.float32
-    assert np.isfinite(first.decoder_points).all()
+    assert first.normalized_tensor.shape == (1, 256, 3)
+    assert first.normalized_points.dtype == np.float32
+    assert np.isfinite(first.normalized_points).all()
     assert first.orientation is not None
     assert first.orientation.method == "planar-dominance-symmetry"
     assert first.orientation.determinant == pytest.approx(1.0)
-    assert np.array_equal(first.decoder_points, repeated.decoder_points)
-    np.testing.assert_allclose(first.decoder_points, transformed.decoder_points, atol=2e-5)
+    assert np.array_equal(first.normalized_points, repeated.normalized_points)
+    np.testing.assert_allclose(first.normalized_points, transformed.normalized_points, atol=2e-5)
     assert transformed.scale.status == "pending"
 
     unit_min = first.unit_points.min(axis=0)
@@ -130,7 +130,7 @@ def test_every_stage_is_explicitly_ablatable() -> None:
     assert enabled["orientation"] is False
     assert enabled["sampling"] is False
     assert enabled["normalization"] is False
-    assert result.decoder_points.shape == (256, 3)
+    assert result.normalized_points.shape == (256, 3)
     assert result.normalization is None
 
 
@@ -158,18 +158,18 @@ def test_exact_preselected_cloud_is_preserved_when_sampling_is_disabled() -> Non
 
     result = PointCloudCanonicalizer(config).run(cloud, seed=5)
 
-    assert np.array_equal(result.decoder_points, cloud.points)
+    assert np.array_equal(result.normalized_points, cloud.points)
     sampling = next(stage for stage in result.stages if stage.name == "sampling")
     assert sampling.report["method"] == "identity-exact-contract"
     assert not any("stable-index" in warning for warning in result.warnings)
 
 
-def test_canonicalizer_artifacts_contain_exact_decoder_tensor(tmp_path: Path) -> None:
+def test_canonicalizer_artifacts_contain_exact_normalized_tensor(tmp_path: Path) -> None:
     result = PointCloudCanonicalizer(_config()).run(_plate_cloud(), seed=9)
     output = tmp_path / "canonical"
     write_canonicalizer_artifacts(output, result)
-    tensor = np.load(output / "decoder_input.npy", allow_pickle=False)
-    assert np.array_equal(tensor, result.decoder_tensor)
+    tensor = np.load(output / "normalized_sample.npy", allow_pickle=False)
+    assert np.array_equal(tensor, result.normalized_tensor)
     assert (output / "canonicalizer_trace.json").is_file()
     assert len(list(output.glob("*.npz"))) == len(result.stages)
 
@@ -222,7 +222,7 @@ config = CanonicalizerConfig(
     plane_ransac_iterations=64,
 )
 result = PointCloudCanonicalizer(config).run(cloud, seed=123)
-print(hashlib.sha256(result.decoder_points.tobytes()).hexdigest())
+print(hashlib.sha256(result.normalized_points.tobytes()).hexdigest())
 """
     environment = dict(os.environ)
     environment["OMP_NUM_THREADS"] = "1"

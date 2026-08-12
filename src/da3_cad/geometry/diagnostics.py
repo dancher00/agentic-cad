@@ -1,4 +1,4 @@
-"""Inspectable Phase B depth, mask and fused-cloud artefacts."""
+"""Inspectable depth, mask and fused-cloud artefacts."""
 
 from __future__ import annotations
 

@@ -28,7 +28,7 @@ DA3_SOURCE_URL = "https://github.com/ByteDance-Seed/Depth-Anything-3"
 
 @dataclass(frozen=True, slots=True)
 class Da3ModelSpec:
-    key: Literal["base", "large", "metric-large"]
+    key: Literal["base", "large-1.1", "large", "metric-large"]
     model_id: str
     revision: str
     license: str
@@ -59,6 +59,15 @@ DA3_MODELS: dict[str, Da3ModelSpec] = {
         noncommercial=False,
         parameter_scale="0.12B (upstream model card)",
         weight_sha256="e01067dc1659613083d9145a9a2547ccdbe6ccbbf83c4fe7b3e8a4e2bdae78b5",
+    ),
+    "large-1.1": Da3ModelSpec(
+        key="large-1.1",
+        model_id="depth-anything/DA3-LARGE-1.1",
+        revision="0e109ae307c5982f319a67cf6f9f99ccdc0ec97c",
+        license="CC BY-NC 4.0",
+        noncommercial=True,
+        parameter_scale="0.35B (upstream model card)",
+        weight_sha256="739905c423cf0d6ccaf9e61a8401d82ba1ac32d7f4d3ee6dca8f92b377633f64",
     ),
     "large": Da3ModelSpec(
         key="large",
@@ -272,7 +281,7 @@ class Da3Backend:
     def __init__(
         self,
         *,
-        checkpoint: Literal["base", "large"],
+        checkpoint: Literal["base", "large-1.1", "large"],
         source_dir: Path,
         cache_dir: Path,
         process_resolution: int = 504,

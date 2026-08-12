@@ -1,4 +1,4 @@
-"""Phase A end-to-end reconstruction and edit orchestration."""
+"""Offline stub reconstruction and shared edit orchestration."""
 
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ def _write_report(
 
 def reconstruct(input_dir: Path, output_dir: Path, config: AppConfig) -> ValidationResult:
     if config.depth_backend != "stub" or config.cad_backend != "stub":
-        raise ValueError("Phase A only implements the explicitly labelled stub backends")
+        raise ValueError("offline smoke reconstruction requires the labelled stub backends")
     observations = load_observations(input_dir)
     _prepare_output(output_dir)
     artefacts = output_dir / "artefacts"
@@ -153,7 +153,7 @@ def reconstruct(input_dir: Path, output_dir: Path, config: AppConfig) -> Validat
         )
     )
     (output_dir / "model.py").write_text(program.source, encoding="utf-8")
-    (artefacts / "raw_decoder_output.py").write_text(program.source, encoding="utf-8")
+    (artefacts / "generated_program.py").write_text(program.source, encoding="utf-8")
 
     started = time.monotonic()
     validation = validate_and_export(program.source, output_dir, config.sandbox)
@@ -270,7 +270,6 @@ def edit_run(
             raise ValueError("coordinate_spaces is missing native or metric space metadata")
         kind = native.get("kind")
         allowed_kinds = {
-            "decoder-native-training-space",
             "canonical-model-space",
             "metric-mm-space",
             "stub-test-space",
@@ -294,7 +293,7 @@ def edit_run(
         ).as_dict()
     _json_write(output_dir / "parameters.json", edited_parameters)
     edit_warnings = [
-        "edited from an existing generated program; decoder was not rerun",
+        "edited from an existing generated program; CAD generator was not rerun",
         f"units remain {units}; no scale was invented during edit",
     ]
     warnings = [*source_warnings, *edit_warnings]

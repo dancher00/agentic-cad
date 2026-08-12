@@ -3,10 +3,10 @@ from __future__ import annotations
 from da3_cad.cad.parameter_semantics import classify_parameters
 
 
-def test_ast_literals_are_not_claimed_as_engineering_parameters() -> None:
+def test_untyped_generated_literals_are_not_claimed_as_engineering_parameters() -> None:
     semantics = classify_parameters(
         {"box_1_length": 4.0, "hole_2_diameter": 8.0},
-        backend="cadrille-point-cloud-rl",
+        backend="external-generated-program",
         mode="ast-literal-lift",
     )
 

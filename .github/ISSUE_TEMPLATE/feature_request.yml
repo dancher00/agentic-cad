@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a reconstruction, CAD, evaluation, or tooling improvement
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user outcome
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Define inputs, outputs, failure behavior, and evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: External models or datasets
+      description: Include source, immutable revision, license, and redistribution status.
+  - type: textarea
+    id: evaluation
+    attributes:
+      label: How should it be evaluated?
+      description: Separate input consistency from independent ground truth.
+    validations:
+      required: true

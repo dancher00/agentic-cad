@@ -71,7 +71,6 @@ class ScaleDecision:
 
 
 NativeSpaceKind = Literal[
-    "decoder-native-training-space",
     "canonical-model-space",
     "metric-mm-space",
     "stub-test-space",
@@ -194,7 +193,7 @@ class CadCoordinateContract:
                 "no_evidence_policy": (
                     None
                     if metric_status == "known"
-                    else "do not label decoder-native or normalized-cube values as millimetres"
+                    else "do not label canonical or normalized-cube values as millimetres"
                 ),
             },
         }
@@ -208,12 +207,8 @@ def cad_coordinate_contract(
 ) -> CadCoordinateContract:
     """Build a backend-aware output-space contract after solid validation."""
 
-    if backend.startswith("cadrille-") or backend.startswith("cadrille-point-cloud-"):
-        kind: NativeSpaceKind = "decoder-native-training-space"
-        units = "decoder-native-training-unit"
-        mm_per_native = scale.millimeters_per_unit if scale.status == "known" else None
-    elif backend in {"geometric-fitter-v1", "visual-hull-v1"} and scale.status == "known":
-        kind = "metric-mm-space"
+    if backend in {"geometric-fitter-v1", "visual-hull-v1"} and scale.status == "known":
+        kind: NativeSpaceKind = "metric-mm-space"
         units = "mm"
         mm_per_native = 1.0
     elif backend in {"geometric-fitter-v1", "visual-hull-v1"}:
@@ -261,17 +256,17 @@ def unresolved_scale(known_dimension: KnownDimension | None = None) -> ScaleDeci
 def resolve_camera_bundle_scale(
     *,
     world_units_to_mm: float,
-    world_units_per_decoder_unit: float,
+    world_units_per_normalized_unit: float,
     camera_source: str,
     evidence: Mapping[str, object],
 ) -> ScaleDecision:
-    """Map a metric external-camera world scale into decoder coordinates."""
+    """Map metric external-camera world scale into normalized object coordinates."""
 
     if not np.isfinite(world_units_to_mm) or world_units_to_mm <= 0.0:
         raise ValueError("world_units_to_mm must be finite and positive")
-    if not np.isfinite(world_units_per_decoder_unit) or world_units_per_decoder_unit <= 0.0:
-        raise ValueError("world_units_per_decoder_unit must be finite and positive")
-    millimeters_per_unit = float(world_units_to_mm * world_units_per_decoder_unit)
+    if not np.isfinite(world_units_per_normalized_unit) or world_units_per_normalized_unit <= 0.0:
+        raise ValueError("world_units_per_normalized_unit must be finite and positive")
+    millimeters_per_unit = float(world_units_to_mm * world_units_per_normalized_unit)
     return ScaleDecision(
         status="known",
         source="camera-bundle",
@@ -280,7 +275,7 @@ def resolve_camera_bundle_scale(
         reference={
             "camera_source": camera_source,
             "world_units_to_mm": float(world_units_to_mm),
-            "world_units_per_decoder_unit": float(world_units_per_decoder_unit),
+            "world_units_per_normalized_unit": float(world_units_per_normalized_unit),
             "evidence": dict(evidence),
         },
         warning=None,

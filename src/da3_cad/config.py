@@ -20,7 +20,7 @@ class SandboxConfig(BaseModel):
 class Da3Config(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    checkpoint: Literal["base", "large"] = "base"
+    checkpoint: Literal["base", "large-1.1", "large"] = "base"
     source_dir: Path = Path("data/upstream/Depth-Anything-3")
     cache_dir: Path = Path("data/hf")
     process_resolution: int = Field(default=504, ge=56, le=2016)
@@ -117,23 +117,6 @@ class VisualHullConfig(BaseModel):
         return self
 
 
-class CadrilleConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    checkpoint: Literal["sft", "rl"] = "rl"
-    cache_dir: Path = Path("data/hf")
-    local_files_only: bool = False
-    max_new_tokens: int = Field(default=768, ge=1, le=2048)
-    candidate_count: int = Field(default=1, ge=1, le=10)
-    image_candidate_count: int = Field(default=0, ge=0, le=4)
-    max_decode_batch_size: int = Field(default=1, ge=1, le=10)
-    selection_mode: Literal["input-chamfer", "input-chamfer-silhouette"] = "input-chamfer"
-    silhouette_weight: float = Field(default=1.0, ge=0.0, le=10.0)
-    silhouette_trim_fraction: float = Field(default=0.1, ge=0.0, lt=0.5)
-    attn_implementation: Literal["sdpa"] = "sdpa"
-    use_cache: bool = True
-
-
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -149,7 +132,6 @@ class AppConfig(BaseModel):
     canonicalizer: CanonicalizerConfig = Field(default_factory=CanonicalizerConfig)
     geometric_fitter: GeometricFitterConfig = Field(default_factory=GeometricFitterConfig)
     visual_hull: VisualHullConfig = Field(default_factory=VisualHullConfig)
-    cadrille: CadrilleConfig = Field(default_factory=CadrilleConfig)
 
 
 def load_config(

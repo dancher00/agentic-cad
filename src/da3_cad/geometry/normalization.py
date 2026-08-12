@@ -1,4 +1,4 @@
-"""Exact decoder bbox normalization verified against cadrille preprocessing."""
+"""Isotropic bounding-box normalization for canonical object coordinates."""
 
 from __future__ import annotations
 
@@ -25,14 +25,14 @@ class BboxNormalization:
             "midpoint": list(self.midpoint),
             "largest_extent": self.largest_extent,
             "unit_formula": "u = (p - midpoint) / largest_extent + 0.5",
-            "decoder_formula": "d = (u - 0.5) * 2",
+            "centered_formula": "c = (u - 0.5) * 2",
         }
 
 
-def normalize_bbox_for_decoder(
+def normalize_bbox_isotropic(
     points: FloatArray,
 ) -> tuple[FloatArray, FloatArray, BboxNormalization]:
-    """Map points isotropically to [0,1]^3 and then cadrille's [-1,1]^3."""
+    """Map points isotropically to [0,1]^3 and centered [-1,1]^3."""
 
     values = np.asarray(points, dtype=np.float64)
     if values.ndim != 2 or values.shape[1] != 3 or len(values) == 0:
@@ -48,11 +48,11 @@ def normalize_bbox_for_decoder(
         raise ValueError("normalization rejects a degenerate zero-extent cloud")
     midpoint = (minimum + maximum) / 2.0
     unit = (values - midpoint) / largest + 0.5
-    decoder = (unit - 0.5) * 2.0
+    centered = (unit - 0.5) * 2.0
     transform = BboxNormalization(
         bbox_min=(float(minimum[0]), float(minimum[1]), float(minimum[2])),
         bbox_max=(float(maximum[0]), float(maximum[1]), float(maximum[2])),
         midpoint=(float(midpoint[0]), float(midpoint[1]), float(midpoint[2])),
         largest_extent=largest,
     )
-    return unit.astype(np.float32), decoder.astype(np.float32), transform
+    return unit.astype(np.float32), centered.astype(np.float32), transform

@@ -19,8 +19,8 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--profile",
-        choices=("base", "large", "metric-large", "all"),
-        default="all",
+        choices=("base", "large-1.1", "large", "metric-large", "all"),
+        default="large-1.1",
     )
     parser.add_argument("--cache-dir", type=Path, default=Path("data/hf"))
     parser.add_argument("--accept-noncommercial-weights", action="store_true")
@@ -30,7 +30,9 @@ def main() -> None:
     keys = tuple(DA3_MODELS) if args.profile == "all" else (args.profile,)
     print("DA3 checkpoints are not redistributed by DA3-CAD:")
     for key in keys:
-        print(f"- {da3_license_notice(DA3_MODELS[key])}")
+        spec = DA3_MODELS[key]
+        print(f"- {da3_license_notice(spec)}")
+        print(f"  expected model.safetensors SHA-256: {spec.weight_sha256}")
     print(f"- target: {args.cache_dir} (ignored runtime cache)")
     if any(DA3_MODELS[key].noncommercial for key in keys):
         print("- required acknowledgement: --accept-noncommercial-weights")

@@ -16,7 +16,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_DIR = ROOT / "docs" / "assets" / "product_io_da3"
-RUN_DIR = ROOT / "outputs" / "photo_plate_geometric_large_hole"
+RUN_DIR = ROOT / "outputs" / "photo_plate_geometric_da3_1_1"
 
 NAVY = "#14213d"
 BLUE = "#2f6fed"
@@ -104,9 +104,7 @@ def render_stage_strip() -> None:
     )
     _equal_limits(cloud_axis, sampled)
     _style_axis_3d(cloud_axis)
-    cloud_axis.set_title(
-        "4  Слитое облако", fontsize=9.4, color=NAVY, pad=5, fontweight="semibold"
-    )
+    cloud_axis.set_title("4  Слитое облако", fontsize=9.4, color=NAVY, pad=5, fontweight="semibold")
 
     mesh_axis = figure.add_subplot(grid[0, 4], projection="3d")
     mesh = _load_mesh(RUN_DIR / "model.stl")
@@ -134,7 +132,7 @@ def render_stage_strip() -> None:
 def render_gt_prediction() -> None:
     paths = (
         (ROOT / "sample_data" / "plate" / "gt.stl", "Эталон: 40 × 28 × 6, Ø8", CYAN),
-        (RUN_DIR / "model.stl", "Результат: 40 × 26,67 × 6,25, Ø6,95", BLUE),
+        (RUN_DIR / "model.stl", "Результат: 40 × 30,85 × 6,06, без отверстия", BLUE),
     )
     figure = plt.figure(figsize=(7.6, 3.2), dpi=190, facecolor="white")
     grid = figure.add_gridspec(1, 2, wspace=0.0)

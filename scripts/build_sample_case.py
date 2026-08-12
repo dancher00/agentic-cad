@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the committed Phase A sample from source parameters."""
+"""Regenerate the committed synthetic sample from source parameters."""
 
 from pathlib import Path
 

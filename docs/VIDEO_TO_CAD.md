@@ -1,235 +1,105 @@
-# Video or photographs to CAD
+# Video to CAD
 
-This is the current Cadrille-free real-capture path. It does not turn an
-arbitrary phone video into an accurate feature tree, but it makes a coarse,
-editable B-Rep executable and auditable:
+The supported capture model is a stationary rigid object observed by a moving
+camera. DA3-CAD first selects sharp, visually and temporally diverse key frames;
+it can then recover cameras with sequential COLMAP and feed those cameras back
+into DA3-LARGE-1.1.
 
-1. select sharp, diverse frames;
-2. recover intrinsics and world-to-camera poses with COLMAP, or let DA3 infer them;
-3. predict DA3 depth/confidence and automatically segment the near central object;
-4. carve a multiview visual hull and decompose it into deterministic cuboid features;
-5. execute the CadQuery program and export only one validated solid;
-6. reproject the exported CAD into every input camera and record fit evidence.
+## Capture recommendations
 
-On the checked 24-frame Google Objectron camera video, RGB-only DA3 cameras
-produced one watertight solid with 82.30% trimmed input-mask silhouette IoU.
-Adding COLMAP cameras recovered from the same video produced one watertight
-solid with 85.27%. These are input-consistency measurements, not CAD-ground-truth
-accuracy. The exact current workflow is in
-[INTERNET_PHOTO_TO_CAD.md](INTERNET_PHOTO_TO_CAD.md).
+- Complete a slow orbit rather than a fast pan.
+- Keep 60–80% overlap between neighbouring views.
+- Lock zoom, focus, exposure, and white balance when possible.
+- Keep the object and background static.
+- Include elevated and low oblique views.
+- Avoid motion blur, reflections, hands, and moving articulation.
+- Add removable background texture when the object and scene are featureless.
 
-## Archived diagnosis: why the earlier decoder path failed
+A turntable is not supported by the current SfM contract because the background
+is static while the object moves. Record a moving camera instead.
 
-The decoder itself is not the primary measured failure. On the repository's
-exact GT-mesh sampling control, Cadrille reaches 92.06% mean IoU. On real
-T-LESS RGB, the complete automatic path reaches only 6.29% mean IoU at eight
-views even with GT-blind best-of-10 selection. The controlled rendered
-diagnostic isolates the upstream loss:
-
-| Geometry path | precision@0.05 |
-|---|---:|
-| unposed DA3-LARGE | 0.2188 |
-| DA3-LARGE with exact cameras | 0.4297 |
-| exact cameras plus forbidden GT per-view depth scale/shift | 0.6270 |
-
-Cadrille's released point path consumes exactly 256 unordered, normalized XYZ
-points. It does not receive normals, camera rays, confidence, masks, physical
-scale or the original image evidence. If DA3 places different views in
-incompatible frames or scales, normalization merely compresses the bad cloud
-into Cadrille's expected cube.
-
-The Cadrille image training distribution is also not arbitrary video: it uses
-four fixed synthetic views in a 2x2 image. The released mixed mode chooses
-either point input or image input for a training example; it is not
-point-image feature fusion. DA3-CAD therefore keeps the modalities as separately
-decoded candidates. The image candidate is a deterministic masked collage from
-four evenly spaced registered views; it is supplemental rather than a
-replacement for recovered geometry because arbitrary photographs remain outside
-the synthetic rendering distribution. Both modalities are compared using the
-input cloud, recovered cameras and input masks, without ground-truth CAD. See the
-[Cadrille repository](https://github.com/col14m/cadrille) and
-[paper](https://arxiv.org/html/2505.22914v3).
-
-## Capture contract
-
-The object must remain stationary and the camera must move. A turntable
-violates the current static-world COLMAP model: the background and object then
-imply different motions. Turntable support needs object-frame pose estimation
-and is not implemented.
-
-For one capture:
-
-- make one slow full orbit and a shorter second orbit from a different height;
-- keep 60--80% visual overlap between neighbouring moments;
-- keep the entire part visible and roughly 50--80% of the frame;
-- lock zoom/focal length, exposure and focus when the camera permits it;
-- avoid specular glare, motion blur and changing shadows;
-- place removable texture or fiducials around a textureless part so COLMAP has
-  stationary features;
-- do not move the part, support or fiducials during capture.
-
-Texture helps pose recovery but can hurt the simple border-colour segmenter.
-The video profiles therefore use explicit user masks. Put one binary PNG in a
-mask directory for every registered frame: white/non-zero is object and black
-is background. Its stem must match the frame, for example
-`registered_frames/view_003.png` to `masks/view_003.png`. These are recorded
-as user evidence and are not labelled as a GT oracle.
-
-Sixteen views are a useful operational target because the controlled oracle
-curve peaked there, but this is not a proven minimum for phone video. More
-nearly identical frames do not repair bad pose or scale.
-
-## Install the optional capture dependencies
-
-Install the locked CUDA/DA3 environment as described in the README, then add
-the video extra:
+## Prepare video
 
 ```bash
-./.venv/bin/python -m pip install -e '.[video]'
+da3-cad prepare-video object.mp4 \
+  --output captures/object \
+  --views 24
 ```
 
-Frame selection uses OpenCV. Camera recovery uses CPU SIFT through pycolmap
-with at most eight extraction/matching threads; the 5080 remains available for
-DA3, while visual-hull generation runs on CPU.
-
-## Prepare a video
-
-```bash
-./.venv/bin/da3-cad prepare-video captures/raw/part.mp4 \
-  -o captures/part --views 16
-```
-
-On success the important outputs are:
+The output includes:
 
 ```text
-captures/part/
+captures/object/
 ├── capture.json
-├── frames/
+├── frames/                       selected original frames
 └── colmap/
     ├── camera_recovery.json
     ├── cameras.npz
-    ├── registered_frames/
-    └── selected_model/
+    └── registered_frames/        undistorted, registered RGB inputs
 ```
 
-`capture.json` freezes source/frame hashes, timestamps, sharpness and the
-selection rule. `cameras.npz` contains named K and world-to-camera matrices;
-DA3-CAD reorders them by exact image name and rejects missing or extra cameras.
-Only registered, undistorted frames should be reconstructed.
+Frame candidates are sampled uniformly in time. Selection starts from a
+high-quality early frame and greedily fills appearance and temporal gaps. Every
+selected frame records source index, timestamp, blur/exposure score, and SHA-256.
 
-If COLMAP reports no good initial pair, recapture more slowly with overlap and
-stationary texture. The extracted frames and failure evidence are retained.
-Do not fall back silently to unposed DA3 and call the result equivalent.
+COLMAP uses CPU SIFT, sequential overlap matching, incremental mapping, and
+undistortion. The camera bundle records registration completeness, sparse-point
+count, reprojection error, camera-centre rank, and arbitrary scale status.
 
-## Run the current visual-hull path on the 5080
-
-No hand-made masks are required for an object-centric capture:
+To extract frames without COLMAP:
 
 ```bash
-./.venv/bin/da3-cad doctor captures/part/colmap/registered_frames \
-  -o captures/part/doctor.json
+da3-cad prepare-video object.mp4 \
+  --output captures/object-unposed \
+  --views 16 \
+  --no-recover-cameras
+```
 
-./.venv/bin/da3-cad reconstruct \
-  captures/part/colmap/registered_frames \
-  -o outputs/part-visual-hull \
+## Reconstruct
+
+```bash
+da3-cad reconstruct \
+  captures/object/colmap/registered_frames \
+  --output outputs/object \
   --config configs/internet_photo.yaml \
-  --cameras captures/part/colmap/cameras.npz \
+  --cameras captures/object/colmap/cameras.npz \
   --accept-noncommercial-weights
 ```
 
-This path uses DA3-LARGE, depth-seeded local GrabCut and a deterministic
-silhouette/depth visual hull. It exports cuboid-decomposed CadQuery rather than
-a semantic feature history. Check `artefacts/geometry/artefacts/mask_overlay_*.png`
-before trusting the solid.
+If automatic masks are wrong, create binary masks for the registered frames and
+use `configs/internet_photo_masked.yaml --masks masks/`.
 
-If automatic masks fail, provide binary PNG files with matching stems:
+## Scale
 
-```bash
-./.venv/bin/da3-cad reconstruct \
-  captures/part/colmap/registered_frames \
-  -o outputs/part-visual-hull-masked \
-  --config configs/internet_photo_masked.yaml \
-  --cameras captures/part/colmap/cameras.npz \
-  --masks captures/part/masks \
-  --accept-noncommercial-weights
-```
-
-COLMAP reconstruction scale is arbitrary. A second run may supply a measured
-dimension only if that exact primary parameter exists, for example
-`--known-dimension body_width=80mm`. A calibrated external bundle may instead
-declare known world scale, but its translations and `world_units_to_mm` must
-describe the same metric frame.
-
-## Archived Cadrille candidate experiment (not the current route)
-
-`configs/video_cadrille.yaml` generates four deterministic point candidates from
-different farthest-point subsamples plus four masked image candidates built from
-offset quartets of views using Cadrille's released 2x2 protocol. Each decoder
-runs in its own staged model lifecycle, so DA3 and the two decoder passes are
-not resident on CUDA together. Every program is AST-checked and executed. A
-single-part result must contain exactly one valid B-rep solid; invalid or
-disconnected outputs receive infinite selection cost. Each valid candidate is
-normalized into the recovered object frame, projected through all recovered
-cameras, and compared with the masks that were already reconstruction inputs.
-The winner minimizes normalized input-cloud Chamfer plus weighted trimmed
-silhouette error. No benchmark ground-truth CAD, benchmark score or oracle mask
-is opened.
+COLMAP coordinates are defined only up to a similarity transform. A named
+measurement can supply scale:
 
 ```bash
-./.venv/bin/da3-cad reconstruct \
-  captures/part/colmap/registered_frames \
-  -o outputs/part-cadrille \
-  --config configs/video_cadrille.yaml \
-  --cameras captures/part/colmap/cameras.npz \
-  --masks captures/part/masks \
-  --cadrille-candidates 10 \
-  --accept-noncommercial-weights \
-  --accept-license cc-by-nc-4.0
+--known-dimension body_width=120mm
 ```
 
-Candidate evidence is written to `artefacts/candidate_selection.json`,
-`candidate_silhouette_selection.json`, `cadrille_image_inputs/`,
-`candidate_silhouettes/` and `candidates/candidate_*/`. The selection report
-explicitly records `ground_truth_access: false`. Reranking can reject invalid
-or obviously inconsistent programs, but it cannot recover detail missing from
-the fused cloud. The image branch is one additional hypothesis and is not
-guaranteed to be valid or superior. Cadrille output remains decoder-native, not
-millimetres; the pipeline rejects metric camera scale through this backend until
-output-space calibration is proven.
+The value is transferred only after the CAD backend emits that exact parameter.
+Otherwise the run must remain in canonical units.
 
-## What the H100 is for
+## Reproducible Internet example
 
-The 16 GiB RTX 5080 is sufficient for current inference. On the checked
-24-frame run, DA3-LARGE forward inference completed in about one second after
-model loading; segmentation, visual-hull construction and CadQuery validation
-ran on CPU.
+The optional Objectron example downloader prints and requires the dataset terms,
+checks the fixed video hash, and writes only to ignored capture storage:
 
-Use the H100 for learning the capabilities that visual hull cannot provide:
+```bash
+python scripts/fetch_objectron_example.py --dry-run
+python scripts/fetch_objectron_example.py --accept-license c-uda-1.0
+```
 
-1. collect real multi-view RGB plus trusted STEP/mesh pairs and freeze a held-out set;
-2. train category-agnostic mask refinement and per-view depth-scale consistency;
-3. learn primitive and feature proposals: planes, cylinders, holes, pockets and fillets;
-4. fit those proposals into a constrained parametric feature graph;
-5. render the executed CAD through recovered cameras and optimize parameters
-   from silhouette/depth residuals;
-6. benchmark dimensional and topological accuracy on unseen physical parts.
+Then use the two commands above with the downloaded video. The checked-in result
+ledger contains hashes and metrics but not the third-party video or frames.
 
-More VRAM alone does not reveal hidden geometry or design intent. The next
-useful H100 experiment is supervised primitive/feature recovery with executable
-render-and-compare validation, while the deterministic visual hull remains the
-fallback that always produces auditable coarse geometry.
+## Common failures
 
-## Inspect failures before trusting STEP
-
-Check in this order:
-
-1. `camera_recovery.json`: registered count, camera rank and reprojection error;
-2. geometry mask overlays: no support/fiducials/background inside the object mask;
-3. `fused_cloud.ply`: one coherent shell rather than offset copies;
-4. canonicalizer trace and exact 256-point decoder tensor;
-5. candidate reports, raw code and parameterization equivalence;
-6. input-CD plus per-view silhouette reports and rendered masks;
-7. final `parameters.json`: scale source and units.
-
-A valid STEP means the program executed and produced a finite solid. It does
-not, by itself, mean the solid matches the photographed object.
+- Few registered frames: increase overlap, sharpness, and background features.
+- Rank-deficient cameras: add elevation change and complete more of the orbit.
+- Wrong mask: provide explicit masks; do not treat input IoU as ground truth.
+- Filled cavities: add views where the cavity affects a silhouette; visual hull
+  cannot infer invisible concavity.
+- Wrong dimensions: add calibrated metric evidence; camera recovery alone does
+  not establish millimetres.

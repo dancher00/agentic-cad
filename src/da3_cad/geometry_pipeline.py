@@ -1,4 +1,4 @@
-"""Real DA3-to-world-point-cloud pipeline for the Phase B verification gate."""
+"""Real DA3-to-world-point-cloud pipeline."""
 
 from __future__ import annotations
 
@@ -74,8 +74,9 @@ def run_geometry(
 ) -> GeometryRunResult:
     """Run real DA3 inference, segmentation, unprojection and gated fusion."""
 
-    if config.depth_backend not in {"da3-base", "da3-large"}:
-        raise ValueError("geometry command requires depth_backend da3-base or da3-large")
+    supported_depth = {"da3-base", "da3-large-1.1", "da3-large"}
+    if config.depth_backend not in supported_depth:
+        raise ValueError(f"geometry command requires depth_backend in {sorted(supported_depth)}")
     expected_checkpoint = config.depth_backend.removeprefix("da3-")
     if config.da3.checkpoint != expected_checkpoint:
         raise ValueError(

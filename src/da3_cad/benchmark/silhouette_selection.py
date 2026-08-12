@@ -134,7 +134,7 @@ def candidate_mesh_in_world(
     *,
     tessellation: TessellationConfig | None = None,
 ) -> trimesh.Trimesh:
-    """Map a bbox-normalized decoder mesh back to the DA3/COLMAP world frame."""
+    """Map a bbox-normalized CAD mesh back to the DA3/COLMAP world frame."""
 
     config = tessellation if tessellation is not None else TessellationConfig()
     mesh = load_mesh(mesh_input, config)

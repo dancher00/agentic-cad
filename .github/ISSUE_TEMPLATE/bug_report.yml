@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a reproducible DA3-CAD failure
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction command
+      description: Remove private paths and do not upload third-party data without permission.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Version and provenance
+      description: Include commit, config, GPU, torch/CUDA, model revision, and relevant report excerpts.
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Failing stage
+      options:
+        - installation/acquisition
+        - video/cameras
+        - DA3 inference
+        - masks/fusion
+        - canonicalization
+        - CAD generation/validation
+        - evaluation/viewer
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Data hygiene
+      options:
+        - label: I have not attached weights, restricted datasets, secrets, or images I cannot redistribute.
+          required: true

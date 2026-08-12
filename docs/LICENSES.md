@@ -1,37 +1,46 @@
 # Third-party licenses
 
-DA3-CAD source is Apache-2.0. No third-party weights or datasets are distributed
-with this repository.
+DA3-CAD source and project-generated synthetic fixtures are Apache-2.0. No
+third-party model weights, source checkout, dataset, video, or derived real
+capture is distributed in this repository.
 
-| Component | Artifact | Terms | Redistribution here |
+| Component | Pinned artifact used by DA3-CAD | Terms | Redistributed here |
 |---|---|---|---|
-| [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3) | source at `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` | Apache-2.0 | fetched into ignored `data/`; not redistributed |
-| [DA3-LARGE](https://huggingface.co/depth-anything/DA3-LARGE) | weights at `c54c26b16ec04d218e8d584ecf4bce082a9fcc20` | CC BY-NC 4.0 | no; CLI requires explicit per-run opt-in |
-| [DA3-BASE](https://huggingface.co/depth-anything/DA3-BASE) | weights at `f4a6c9b3c95e41c82048423d3493a81ec3fa810e` | Apache-2.0 | no; downloaded into ignored cache |
-| [DA3METRIC-LARGE](https://huggingface.co/depth-anything/DA3METRIC-LARGE) | weights at `4010e39f3634a45bc60553321fb49fb760bd594e` | Apache-2.0 | no; diagnostic download stays in an ignored cache |
-| [cadrille](https://github.com/col14m/cadrille) | minimal modified source from `338db111a1612e8e3a61309f71db138c09474eec` | Apache-2.0 | yes; license and diff provenance retained in `third_party/cadrille/` |
-| [Manifold](https://github.com/elalish/manifold) / `manifold3d==3.5.2` | robust complete-mesh Boolean engine used by the evaluator | Apache-2.0 | package dependency only; not vendored |
-| [cadrille SFT](https://huggingface.co/maksimko123/cadrille) | weights at `2f422d1169e4362e2288b0e0f54bb3a2b504e0f9` | CC BY-NC 4.0 | no; exact opt-in plus SHA-256 verification |
-| [cadrille RL](https://huggingface.co/maksimko123/cadrille-rl) | weights at `712489b5890a0ce81b18cf441e14b2ed2eadc02a` | CC BY-NC 4.0 | no; exact opt-in plus SHA-256 verification |
-| [Qwen2-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct) | tokenizer/processor at `895c3a49bc3fa70a340399125c650a463535e71c` | Apache-2.0 | no; cached outside git |
-| [DeepCAD test mesh mirror](https://huggingface.co/datasets/maksimko123/deepcad_test_mesh) | dataset at `ee4999c749fbb6a726df6284abb1a949ec7548c1` | labelled CC BY-NC 4.0; upstream provenance remains distinct | no |
-| [Fusion 360 Gallery](https://github.com/AutodeskAILab/Fusion360GalleryDataset/blob/master/LICENSE.md) | test-mesh mirror at `af9643d11bdae5512020bfba024cb4d609b893e1` | Autodesk non-commercial and redistribution terms | no |
-| [T-LESS BOP/HF](https://huggingface.co/datasets/bop-benchmark/tless) | Primesense test images and CAD models at `5fd309a04476a842d93abfb584fba9ee7caecdf1` | CC BY 4.0 on the HF card and [original CTU site](https://cmp.felk.cvut.cz/t-less/) | no; exact opt-in, verified archives, attribution retained in reports |
+| [Depth Anything 3 source](https://github.com/ByteDance-Seed/Depth-Anything-3) | commit `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` | Apache-2.0 | no; fetched to ignored `data/upstream/` |
+| [DA3-LARGE-1.1](https://huggingface.co/depth-anything/DA3-LARGE-1.1) | revision `0e109ae307c5982f319a67cf6f9f99ccdc0ec97c`; SHA-256 `739905…33f64` | CC BY-NC 4.0 | no; explicit acceptance and ignored cache |
+| [DA3-BASE](https://huggingface.co/depth-anything/DA3-BASE) | revision `f4a6c9b3c95e41c82048423d3493a81ec3fa810e`; SHA-256 `e01067…78b5` | Apache-2.0 | no; ignored cache |
+| [legacy DA3-LARGE](https://huggingface.co/depth-anything/DA3-LARGE) | revision `c54c26b16ec04d218e8d584ecf4bce082a9fcc20`; retained only for reproducibility | CC BY-NC 4.0 | no |
+| [Google Objectron](https://github.com/google-research-datasets/Objectron) | optional camera `batch-1/0` example | C-UDA-1.0 | no; explicit acceptance and ignored capture |
+| [CadQuery](https://github.com/CadQuery/cadquery) / OpenCascade bindings | installed package dependencies | upstream package licenses | no vendored code |
+| [COLMAP](https://github.com/colmap/colmap) / pycolmap | optional camera recovery dependency | upstream package licenses | no vendored code |
+| [manifold3d](https://github.com/elalish/manifold) | `3.5.2`, reference mesh Boolean evaluator | Apache-2.0 | package dependency only |
 
-Exact URLs, immutable revisions and acquisition behavior are recorded in
-`PLAN.md`. The normalization audit downloader displays the dataset URLs, pinned
-revisions and terms before requiring `--accept-noncommercial-terms`; downloaded
-files stay in ignored `data/`. DA3 checkpoint acquisition prints each model
-URL, revision and terms before requiring `--accept-noncommercial-weights` for
-LARGE, verifies the complete weight SHA-256 and writes only an ignored local
-receipt. Cadrille SFT/RL acquisition prints both model
-cards and immutable revisions, then requires the exact acknowledgement
-`--accept-license cc-by-nc-4.0`; the downloader verifies the complete weight
-SHA-256 and writes only a local receipt beneath the ignored cache. Package
-dependency licenses will be audited before release.
+The full hashes are intentionally kept in source and
+[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md), while the table abbreviates two long
+values for readability.
 
-The T-LESS downloader similarly requires `--accept-license cc-by-4.0`, pins the
-BOP/Hugging Face dataset revision, verifies the full SHA-256 and byte size of
-the base, CAD-model and Primesense BOP19 archives, and extracts them only below
-the ignored `data/tless/` tree. Use of T-LESS must cite Hodaň et al., *T-LESS:
-An RGB-D Dataset for 6D Pose Estimation of Texture-less Objects*, WACV 2017.
+## Model acceptance
+
+`fetch_da3_weights.py` prints every selected model card, immutable revision,
+license, target, and the required acknowledgement. Non-commercial weights are
+not downloaded or loaded unless `--accept-noncommercial-weights` is supplied.
+After download, the complete `model.safetensors` is hashed and a local receipt
+is written under `data/hf/da3-cad-license-receipts/`.
+
+Passing the CLI flag records that the operator accepted the displayed upstream
+terms for that run. It does not change the checkpoint license and does not grant
+commercial rights.
+
+## Dataset acceptance
+
+`fetch_objectron_example.py` displays the official dataset page and license URL,
+requires the exact `--accept-license c-uda-1.0` value, verifies bytes and SHA-256,
+and keeps the video plus derived frames below ignored `captures/`. Users remain
+responsible for complying with C-UDA-1.0.
+
+## Dependency inventory
+
+Python dependency names and exact tested versions are in `constraints/`. Those
+files are a reproducibility lock, not a replacement for upstream license texts.
+Before distributing a binary bundle or hosted commercial service, audit every
+installed package and select model checkpoints compatible with that use.

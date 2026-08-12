@@ -153,9 +153,7 @@ def normalize_evaluation_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     if not np.isfinite(extent) or extent <= 1e-12:
         raise ValueError("evaluation mesh bbox is non-finite or degenerate")
     normalized = mesh.copy()
-    normalized.vertices = (
-        np.asarray(normalized.vertices, dtype=np.float64) - center
-    ) / extent
+    normalized.vertices = (np.asarray(normalized.vertices, dtype=np.float64) - center) / extent
     return normalized
 
 
@@ -188,7 +186,7 @@ def verify_official_test_mesh_frame(
     *,
     tolerance: float = 5e-4,
 ) -> None:
-    """Verify the released Cadrille test-mesh storage frame before pc preprocessing."""
+    """Verify the canonical test-mesh storage frame before pc preprocessing."""
 
     bounds = np.asarray(mesh.bounds, dtype=np.float64)
     extents = bounds[1] - bounds[0]

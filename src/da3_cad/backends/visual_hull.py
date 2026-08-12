@@ -601,11 +601,11 @@ class VisualHullCadBackend:
         lower = np.asarray(chosen_volume.lower_oriented, dtype=np.float64)
         upper = np.asarray(chosen_volume.upper_oriented, dtype=np.float64)
         world_extents = upper - lower
-        decoder_factor = 2.0 / canonical.normalization.largest_extent
+        normalization_factor = 2.0 / canonical.normalization.largest_extent
         normalized_parameters = {
-            "body_width": float(world_extents[0] * decoder_factor),
-            "body_depth": float(world_extents[1] * decoder_factor),
-            "body_height": float(world_extents[2] * decoder_factor),
+            "body_width": float(world_extents[0] * normalization_factor),
+            "body_depth": float(world_extents[1] * normalization_factor),
+            "body_height": float(world_extents[2] * normalization_factor),
         }
         emitted, scale = _scaled_parameters(
             normalized_parameters,
@@ -625,7 +625,7 @@ class VisualHullCadBackend:
             "threads, tolerances, material, assemblies and GD&T are unsupported",
         )
         warnings = [
-            "deterministic visual-hull CAD; no generative CAD decoder or Cadrille weights",
+            "deterministic visual-hull CAD; no generative CAD model weights",
             *limitations,
         ]
         if scale.status != "known":

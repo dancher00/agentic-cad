@@ -112,9 +112,7 @@ class Evaluator:
             raise EvaluationError(f"could not load ground truth: {error}") from error
         native_validation = validate_mesh(native_mesh)
         if not native_validation.valid:
-            raise EvaluationError(
-                f"invalid ground-truth mesh: {native_validation.reason}"
-            )
+            raise EvaluationError(f"invalid ground-truth mesh: {native_validation.reason}")
         try:
             mesh = normalize_evaluation_mesh(native_mesh)
             validation = validate_mesh(mesh)

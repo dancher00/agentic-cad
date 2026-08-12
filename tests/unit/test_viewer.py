@@ -26,7 +26,7 @@ def test_build_viewer_embeds_geometry_parameters_and_downloads(tmp_path: Path) -
     (run / "parameters.json").write_text(
         json.dumps(
             {
-                "units": "decoder-native-unit",
+                "units": "canonical-model-unit",
                 "primary_parameters": [
                     {"name": "width", "value": 2.0, "semantic_role": "overall width"}
                 ],

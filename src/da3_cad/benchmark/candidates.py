@@ -1,4 +1,4 @@
-"""Deterministic multi-candidate sampling and GT-blind input-CD selection."""
+"""Input-only fit evidence for reconstructed CAD."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from da3_cad.evaluation.mesh import (
 )
 from da3_cad.evaluation.surface_sampling import sample_surface_area_weighted
 from da3_cad.geometry.canonicalizer import CanonicalCloud
-from da3_cad.geometry.normalization import normalize_bbox_for_decoder
+from da3_cad.geometry.normalization import normalize_bbox_isotropic
 from da3_cad.geometry.sampling import farthest_point_indices
 from da3_cad.models import FloatArray
 
@@ -27,18 +27,6 @@ SELECTION_SURFACE_POINTS = 8192
 
 def _points_sha256(points: FloatArray) -> str:
     return hashlib.sha256(np.asarray(points, dtype="<f4").tobytes(order="C")).hexdigest()
-
-
-@dataclass(frozen=True, slots=True)
-class DecoderCandidateInput:
-    index: int
-    seed: int
-    decoder_points: FloatArray
-    unit_points: FloatArray
-
-    @property
-    def decoder_sha256(self) -> str:
-        return _points_sha256(self.decoder_points)
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,53 +77,13 @@ class CandidateSelection:
         }
 
 
-def candidate_seeds(item_seed: int, count: int) -> tuple[int, ...]:
-    if item_seed < 0 or count <= 0:
-        raise ValueError("candidate seed and count must be positive")
-    return tuple(
-        int.from_bytes(
-            hashlib.sha256(f"candidate\0{item_seed}\0{index}".encode()).digest()[:8],
-            "big",
-            signed=False,
-        )
-        for index in range(count)
-    )
-
-
 def canonical_input_pool(canonical: CanonicalCloud) -> FloatArray:
     orientation_stages = [stage for stage in canonical.stages if stage.name == "orientation"]
     if len(orientation_stages) != 1:
         raise ValueError("canonical trace must contain exactly one orientation stage")
     pool = np.asarray(orientation_stages[0].points, dtype=np.float32)
-    unit_pool, _, _ = normalize_bbox_for_decoder(pool)
+    unit_pool, _, _ = normalize_bbox_isotropic(pool)
     return np.asarray(unit_pool - 0.5, dtype=np.float32)
-
-
-def build_candidate_inputs(
-    canonical: CanonicalCloud,
-    seeds: tuple[int, ...],
-) -> tuple[DecoderCandidateInput, ...]:
-    if not seeds or len(set(seeds)) != len(seeds):
-        raise ValueError("candidate seeds must be non-empty and unique")
-    orientation_stages = [stage for stage in canonical.stages if stage.name == "orientation"]
-    if len(orientation_stages) != 1:
-        raise ValueError("canonical trace must contain exactly one orientation stage")
-    pool = np.asarray(orientation_stages[0].points, dtype=np.float32)
-    if len(pool) < 256:
-        raise ValueError("canonical input pool has fewer than 256 points")
-    outputs: list[DecoderCandidateInput] = []
-    for index, seed in enumerate(seeds):
-        indices = farthest_point_indices(pool, 256, seed=seed)
-        unit_points, decoder_points, _ = normalize_bbox_for_decoder(pool[indices])
-        outputs.append(
-            DecoderCandidateInput(
-                index=index,
-                seed=seed,
-                decoder_points=np.asarray(decoder_points, dtype=np.float32),
-                unit_points=np.asarray(unit_points, dtype=np.float32),
-            )
-        )
-    return tuple(outputs)
 
 
 def _fixed_input_points(points: FloatArray, *, seed: int) -> FloatArray:

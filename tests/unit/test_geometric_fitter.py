@@ -110,11 +110,7 @@ def test_void_detector_requires_supported_circular_boundary() -> None:
 
 def test_void_detector_skips_a_larger_unsupported_surface_gap() -> None:
     points = _plate_surface(with_hole=True)
-    keep = ~(
-        (points[:, 2] > 0.05)
-        & (points[:, 0] > 0.45)
-        & (points[:, 1] > 0.05)
-    )
+    keep = ~((points[:, 2] > 0.05) & (points[:, 0] > 0.45) & (points[:, 1] > 0.05))
     incomplete = points[keep]
     detected = _detect_circular_void(
         incomplete,

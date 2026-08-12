@@ -1,4 +1,4 @@
-"""Phase A smoke harness; it deliberately emits no quality metrics."""
+"""Offline stub smoke harness; it deliberately emits no quality metrics."""
 
 from __future__ import annotations
 
@@ -45,11 +45,11 @@ def run_smoke_benchmark(root: Path, output_dir: Path, config: AppConfig) -> dict
                 "valid": validation.valid,
                 "seconds": time.monotonic() - case_started,
                 "metrics": None,
-                "metrics_reason": "Phase A smoke harness does not implement benchmark metrics",
+                "metrics_reason": "offline stub smoke does not implement benchmark metrics",
             }
         )
     payload: dict[str, object] = {
-        "protocol": "phase-a-stub-smoke-v1",
+        "protocol": "offline-stub-smoke-v2",
         "is_benchmark_result": False,
         "case_count": len(rows),
         "seconds": time.monotonic() - started,

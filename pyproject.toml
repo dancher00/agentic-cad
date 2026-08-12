@@ -4,16 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "da3-cad"
-version = "0.1.0"
-description = "Research pipeline for multi-view RGB to editable parametric CAD"
+version = "0.2.0"
+description = "Deterministic multi-view RGB to editable B-Rep CAD with Depth Anything 3"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
 authors = [{name = "DA3-CAD contributors"}]
+keywords = ["cad", "depth-anything-3", "3d-reconstruction", "visual-hull", "cadquery"]
 classifiers = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 3 - Alpha",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Image Processing",
 ]
 dependencies = [
   "cadquery==2.4.0",
@@ -31,6 +34,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2,<2",
   "mypy>=1.15,<2",
   "pip-tools>=7.6,<8",
   "pytest>=8.3,<10",
@@ -55,12 +59,11 @@ video = [
   "opencv-python-headless==4.11.0.86",
   "pycolmap>=3.13,<3.14",
 ]
-cadrille = [
-  "huggingface-hub>=0.36,<1",
-  "qwen-vl-utils==0.0.10",
-  "safetensors>=0.6,<1",
-  "transformers==4.50.3",
-]
+[project.urls]
+Homepage = "https://github.com/dancher00/DA3-CAD"
+Documentation = "https://github.com/dancher00/DA3-CAD#readme"
+Repository = "https://github.com/dancher00/DA3-CAD.git"
+Issues = "https://github.com/dancher00/DA3-CAD/issues"
 
 [project.scripts]
 da3-cad = "da3_cad.cli:app"
@@ -87,6 +90,7 @@ markers = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -103,5 +107,5 @@ pretty = true
 packages = ["da3_cad"]
 
 [[tool.mypy.overrides]]
-module = ["cadquery.*", "scipy.*", "transformers.*", "trimesh.*", "yaml.*"]
+module = ["cadquery.*", "scipy.*", "trimesh.*", "yaml.*"]
 ignore_missing_imports = true

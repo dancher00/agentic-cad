@@ -76,9 +76,9 @@ class GeometricFitReport:
         }
 
 
-def _full_decoder_pool(canonical: CanonicalCloud) -> FloatArray:
+def _full_oriented_pool(canonical: CanonicalCloud) -> FloatArray:
     if canonical.normalization is None:
-        raise ValueError("geometric fitter requires enabled decoder bbox normalization")
+        raise ValueError("geometric fitter requires enabled canonical bbox normalization")
     orientation_stage = next(
         (stage for stage in canonical.stages if stage.name == "orientation"), None
     )
@@ -357,7 +357,7 @@ class GeometricCadBackend:
         known_dimension: KnownDimension | None = None,
     ) -> CadProgram:
         del seed
-        points = _full_decoder_pool(canonical).astype(np.float64)
+        points = _full_oriented_pool(canonical).astype(np.float64)
         quantile = self.config.robust_bounds_quantile
         minimum = np.quantile(points, quantile, axis=0)
         maximum = np.quantile(points, 1.0 - quantile, axis=0)
@@ -438,7 +438,7 @@ class GeometricCadBackend:
             "threads, gears, freeform surfaces, assemblies, tolerances and GD&T are unsupported",
         )
         warnings = [
-            "deterministic geometric control baseline; not the neural cadrille path",
+            "deterministic geometric template; no generative CAD model weights",
             *limitations,
         ]
         if scale.status != "known":

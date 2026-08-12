@@ -102,7 +102,7 @@ def classify_parameters(
         "AST literal use sites preserve geometry but do not establish feature ownership, "
         "design intent, or whether a dimension controls the main body"
         if mode == "ast-literal-lift"
-        else "decoder-emitted names have no explicit engineering-role metadata"
+        else "generated names have no explicit engineering-role metadata"
     )
     implementation = tuple(
         _entry(
@@ -121,6 +121,6 @@ def classify_parameters(
         warning=(
             f"{len(implementation)} numeric CAD operands are retained for exact replay but are "
             "not advertised as engineering parameters; edits and --known-dimension references "
-            "are rejected until the decoder emits an explicit feature schema"
+            "are rejected until the generator emits an explicit feature schema"
         ),
     )

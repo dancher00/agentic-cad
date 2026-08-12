@@ -164,9 +164,7 @@ def build_viewer(
     if destination.exists():
         raise ValueError(f"viewer output already exists: {destination}")
     payload = viewer_payload(run_dir, output=destination, images_dir=images_dir)
-    template = (
-        files("da3_cad.viewer").joinpath("template.html").read_text(encoding="utf-8")
-    )
+    template = files("da3_cad.viewer").joinpath("template.html").read_text(encoding="utf-8")
     encoded = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
     html = template.replace("__DA3_CAD_VIEWER_PAYLOAD__", encoded)
     if "__DA3_CAD_VIEWER_PAYLOAD__" in html:

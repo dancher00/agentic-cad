@@ -1,0 +1,365 @@
+\documentclass[10pt]{article}
+
+\usepackage[a4paper,margin=24mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black,
+  pdftitle={DA3-CAD: Deterministic Multi-View RGB-to-B-Rep Reconstruction with Depth Anything 3},
+  pdfauthor={DA3-CAD Contributors},
+  pdfkeywords={photo-to-CAD, multi-view reconstruction, B-Rep, Depth Anything 3, visual hull}
+}
+\newcommand{\system}{DA3-CAD}
+\newcommand{\da}{DA3-LARGE-1.1}
+
+\title{\system: Deterministic Multi-View RGB-to-B-Rep Reconstruction\\with Depth Anything 3}
+\author{DA3-CAD Contributors\\\small Author list and affiliations to be finalized before submission}
+\date{Working manuscript, 12 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Image-based 3D reconstruction is mature enough to recover depth, cameras, point
+clouds, and renderable surfaces, but these outputs are not equivalent to an
+editable boundary-representation (B-Rep) CAD model.  We present \system, an
+open research pipeline that converts object-centric multi-view RGB images or
+moving-camera video into executable CadQuery, STEP, and STL.  Depth Anything 3
+(DA3) supplies per-view depth, confidence, intrinsics, and extrinsics.  A
+deterministic downstream stack performs object segmentation, confidence-gated
+unprojection, multi-view filtering, canonical orientation, silhouette/depth
+visual-hull carving, voxel-to-cuboid decomposition, constrained CadQuery
+execution, and single-solid validation.  Physical scale remains a separate
+evidence channel and is transferred only from an accepted named dimension.
+The system records immutable model/source revisions, complete weight hashes,
+stage provenance, and separates agreement with input observations from
+independent reference-CAD metrics.  On a 24-view Objectron camera sequence,
+the pipeline produces a valid 60-cuboid B-Rep with 81.61\% mean input-silhouette
+IoU; no reference CAD is available, so this is not an accuracy result.  On a
+four-view synthetic plate with reference CAD, a conservative geometric backend
+produces one valid metric solid with 85.87\% mesh IoU but failed to recover the visible through-hole.
+This failure illustrates the remaining gap between
+valid solid reconstruction and recovery of design intent.  We describe the
+system as a reproducible baseline and define the benchmark and feature-inference
+work needed for general photo-to-CAD.
+\end{abstract}
+
+\noindent\textbf{Keywords:} photo-to-CAD, multi-view reconstruction, B-Rep,
+Depth Anything 3, visual hull, reproducibility
+
+\section{Introduction}
+
+A useful answer to ``is 3D reconstruction solved?'' depends on the requested
+output.  Structure from motion can estimate cameras and sparse geometry;
+multi-view depth can recover dense visible surfaces; neural rendering can
+reproduce novel views; and meshing can produce a watertight triangle surface.
+Engineering CAD requires additional commitments: analytic or parametric
+features, topology accepted by a CAD kernel, physical units, editable
+constraints, and ideally the construction logic intended by a designer.  A
+visually plausible surface may therefore be an invalid solid, while a valid
+solid may contain the wrong hole, thickness, or hidden cavity.
+
+Depth Anything 3 (DA3) predicts spatially consistent geometry from arbitrary
+visual inputs with or without supplied camera poses\cite{lin2025depthanything3}.
+Its public API exposes depth, confidence, intrinsics, and extrinsics, making it
+a strong observation model for a photo-to-CAD system.  DA3 does not itself
+claim to emit STEP or design history.  \system{} explores a deliberately simple
+and inspectable bridge from these geometric observations to a coarse B-Rep.
+
+The contributions of this working system are:
+\begin{enumerate}
+  \item an end-to-end, deterministic path from ordered RGB views or video to a
+        validated single-solid CadQuery/STEP/STL output;
+  \item explicit camera, foreground, coordinate, scale, and failure contracts
+        around a pinned DA3 model and source revision;
+  \item a silhouette/depth visual hull converted into an editable cuboid B-Rep
+        without learned CAD-generator weights;
+  \item restricted execution and independent reference-mesh evaluation, with
+        input consistency kept separate from ground-truth accuracy; and
+  \item reproducible real and synthetic integration cases that report both
+        success and a feature-recovery failure.
+\end{enumerate}
+
+The method is not presented as universal reverse engineering.  Its role is to
+establish a transparent baseline on which learned feature recognition and
+constraint solving can be evaluated.
+
+\section{Related Work}
+
+\paragraph{Any-view geometry.}
+DA3 uses a unified depth--ray formulation for monocular, multi-view, and
+pose-conditioned geometry\cite{lin2025depthanything3}.  \system{} consumes the
+released prediction contract rather than modifying its network.  When video
+poses are available, we recover them with incremental structure from motion in
+COLMAP\cite{schonberger2016sfm} and condition DA3 on those cameras.
+
+\paragraph{Foreground and visual hulls.}
+The visual hull is the maximal object consistent with a set of silhouettes and
+cannot recover concavity that changes no silhouette\cite{laurentini1994visualhull}.
+Our automatic object mask combines colour, depth, confidence, and a locally
+constrained GrabCut refinement\cite{rother2004grabcut}.  Unlike a generic
+semantic segmenter, this backend states its assumption of one prominent central
+object and supports exact user masks when that assumption fails.
+
+\paragraph{Parametric CAD.}
+CadQuery provides a Python interface to a parametric OpenCascade-based CAD
+kernel and exports STEP in addition to tessellated formats\cite{cadquery}.
+Contemporary image-to-CAD research often learns command sequences or implicit
+shape priors.  Our current baseline instead exposes a small deterministic
+vocabulary: a general object is a union of cuboid features; a diagnostic
+geometric backend fits boxes, cylinders, and a conservatively supported
+through-hole.  This choice sacrifices compact design history in exchange for
+traceable geometry and failure behaviour.
+
+\section{Problem Formulation}
+
+Let $I_i$ denote $N$ RGB observations of one rigid object.  Optional inputs are
+camera intrinsics $K_i$, world-to-camera transforms $E_i$, foreground masks
+$M_i$, and one named physical dimension $d_j$ in millimetres.  The target is a
+program $P(\theta)$ that executes to exactly one positive-volume B-Rep solid,
+where $\theta$ contains editable primary dimensions.  The program must export
+STEP and STL and be accompanied by provenance $R$.
+
+The reconstruction objective is constrained by visible evidence rather than an
+unavailable original feature tree.  In particular, a run without scale evidence
+produces a canonical-unit model; a run without reference CAD cannot report CAD
+IoU; and a valid program alone is not treated as geometric correctness.
+
+\section{Method}
+
+Figure~\ref{fig:pipeline} illustrates the implemented stages on the synthetic
+control.  The shown result is intentionally the current conservative output,
+including its missed hole.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../docs/assets/product_io_da3/plate_stage_strip.png}
+  \caption{Implemented path from RGB through DA3 depth, foreground mask, fused
+  geometry, and validated parameterized CAD.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Pinned DA3 observation model}
+
+We use the official \da{} checkpoint and source at immutable revisions.  The
+complete 1.64,GB safetensors file is hashed before every uncached admission.
+The adapter validates finite positive depth $D_i$, higher-is-better confidence
+$C_i$, $K_i$, $E_i$, and processed images.  Externally supplied cameras
+condition DA3 and must survive shape, name, rotation, determinant, and
+camera-centre-rank checks.
+
+For a retained pixel $p=[u,v,1]^\top$ with z-depth $z=D_i(u,v)$,
+\begin{equation}
+  x_{\mathrm{cam}} = zK_i^{-1}p, \qquad
+  x_{\mathrm{world}} = E_i^{-1}\begin{bmatrix}x_{\mathrm{cam}}\\1\end{bmatrix}.
+\end{equation}
+This convention is checked by projection--unprojection round trips at runtime.
+
+\subsection{Foreground and confidence-gated fusion}
+
+For object-centric Internet imagery, a border-colour model identifies likely
+background while a near central DA3-depth component seeds foreground.  The
+search region is dilated locally; GrabCut may refine only inside it.  Morphology
+and connected-component selection produce $M_i$.  A view is rejected if no
+valid seed remains or if foreground implausibly covers nearly the whole frame.
+
+Within $M_i$, the fusion gate retains finite positive depth and confidence above
+a per-view percentile.  Each point keeps its view and pixel origin.  A second
+confidence pass, statistical/radius outlier rejection, and minimum neighbourhood
+support from distinct views yield the measured fused cloud.  No reference shape
+enters these operations.
+
+\subsection{Canonical frame and scale}
+
+The system chooses either a three-axis PCA frame or, for planar degeneracy, a
+dominant-plane normal plus deterministic in-plane symmetry/PCA voting.  It
+records every candidate and tie-break.  Isotropic normalization subtracts the
+robust bbox centre and divides all axes by one largest extent; per-axis scaling
+is forbidden.
+
+Scale is metadata independent of normalized shape.  If the CAD backend emits a
+parameter matching a supplied observation such as
+\texttt{body\_width=40mm}, one uniform factor converts every emitted length to
+millimetres.  Otherwise scale remains unresolved.  COLMAP units and category
+priors are never silently interpreted as physical units.
+
+\subsection{Silhouette/depth visual hull}
+
+A voxel centre $X$ is projected into each camera in which it is visible.  It
+survives when its dilated silhouette support satisfies
+\begin{equation}
+  \frac{1}{|V(X)|}\sum_{i\in V(X)} M_i(\pi_i(X)) \geq \tau_s,
+\end{equation}
+for visible views $V(X)$ and support threshold $\tau_s$.  A conservative depth
+test removes space clearly in front of the observed surface, with tolerance
+proportional to the robust depth span.  This depth term constrains front
+surfaces but does not claim to reveal hidden cavities.
+
+We keep the largest six-connected component.  Edge- or vertex-only voxel
+contacts that would create non-manifold pinch points are minimally filled.  If
+the requested grid exceeds occupancy or feature limits, resolution is reduced
+through a recorded deterministic schedule.
+
+\subsection{Voxel occupancy to B-Rep}
+
+A stable greedy scan covers every occupied voxel exactly once with axis-aligned
+cuboids.  The cuboid coordinates are encoded as fractions of
+\texttt{body\_width}, \texttt{body\_depth}, and \texttt{body\_height}; CadQuery
+unions them.  The representation is editable and uses a CAD kernel, but the
+many cuboids are implementation operands rather than recovered engineering
+features.
+
+The alternative geometric backend compares box and radial boundary residuals
+and searches a top-surface point set for an empty circle with spacing and
+angular-boundary support.  It emits a through-hole only when those tests pass.
+
+\subsection{Validation and evidence}
+
+Generated source passes an AST allow-list and runs in an isolated subprocess
+with address-space, CPU, and wall limits.  Export is accepted only for one solid
+with finite bounds and positive volume.  Failure does not trigger an unreported
+cached or permissive fallback.
+
+The visual-hull output is reprojected to every input mask and sampled against
+the canonical input cloud.  These scores have
+\texttt{ground\_truth\_access=false}.  A separate evaluator compares a
+prediction with explicit reference CAD after independently centring each mesh
+and dividing by its largest bbox extent.  It applies no ICP, pose oracle, or
+per-axis scaling, computes full-mesh Boolean IoU, and estimates symmetric
+squared Chamfer from 8,192 seeded surface samples.
+
+\section{Preliminary Experiments}
+
+\subsection{Setup}
+
+Both cases use the same \da{} weights and official source revision.  Inference
+runs on an NVIDIA RTX 5080 with 16,GB VRAM, PyTorch 2.13.0+cu130, and 504-pixel
+processing resolution.  The global deterministic seed is 20260810.  CPU stages
+use CadQuery 2.4.0 and manifold3d 3.5.2.  Exact hashes and commands are published
+with the repository.
+
+\paragraph{Real sequence.}
+We use Objectron\cite{ahmadyan2021objectron} camera sequence
+\texttt{batch-1/0} under C-UDA-1.0.  Twenty-four key frames are selected from a
+7.10,s video.  COLMAP registers all frames with 0.706-pixel mean reprojection
+error, 3,550 sparse points, and rank-three camera centres.  Reference
+manufacturing CAD is unavailable and unused.
+
+\paragraph{Synthetic control.}
+Project code renders four orthographic RGB views of a
+$40\times28\times6$,mm plate with a centred 8,mm through-hole.  Reconstruction
+receives RGB and the known 40,mm width.  The committed reference STL is opened
+only after reconstruction.
+
+\subsection{Results}
+
+\begin{table}[t]
+\centering
+\caption{Preliminary v0.2.0 integration evidence.  Input IoU/CD and reference
+IoU/CD are different metric classes and should not be compared numerically.}
+\label{tab:results}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & Objectron camera & Synthetic plate \\
+\midrule
+Views & 24 real & 4 rendered \\
+Cameras & COLMAP-conditioned & DA3-estimated \\
+CAD backend & visual hull & geometric template \\
+Valid single solid & yes & yes \\
+Cuboids / primary parameters & 60 / 3 & n/a / 3 \\
+Scale & unresolved & width fixed to 40 mm \\
+Input silhouette IoU & 81.61\% & n/a \\
+Input CD$^2$ & 0.02010 & n/a \\
+Reference mesh IoU & unavailable & 85.87\% \\
+Reference CD$^2\times1000$ & unavailable & 0.6636 \\
+Hole recovered & unknown & no \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The real run fuses 397,184 points and emits 921 occupied voxels covered by 60
+cuboids.  Mean and 10\%-trimmed input-silhouette IoU are 81.61\% and 81.84\%,
+respectively.  These figures establish input agreement, not physical accuracy.
+DA3 inference takes 1.33,s inside the adapter and peaks at 6.02,GB allocated
+and 8.67,GB reserved CUDA memory on this single host observation.
+
+For the plate, the geometric backend emits a
+$40\times30.8466\times6.0579$,mm box.  The strongest empty-circle candidate is
+off-centre with angular coverage 0.333, below the fixed 0.35 threshold.  The
+backend therefore refuses a hole rather than tuning one into existence.  The
+result remains a valid B-Rep and reaches 85.87\% reference mesh IoU, but it is
+feature-incomplete.  This distinction is central: topological validity is a
+necessary engineering gate, not a sufficient correctness metric.
+
+\section{Limitations and Discussion}
+
+Visual hulls fill concavities that never affect silhouettes, and a coarse voxel
+grid loses thin walls and small holes.  DA3 depth and pose errors can shift
+carving evidence across views.  Automatic segmentation assumes one central
+object, while SfM assumes a static object and world.  Global scale is absent
+without a measurement.  Cuboid unions are cumbersome compared with compact
+sketch/extrude histories and do not express constraints, patterns, fillets,
+threads, tolerances, materials, or assemblies.
+
+The two experiments have complementary but narrow validity.  Objectron tests
+real appearance and cameras but lacks reference CAD.  The plate supplies exact
+CAD but is simple, synthetic, and generated by the same repository.  No
+category-level confidence interval or production dimensional claim is possible.
+The measured hole failure also indicates that updating the observation model
+alone does not solve CAD feature inference.
+
+Licensing is part of the system boundary.  Project code is Apache-2.0; the
+default \da{} weights are CC BY-NC 4.0 and fetched only after explicit
+acceptance; Objectron is C-UDA-1.0 and is not redistributed.  A permissively
+licensed codebase does not convert those external terms into commercial rights.
+
+\section{Research Roadmap}
+
+The next stage is a preregistered, category-diverse benchmark with calibrated
+4/8/16/24-view prefixes, automatic- and supplied-mask tracks, held-out reference
+CAD or metrology, and explicit pose, depth, scale, silhouette, topology,
+feature, and dimension errors.  Invalid and irrecoverable cases must contribute
+to aggregate rates.
+
+Algorithmically, the highest-value extension is a feature layer that proposes
+planes, cylinders, axes, holes, pockets, and repeated patterns from DA3 geometry
+and RGB, followed by robust constraint fitting and B-Rep hypothesis selection.
+H100-class hardware is useful for training and sweeping this layer, whereas the
+current 0.35B inference pipeline already fits a 16,GB consumer GPU.  Learned
+features should be evaluated against the deterministic visual-hull baseline and
+should retain explicit evidence and abstention.
+
+\section{Conclusion}
+
+\system{} demonstrates that DA3 any-view geometry can be connected to a real CAD
+kernel through a deterministic and inspectable pipeline.  It produces editable,
+validated coarse B-Reps from both real video and synthetic views on a consumer
+GPU, while keeping scale and metric semantics explicit.  Equally importantly,
+the current evidence shows where the bridge remains incomplete: a valid solid
+can still miss a simple visible hole.  Treating that failure as a measured
+research target, rather than as a hidden exception, provides a sound basis for
+future feature-aware photo-to-CAD work.
+
+\section*{Reproducibility Statement}
+
+Source code, constraints, model/source revisions, complete model hash,
+configuration, synthetic fixture, result ledger, and reproduction commands are
+included in the public repository.  Third-party weights and real data are not
+redistributed.  CPU CI requires no network or weights; GPU results are opt-in and
+record the complete runtime and tested repository state.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

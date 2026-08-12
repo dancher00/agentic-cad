@@ -1,423 +1,293 @@
 # DA3-CAD
 
-DA3-CAD turns multiple RGB views of one object into a validated CadQuery
-program plus STEP and STL. The current product route is deterministic and
-Cadrille-free: [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3)
-predicts depth, confidence and cameras; automatic object masks constrain a
-multiview visual hull; the resulting voxel volume is converted into editable
-cuboid features and executed in an AST-constrained, resource-limited subprocess.
+[![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg)](https://www.python.org/)
+[![License: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
+[![Status: research alpha](https://img.shields.io/badge/status-research%20alpha-orange.svg)](#current-scope)
 
-A valid run writes `model.py`, `model.step`, `model.stl`, `parameters.json`,
-input-fit evidence, a quality report and complete provenance. Without a known
-dimension, output units are explicitly canonical rather than millimetres. The
-result is a coarse editable B-Rep, not recovered design history: hidden
-concavities, exact fillets, holes, threads and tolerances are not inferred
-reliably from arbitrary photographs.
+**Deterministic multi-view RGB to editable B-Rep CAD with
+[Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3).**
 
-The verified internet-video example uses 24 Google Objectron camera frames and
-no CAD ground truth during reconstruction:
+DA3-CAD takes object-centric photographs or a moving-camera video and produces
+an executable CadQuery model, one validated STEP solid, STL, editable primary
+dimensions, and an auditable reconstruction report. Depth Anything 3 supplies
+multi-view geometry; DA3-CAD supplies object masks, fusion, canonicalization,
+visual-hull reconstruction, B-Rep generation, validation, and export.
 
-| Input route | Cameras | Masks | Result | Trimmed input-silhouette IoU |
-|---|---|---|---|---:|
-| RGB only | DA3-LARGE | automatic v2 | one watertight STEP/STL solid, 69 cuboids | 82.30% |
-| RGB video | COLMAP recovered from the video | automatic v2 | one watertight STEP/STL solid, 44 cuboids | 85.27% |
+![Four RGB views, DA3 depth, foreground mask, fused cloud and generated CAD](docs/assets/product_io_da3/plate_stage_strip.png)
 
-These IoUs measure agreement with reconstruction input masks, not accuracy
-against an unknown reference CAD. See
-[Internet photos/video → CAD](docs/INTERNET_PHOTO_TO_CAD.md) for exact commands,
-algorithm details and limitations.
+> This is a working **coarse reconstruction** pipeline, not universal reverse
+> engineering. It does not recover the original feature tree, invisible
+> concavities, fillets, threads, tolerances, assemblies, or manufacturing intent.
 
-![DA3-CAD pipeline: rendered input views to fused cloud, recovered solid and implementation parameters](docs/assets/readme/hero.gif)
+## What goes in and what comes out
 
-*The animation is an archived rendered decoder-research visualization. It is
-retained as provenance and is not the current visual-hull product result.*
+| Input | DA3 contribution | DA3-CAD contribution | Output |
+|---|---|---|---|
+| 8–24 RGB views | depth, confidence, intrinsics and extrinsics | segmentation, confidence-gated fusion, canonical orientation, silhouette/depth carving | `model.py`, STEP, STL, parameters, reports |
+| Moving-camera video | pose-conditioned depth after key-frame and optional COLMAP preparation | deterministic key-frame selection and the same image pipeline | the same CAD artifacts |
+| RGB + external `K/E` | camera-conditioned depth | uses the verified camera bundle instead of relying on free pose estimation | more stable multi-view geometry |
+| RGB + masks | depth and cameras | uses exact per-view object support | less segmentation ambiguity |
+| Any of the above + one named dimension | geometry remains scale-ambiguous | transfers the accepted dimension to the whole CAD model | dimensions explicitly in millimetres |
 
-## Try it without a GPU
+A single photograph is accepted by the geometry stack, but hidden shape and
+thickness remain underconstrained. Multi-view input is the product path.
 
-The shipped four-view rendered plate exercises the complete CLI, sandbox,
-parameter edit and STEP/STL export with explicitly labelled stub backends:
+## Pipeline
+
+```mermaid
+flowchart LR
+    A[Object photos] --> B[Optional video key frames + COLMAP]
+    B --> C[DA3-LARGE-1.1]
+    A --> C
+    C --> D[depth · confidence · K · E]
+    D --> E[automatic or explicit masks]
+    D --> F[confidence-gated 3D fusion]
+    E --> F
+    F --> G[outlier filtering + canonical orientation]
+    D --> H[silhouette/depth visual hull]
+    E --> H
+    G --> H
+    H --> I[greedy cuboid B-Rep decomposition]
+    I --> J[restricted CadQuery execution]
+    J --> K[model.py · STEP · STL · parameters · provenance]
+```
+
+For a pixel `(u,v)` with DA3 z-depth `z`, the geometry core computes
+`x_cam = z K⁻¹[u,v,1]ᵀ` and transforms it with the inverse world-to-camera
+extrinsic. Points survive only explicit mask, finite-depth, and per-view
+confidence gates. The CAD backend retains voxels supported by enough visible
+silhouettes, applies conservative front-surface depth carving, keeps one
+6-connected component, and covers it with deterministic cuboid features.
+Generated CadQuery is checked by an AST policy and executed in a resource-limited
+subprocess. Export succeeds only for one finite positive-volume solid.
+
+See [the architecture document](docs/ARCHITECTURE.md) for coordinate, camera,
+scale, and validation contracts.
+
+## Quick start
+
+The tested target is Ubuntu, CPython 3.12, and an NVIDIA GPU. RTX 5080 16 GB is
+enough for the default 0.35B model; the verified run peaked at 6.02 GB allocated
+and 8.67 GB reserved CUDA memory.
 
 ```bash
+git clone https://github.com/dancher00/DA3-CAD.git
+cd DA3-CAD
 conda create --prefix ./.venv python=3.12 pip -y
-./.venv/bin/python -m pip install -r constraints/cpu-py312.txt
-./.venv/bin/python -m pip install --no-deps -e .
-./.venv/bin/da3-cad reconstruct sample_data/plate/views -o outputs/sample --config configs/stub.yaml
-```
+conda activate "$PWD/.venv"
 
-Then inspect, edit and open the self-contained viewer:
+python -m pip install -r constraints/cpu-py312.txt
+python -m pip install -r constraints/cu130-py312.txt
+python -m pip install -r constraints/da3-py312.txt
+python -m pip install --no-deps -e .
 
-```bash
-./.venv/bin/da3-cad inspect outputs/sample
-./.venv/bin/da3-cad edit outputs/sample --set plate_width=52 -o outputs/sample-wide
-./.venv/bin/da3-cad viewer outputs/sample --images sample_data/plate/views
-```
-
-`outputs/sample/viewer.html` makes no network requests. The stub uses the
-supplied pixels, but it is not a geometric-quality result; every stub artifact
-is visibly marked `STUB`.
-
-![Offline DA3-CAD viewer with solid, source views, exports, parameters and provenance](docs/assets/readme/viewer.png)
-
-*The viewer screenshot uses the frozen rendered neural showcase so every panel
-is populated; the GPU-free command above produces a conspicuously labelled
-`STUB` result. The viewer normalizes geometry for inspection and does not invent
-millimetres.*
-
-## Run the research model
-
-The tested environment is Python 3.12, torch `2.13.0+cu130`, CUDA 13.0 and an
-RTX 5080 (`sm_120`). Install the CUDA and DA3 locks in this order so pip does
-not replace the verified CUDA wheel:
-
-```bash
-./.venv/bin/python -m pip install -r constraints/cu130-py312.txt
-./.venv/bin/python -m pip install -r constraints/da3-py312.txt
-./.venv/bin/python scripts/fetch_da3_source.py
-./.venv/bin/python scripts/fetch_da3_weights.py --profile large \
-  --cache-dir data/hf --accept-noncommercial-weights
-```
-
-The downloader shows the exact DA3-LARGE terms and verifies the full checkpoint
-SHA-256. No CAD-decoder weights are used by the internet-photo profile:
-
-```bash
-./.venv/bin/da3-cad doctor photos/ -o doctor.json
-./.venv/bin/da3-cad reconstruct photos/ -o outputs/part \
-  --config configs/internet_photo.yaml \
-  --accept-noncommercial-weights
-./.venv/bin/da3-cad viewer outputs/part --images photos/
-```
-
-The automatic profile requires one prominent near-centred object. If a mask
-overlay includes background or cuts the object, provide explicit masks with
-`configs/internet_photo_masked.yaml`. Supply a measured dimension only when
-its schema name is known:
-
-```bash
-./.venv/bin/da3-cad reconstruct photos/ -o outputs/part-mm \
-  --config configs/internet_photo.yaml \
-  --known-dimension body_width=40mm \
+python scripts/fetch_da3_source.py
+python scripts/fetch_da3_weights.py \
+  --profile large-1.1 \
   --accept-noncommercial-weights
 ```
 
-For simple rectangular/circular extrusions and circular through-holes,
-`configs/photo_geometric.yaml` remains a narrower semantic fitter. Both paths
-refuse a mismatched dimension name instead of attaching a measurement to an
-unrelated value.
+The default refreshed `DA3-LARGE-1.1` checkpoint is CC BY-NC 4.0. The fetcher
+displays the terms, requires explicit acceptance, pins its immutable revision,
+checks the complete SHA-256, and stores it only under ignored `data/`. DA3-CAD
+does not redistribute model weights.
 
-## Experimental video and external-camera path
+### Reconstruct photos
 
-The capture path now selects diverse video frames, recovers a named
-world-to-camera bundle with CPU COLMAP, conditions DA3 on those K/E matrices,
-and can use user-supplied masks. The object must remain stationary while the
-camera moves; turntable capture is deliberately rejected by the current
-contract.
+Place ordered views of one stationary object in a directory:
 
 ```bash
-./.venv/bin/python -m pip install -e '.[video]'
-./.venv/bin/da3-cad prepare-video raw/part.mp4 -o captures/part --views 24
+da3-cad doctor photos/
 
-./.venv/bin/da3-cad reconstruct \
-  captures/part/colmap/registered_frames \
-  -o outputs/part-visual-hull \
+da3-cad reconstruct photos/ \
+  --output outputs/my-object \
   --config configs/internet_photo.yaml \
-  --cameras captures/part/colmap/cameras.npz \
   --accept-noncommercial-weights
 ```
 
-The same automatic masks are used to build and then independently reproject
-the CAD. `artefacts/input_fit_validation.json` records normalized input-cloud
-Chamfer and per-view silhouette IoU with `ground_truth_access: false`. If
-automatic masks fail, switch to `configs/internet_photo_masked.yaml` and add
-`--masks captures/part/masks`.
-
-Capture requirements and exact output semantics are in
-[Internet photos/video → CAD](docs/INTERNET_PHOTO_TO_CAD.md). The lower-level
-capture contract remains in [Video to CAD](docs/VIDEO_TO_CAD.md).
-
-## Archived decoder research: cameras and per-view scale
-
-The sections below preserve earlier generative-decoder experiments and negative
-results for scientific provenance. They are not the current product route; the
-supported internet-photo command above uses deterministic visual hull CAD. In
-that archived study, the measured bottleneck was camera pose and depth scale
-between views.
-
-![Measured bottleneck decomposition for camera pose, per-view depth scale and segmentation](docs/assets/readme/bottleneck_decomposition.png)
-
-The adapted decoder is healthy on its training-distribution input. What fails
-is turning uncalibrated DA3 views into one surface-consistent decoder cloud.
-On the same N=8 rendered slice, exact renderer cameras nearly double
-precision@0.05; a forbidden GT-only scale/shift correction for each view then
-crosses the preregistered 0.60 diagnostic target.
-
-| Geometry supplied to the same decoder-input diagnostic | Precision@.05 | Objects / records | Seed | Checkpoint | Commit |
-|---|---:|---:|---|---|---|
-| Unposed DA3-LARGE | 0.2188 | 20 / 20 | 20260810 → per-object SHA-256 | DA3-L `c54c26b` | `b82d0bf` |
-| Exact renderer intrinsics/extrinsics | 0.4297 | 20 / 20 | 20260810 → per-object SHA-256 | DA3-L `c54c26b` | `b82d0bf` |
-| Exact cameras + GT-only per-view depth scale/shift | 0.6270 | 20 / 20 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `71d7dee` |
-
-These are GT-axis-oracle precision diagnostics, not deployable reconstruction
-rows. They isolate cause: camera recovery is the largest single measured gain,
-and view-specific depth scale remains material after cameras are exact. Local
-depth surfaces are smooth; local denoising cannot reconcile their global frames.
-The full parameter and population provenance is in
-[`benchmarks/release_facts.json`](benchmarks/release_facts.json).
-
-### Six closed hypotheses
-
-All six used the same frozen 20 objects. The first three consumed cached DA3
-geometry on CPU; model controls ran on the RTX 5080. `DA3METRIC-LARGE` is the
-upstream “metric depth with sky segmentation” checkpoint, so its row only says
-that this out-of-distribution control is unsuitable for tabletop CAD—not that
-metric depth in general cannot help.
-
-| Hypothesis | Measured precision@.05 result | Records | Seed | Checkpoint | Commit | Decision |
-|---|---:|---:|---|---|---|---|
-| Hard two-view ray confirmation removes outliers | 0.3320 → 0.2969 | 71 paired | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `53628bd` | negative; also broke 256-point contract on 3 records |
-| Reliability scoring selects surface points | 0.3301 → 0.3008 | 74 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `a7e2614` | negative; smoother predicted surface, worse GT residual |
-| Project selected points to a local plane | 0.3008 → 0.3008 | 74 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `fd22fe7` | negative; median displacement only 1.51e-5 of extent |
-| Metric-depth checkpoint with exact cameras | 0.3008 → 0.1406 | 74 | 20260810 → per-object SHA-256 | DA3METRIC-L `4010e39` | `b82d0bf` | negative for this out-of-distribution checkpoint |
-| `use_ray_pose=True` improves recovered cameras | 0.3008 → 0.2930 | 74 | 20260810 → per-object SHA-256 | DA3-L `c54c26b` | `b82d0bf` | effectively neutral |
-| One global axis/diagonal scale fixes the cloud | 0.3008 → 0.3867 / 0.3750 | 74 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `b82d0bf` | negative; 39/74 and 47/74 fits hit bounds |
-
-## Frozen showcase: successes, partial recovery and failure
-
-The showcase is regenerated from the same 20-record Phase-D pilot. The
-committed rule selects the highest valid best-of-10 input-CD IoU separately for
-DeepCAD and Fusion 360, the valid record nearest the pooled median IoU, and the
-first invalid fixed single decode. IDs, exact metrics, source commit,
-checkpoints and seed live in
-[`benchmarks/showcase/manifest.json`](benchmarks/showcase/manifest.json); no
-case is selected by visual preference. All panels below are labelled
-**Rendered benchmark**, visually separating them from the real-camera T-LESS
-rows.
-
-![Frozen DeepCAD success with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_success_deepcad.png)
-
-![Frozen Fusion 360 success with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_success_fusion360.png)
-
-![Frozen partial recovery with input views, cloud, solid, parameters, overlay, CD and IoU](docs/assets/readme/showcase_partial.png)
-
-![Frozen explicit failure with input views, cloud, absent solid and parameters, GT overlay, and N/A metrics](docs/assets/readme/showcase_failure.png)
-
-## How many photographs?
-
-The controlled exact-camera plus per-view GT-affine curve peaks at 16 views.
-Adding views through 32 did not improve it, so 16 is the measured saturation
-point over this range—not a proven minimum for arbitrary user photographs.
-
-| Views | Precision@.05 | Objects / records | Seed | Checkpoint | Commit |
-|---:|---:|---:|---|---|---|
-| 8 | 0.6094 | 19 / 19 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `fa0a853` |
-| 16 | **0.7500** | 19 / 19 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `fa0a853` |
-| 24 | 0.7031 | 19 / 19 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `fa0a853` |
-| 32 | 0.7344 | 19 / 19 | 20260810 → per-object SHA-256 | cached DA3-L `c54c26b` | `fa0a853` |
-
-The schedule is nested and fills angular gaps while increasing count, so it
-does not causally separate redundancy from view separation. `doctor` warns
-below the measured 16-view saturation point while explicitly leaving
-“minimum” and “recommended” unset. At N=32, DA3-LARGE used 7.64 GiB peak
-allocated and 10.51 GiB peak reserved on the tested 16-GiB GPU.
-
-## Decoder control and GT-blind alignment
-
-Feeding Cadrille the exact upstream mesh-sampling path (8,192 area-weighted
-points → fixed-start FPS 256 → `(xyz-0.5)*2`) gives the expected published
-quality band without FlashAttention:
-
-| Control | Mean IoU | Median CD×10³ | Valid | Objects / records | Seed | Checkpoint | Commit |
-|---|---:|---:|---:|---:|---|---|---|
-| GT-mesh-sampled DeepCAD + Fusion360 | 92.06% | 0.165 | 20/20 | 20 / 20 | 20260810, recorded role seeds | Cadrille-RL `712489b` | `51ca4d0` |
-
-This is a decoder-adapter sanity control, not a claim of superiority to the
-published 87.1%/0.18 row: our corrected complete-mesh evaluator and exact split
-are not identical to the released evaluator. It does prove that the vendored
-adapter, SDPA substitution, tensor ordering and tokenizer path did not cause
-the DA3 domain gap.
-
-The attempted GT-blind bundle-like depth alignment remains a negative result.
-At N=32 the best scale rank correlation is ρ=0.524 (fixed-plane criterion),
-while the best scale sign agreement is 54.5% (projected criterion); no single
-criterion passes the frozen gate. Both use 19 objects, 589 non-reference view
-coefficients, base seed 20260810, cached DA3-LARGE `c54c26b`, and report commit
-`7018d5c`.
-
-The oracle median within-object max/min scale grows from 1.497 at N=8 (20
-objects, commit `d748ba3`) to 13.89 at N=32 (19 objects, commit `7018d5c`).
-This is not a small calibration error: some views assign fundamentally
-different scales to one object. Mutual consistency then finds a compromise
-where the diagnostic oracle requires extreme, incompatible corrections.
-
-## Real-camera CAD ground truth: T-LESS Primesense
-
-The paired real-camera evaluation uses all 30 texture-less T-LESS objects. The
-automatic configuration receives full-frame Primesense RGB only—no BOP depth,
-crop, GT mask, intrinsics or extrinsics. The separately labelled GT-mask oracle
-replaces only the segmentation gate with the official visible-instance mask;
-it remains unposed and receives no BOP depth, crop, intrinsics or extrinsics.
-The oracle is an upper-bound diagnostic unavailable for ordinary user photos.
-Official CAD meshes drive the same centred evaluator in both configurations.
-
-All rows ran on the RTX 5080 with torch `2.13.0+cu130`; candidate selection is
-GT-blind. Checkpoint labels are `DA3-L c54c26b` and `Cadrille-RL 712489b`.
-
-### Automatic segmentation
-
-| Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
-|---:|---|---:|---:|---:|---:|---:|---|---|---|
-| 1 | single | 0.75% | 60.781 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 1 | best-of-10 input-CD | 0.90% | 61.041 | 3.33% | 29/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 2 | single | 2.64% | 63.038 | 26.67% | 22/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 2 | best-of-10 input-CD | 2.07% | 62.972 | 23.33% | 23/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 4 | single | 2.85% | 52.946 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 4 | best-of-10 input-CD | 3.12% | 53.225 | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 8 | single | 5.98% | 44.230 | 3.33% | 29/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 8 | best-of-10 input-CD | **6.29%** | 46.174 | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 16 | single | 5.66% | 44.236 | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-| 16 | best-of-10 input-CD | 5.81% | **42.892** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `cc7e3e5` |
-
-### Official GT-mask oracle
-
-| Views | Selector | Mean IoU | Median CD×10³ | IR | Valid | Objects / records | Seed | Checkpoints | Run commit |
-|---:|---|---:|---:|---:|---:|---:|---|---|---|
-| 8 | single | 8.46% | 42.876 | 6.67% | 28/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
-| 8 | best-of-10 input-CD | **8.91%** | **33.944** | 0.00% | 30/30 | 30 / 30 | 20260810 → per-object SHA-256 | DA3-L `c54c26b`; Cadrille-RL `712489b` | `aa793b9` |
-
-This is still a negative product result. For the paired N=8 best-of-10 row,
-perfect visible masks move mean IoU `6.293 → 8.913%` (`+2.620` points) and
-median CD×10³ `46.174 → 33.944`. The IoU gain misses the frozen `+5`-point
-materiality gate. Automatic mask precision/recall is `4.42%/90.28%`, proving
-that the weight-free full-frame segmenter selects mostly clutter; oracle mask
-precision/recall is exactly `100%/100%`. Yet correct segmentation is
-insufficient: the oracle upper bound remains only 8.91%. The healthy 92.06%
-decoder control and rendered camera/scale controls therefore remain the main
-explanation of the downstream gap, while segmentation is a measured, smaller
-third lever rather than an unmeasured confound.
-The pose/scale and segmentation interventions use different diagnostic domains
-and metrics, so their gains are causal clues, not additive percentages.
-
-The result also does not beat the earlier approximately 0.4-IoU attempt
-described in the project brief. That attempt used hand-declared per-object
-geometry and a different, undisclosed evaluator path; this row removes those
-priors and keeps all failures, but its absolute geometry quality is lower.
-
-This table is the honest scope of measured photography: one fixed Primesense
-sensor and the cluttered T-LESS test scenes. Kinect v2 and Canon are optional
-extensions, not implied results. See [`docs/TLESS_RESULTS.md`](docs/TLESS_RESULTS.md)
-for repair provenance of three source CAD triangulations, segmentation audit,
-failure analysis, timing and exact reproduction.
-
-## Evaluator corrections
-
-The normative evaluator independently bbox-centres and isotropically scales
-both meshes into `[-0.5,0.5]^3`, samples exactly 8,192 surface points per role,
-reports bidirectional squared Chamfer ×1,000, complete-mesh Manifold IoU and
-original-denominator IR, with no ICP or trimming. Synthetic boxes validate
-analytic IoU and translated point pairs validate Chamfer.
-
-The side-by-side audit of cadrille commit `338db11` found four material defects:
-
-- process-global surface sampling has no recorded seed;
-- pairwise component IoU can return the impossible value 2.0, while Boolean
-  exceptions are swallowed and silently omitted;
-- aggregation prints `skip=0..4`, progressively removing the worst valid CD;
-- multi-candidate evaluation independently selects CD and IoU winners using GT.
-
-Our selector commits its candidate budget before metrics and chooses one valid
-candidate only by Chamfer to the input cloud. The exact upstream Chamfer
-function is reproduced with zero delta at seeds 11, 29, 47, 83 and 131. Issue
-[#19](https://github.com/col14m/cadrille/issues/19) remains unreproducible
-exactly because it supplies no meshes, dependency lock or seed; the related
-suppressed-error bug class is reproduced. Full evidence is in
-[`docs/EVALUATOR_AUDIT.md`](docs/EVALUATOR_AUDIT.md).
-
-## Outputs, parameters and failure inspection
-
-A valid real run contains `model.py`, `model.step`, `model.stl`,
-`parameters.json`, `quality.json`, `report.md`, `provenance.json` and an
-`artefacts/` tree with every geometry and decoder boundary. The viewer embeds
-the cloud/solid but links downloads relatively, so it remains small and local.
-
-DA3-CAD keeps decoder-native training units, the normalized unit cube and
-millimetres separate. Metric labels appear only with evidence. Explicit
-geometric templates expose editable primary dimensions; current Cadrille code
-does not emit feature-role metadata, so its AST-lifted operands are shown
-separately and are not editable primary parameters. For the same reason the
-neural path rejects `--known-dimension` rather than attaching a caliper value
-to a guessed literal. See [`docs/UNITS_AND_PARAMETERS.md`](docs/UNITS_AND_PARAMETERS.md)
-and the step-by-step [real-photo handoff](docs/REAL_PHOTO_VALIDATION.md).
-
-## Reproduce the evidence
-
-Every README number is extracted from committed reports by one script. It
-fails release generation if the complete all-30 T-LESS report is absent:
+If a real body width is known:
 
 ```bash
-./.venv/bin/python scripts/build_release_facts.py
+da3-cad reconstruct photos/ \
+  --output outputs/my-object-mm \
+  --config configs/internet_photo.yaml \
+  --known-dimension body_width=120mm \
+  --accept-noncommercial-weights
 ```
 
-README visuals are likewise code-generated. Regeneration requires the ignored
-Phase-D runtime artefacts plus local Firefox/Xephyr for the genuine viewer
-screenshot; verification needs only the committed files:
+Without accepted scale evidence, units remain `canonical-model-unit`; they are
+never silently labelled millimetres.
+
+### Reconstruct video
+
+The object must remain stationary while the camera moves. A turntable violates
+the current camera model.
 
 ```bash
-./.venv/bin/python scripts/generate_readme_figures.py
-./.venv/bin/python scripts/generate_readme_figures.py --verify
+da3-cad prepare-video object.mp4 \
+  --output captures/my-object \
+  --views 24
+
+da3-cad reconstruct captures/my-object/colmap/registered_frames \
+  --output outputs/my-object-colmap \
+  --config configs/internet_photo.yaml \
+  --cameras captures/my-object/colmap/cameras.npz \
+  --accept-noncommercial-weights
 ```
 
-Output SHA-256, dimensions and source-report hashes are frozen in
-[`benchmarks/showcase/assets.json`](benchmarks/showcase/assets.json).
+`prepare-video` chooses sharp and appearance-diverse frames, runs sequential
+COLMAP when available, registers cameras, and undistorts images for DA3. See
+[video capture](docs/VIDEO_TO_CAD.md) and the
+[Russian photo guide](docs/INTERNET_PHOTO_TO_CAD.md).
 
-T-LESS acquisition and evaluation are explicit opt-ins and write only ignored
-runtime data:
+### Use explicit masks
+
+Use one binary PNG per image with the same stem, then switch profiles:
 
 ```bash
-./.venv/bin/python scripts/fetch_tless.py --accept-license cc-by-4.0
-./.venv/bin/python scripts/prepare_tless_ground_truth.py
-./.venv/bin/python scripts/build_tless_split.py
-./.venv/bin/python scripts/run_tless_primesense.py \
-  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
-./.venv/bin/python scripts/run_tless_primesense.py \
-  --config configs/tless_gt_mask_oracle.yaml --segmentation-mode gt-mask-oracle \
-  --view-count 8 --output-root data/benchmark_runs/tless_primesense_gt_mask_oracle \
-  --report benchmarks/tless_primesense/gt_mask_oracle_report.json \
-  --accept-noncommercial-weights --accept-license cc-by-nc-4.0
+da3-cad reconstruct photos/ \
+  --output outputs/my-object-masked \
+  --config configs/internet_photo_masked.yaml \
+  --masks masks/ \
+  --accept-noncommercial-weights
 ```
 
-The T-LESS protocol, DeepCAD/Fusion360 diagnostic commands, fixed splits,
-candidate contract and evaluator reproduction are documented in
-[`docs/BENCHMARK.md`](docs/BENCHMARK.md). GPU/weights tests are marked and
-skipped by the network-free CPU CI job.
+### Inspect, edit, view, and evaluate
 
-## Honest scope and limitations
+```bash
+da3-cad inspect outputs/my-object
 
-- The neural path produces replayable CadQuery code and valid STEP when a
-  candidate passes, but not a recovered semantic feature tree.
-- Local surface noise is not the dominant measured error. Unposed camera and
-  per-view scale disagreement are unresolved in deployable GT-blind inference.
-- The long 150/500-object render campaign was deliberately not run after the
-  20-object pilot exposed a two-order domain gap. Render numbers above are
-  bounded causal diagnostics or decoder controls, not a headline SOTA table.
-- Real-camera accuracy is measured only on T-LESS Primesense. Accuracy on
-  arbitrary phone photos, irregular optics, hands/fixtures and user-selected
-  backgrounds remains unmeasured; do not add a “real-photo result” without GT.
-- The default weight-free segmenters are not universal object detectors.
-  Always inspect mask overlays before interpreting a bad CAD result.
-- More than 16 views did not improve the controlled diagnostic. This does not
-  prove that fewer than 16 cannot work or that 16 is sufficient for a new scene.
-- Absolute scale remains unresolved on the neural path. Exported dimensions
-  must not be read as millimetres.
+da3-cad edit outputs/my-object \
+  --output outputs/my-object-wide \
+  --set body_width=2.0
 
-## Licenses and citations
+da3-cad viewer outputs/my-object --images photos/
 
-DA3-CAD source is Apache-2.0. It redistributes neither datasets nor model
-weights. The research profile uses opt-in CC BY-NC 4.0 DA3-LARGE and
-Cadrille-RL weights; T-LESS is CC BY 4.0; DeepCAD and Fusion 360 inputs retain
-their distinct upstream terms. Exact revisions, URLs and redistribution policy
-are in [`docs/LICENSES.md`](docs/LICENSES.md).
+da3-cad evaluate outputs/my-object/model.step reference.step \
+  --item-id my-object \
+  --output outputs/my-object/reference_metrics.json
+```
 
-Please cite the upstream work you use: Depth Anything 3; CAD-Recode (ICCV
-2025); cadrille (arXiv:2505.22914); DeepCAD; the Fusion 360 Gallery Dataset;
-and Hodaň et al., *T-LESS: An RGB-D Dataset for 6D Pose Estimation of
-Texture-less Objects* (WACV 2017).
+The evaluator independently centers each complete mesh, divides by its largest
+bbox extent, performs no ICP or per-axis scaling, samples 8,192 surface points
+with role-derived seeds, and reports symmetric squared Chamfer and manifold mesh
+IoU.
+
+## Output contract
+
+```text
+outputs/my-object/
+├── model.py                 editable CadQuery source
+├── model.step               validated single B-Rep solid
+├── model.stl                triangulated export
+├── parameters.json          editable dimensions, units and scale evidence
+├── quality.json             validity, backend and warnings
+├── provenance.json          versions, hashes, timings and stage records
+├── report.md                short human-readable quality report
+└── artefacts/
+    ├── reconstruction_report.json
+    ├── input_fit_validation.json
+    ├── geometry/             depth, confidence, masks and fused cloud
+    └── canonicalizer/        every filtered geometry stage
+```
+
+`model.py` is the source actually validated and exported. No unreported cached
+shape or geometric fallback replaces a failed generation.
+
+## Measured v0.2.0 evidence
+
+These are integration results, not a claim of category-level accuracy. Exact
+machine-readable facts and reproduction commands are in
+[`docs/results/v0.2.0.json`](docs/results/v0.2.0.json).
+
+| Case | Input / cameras | CAD result | Metric with reference CAD | Input-only consistency |
+|---|---|---|---|---|
+| Synthetic plate | 4 rendered RGB / DA3 poses | valid one-solid geometric B-Rep, 3 primary dimensions, width fixed at 40 mm | mesh IoU **85.87%**, CD²×1000 **0.6636**; the Ø8 hole was conservatively not recovered | n/a |
+| Objectron camera | 24 real RGB / COLMAP-conditioned DA3 | valid one-solid, 60-cuboid visual-hull B-Rep | **unknown**: no reference CAD was used | mean silhouette IoU **81.61%**, trimmed mean **81.84%**, input CD² **0.02010** |
+
+The Objectron run used `DA3-LARGE-1.1`, all 24 automatically generated masks,
+397,184 fused points, no fallback, and unresolved scale. Its silhouette and
+Chamfer values measure agreement with its own input observations. They must not
+be read as IoU or distance to the unknown physical camera CAD; the real case has
+no reference-CAD accuracy measurement.
+
+The synthetic control exposes the opposite evidence profile: reference CAD is
+available, but the imagery is simple and generated by this repository. The
+current fitter produced a valid metric box but rejected a weak, off-centre void
+candidate; it did **not** recover the visible through-hole. This failure is kept
+in the headline table because valid STEP is not the same as correct CAD.
+
+More detail: [results and metric semantics](docs/RESULTS.md).
+
+## Current scope
+
+What works now:
+
+- deterministic multi-view RGB or moving-camera video ingestion;
+- DA3-LARGE-1.1 inference with optional external cameras;
+- weight-free central-object segmentation or explicit masks;
+- confidence-gated 3D fusion with inspectable intermediate artifacts;
+- coarse silhouette/depth visual hull to an editable CadQuery B-Rep;
+- narrow box/cylinder/through-hole geometric templates;
+- explicit known-dimension scale transfer;
+- single-solid STEP/STL validation, offline viewer, and reference evaluator.
+
+What remains research:
+
+- reliable automatic segmentation for cluttered or multi-object images;
+- pose/scale robustness for unrelated Internet product photos;
+- thin structures, hidden concavities, freeform surfaces and glossy objects;
+- robust feature recognition for holes, pockets, fillets, chamfers and patterns;
+- recovered design history, assemblies, materials, tolerances and GD&T;
+- a category-diverse benchmark with measured physical dimensions.
+
+The next engineering milestone is not a larger GPU-only run. It is a benchmark
+that separates pose, mask, depth, feature, scale, and B-Rep errors, followed by a
+feature-recognition/constraint-solving layer trained on H100-class hardware.
+
+## Reproducibility and provenance
+
+- Python and direct dependencies are pinned in checked-in constraints.
+- DA3 source and all model artifacts use immutable revisions.
+- Complete model-file SHA-256 is verified before inference.
+- Every run records image digests, configuration, cameras, versions, timings,
+  units, warnings, and whether the worktree was clean.
+- Weights, third-party datasets, captures, and generated outputs are ignored.
+- CPU CI runs formatting/lint, strict mypy, tests, and wheel/sdist builds without
+  network or model weights.
+
+See [reproducibility](docs/REPRODUCIBILITY.md),
+[third-party licenses](docs/LICENSES.md), and [troubleshooting](docs/TROUBLESHOOTING.md).
+Earlier exploratory work is frozen under `legacy/decoder-research/` and is
+excluded from the package, tests, and public product claims.
+
+## Paper
+
+A first manuscript, **“DA3-CAD: Deterministic Multi-View RGB-to-B-Rep
+Reconstruction with Depth Anything 3,”** is in [`paper/`](paper/README.md). It
+formalizes the method, preliminary evidence, failure taxonomy, and planned
+benchmark. Authors and venue are intentionally left as release-time metadata.
+
+## License and citation
+
+DA3-CAD code is Apache-2.0. Third-party code, checkpoints, datasets, and generated
+content keep their own terms; no third-party weights or datasets are included.
+In particular, the default DA3-LARGE-1.1 weights are CC BY-NC 4.0 and are not
+licensed for commercial use by this repository.
+
+Please cite the software using [`CITATION.cff`](CITATION.cff) and cite
+Depth Anything 3 separately when using its geometry:
+
+```bibtex
+@article{lin2025depthanything3,
+  title   = {Depth Anything 3: Recovering the Visual Space from Any Views},
+  author  = {Lin, Haotong and Chen, Sili and Liew, Jun Hao and Chen, Donny Y. and
+             Li, Zhenyu and Shi, Guang and Feng, Jiashi and Kang, Bingyi},
+  journal = {arXiv preprint arXiv:2511.10647},
+  year    = {2025}
+}
+```
+
+Contributions are welcome through [the contribution guide](CONTRIBUTING.md).
+For the proposed upstream listing, see [`docs/AWESOME_PR.md`](docs/AWESOME_PR.md).

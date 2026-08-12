@@ -1,69 +1,59 @@
-# Depth Anything 3 Awesome-list PR
+# Upstream Awesome DA3 submission
 
-This is copy-ready PR text for the Awesome section of the official
-[`Depth-Anything-3`](https://github.com/ByteDance-Seed/Depth-Anything-3)
-README. The proposed entry points to the public repository at
-[`dancher00/DA3-CAD`](https://github.com/dancher00/DA3-CAD).
+The official Depth Anything 3 repository currently invites DA3 integrations via
+a pull request to its `## 🏢 Awesome DA3 Projects` README section.
 
-## Proposed title
+## Proposed pull request
+
+Title:
 
 ```text
-docs: add DA3-CAD to Awesome projects
+docs: add DA3-CAD to Awesome DA3 Projects
 ```
 
-## Proposed README entry
-
-Insert this bullet in the existing `## 🌟 Awesome Work using DA3` list:
+Add this bullet after `DA3-blender`:
 
 ```markdown
-* [DA3-CAD](https://github.com/dancher00/DA3-CAD): Multi-view RGB-to-CadQuery/STEP/STL research pipeline with deterministic evaluation, an offline viewer, and measured T-LESS Primesense results.
+* [DA3-CAD](https://github.com/dancher00/DA3-CAD) : Converts multi-view object photos or moving-camera video into validated, editable CadQuery, STEP and STL using DA3 geometry and a deterministic silhouette/depth visual hull.
 ```
 
-## Proposed PR body
+## Suggested PR body
 
 ```markdown
-## What
+DA3-CAD is an open-source research integration that turns DA3 any-view geometry
+into editable B-Rep CAD rather than only a point cloud or renderable scene.
 
-Adds DA3-CAD, a research pipeline that uses Depth Anything 3 multi-view depth
-and camera estimates to produce validated CadQuery programs plus STEP/STL
-exports. It includes a self-contained offline result viewer, deterministic
-evaluation, and a real-camera T-LESS Primesense benchmark.
+The default pipeline uses DA3-LARGE-1.1 depth/confidence/cameras, automatic or
+explicit object masks, confidence-gated fusion, deterministic silhouette/depth
+visual-hull carving, cuboid B-Rep decomposition, restricted CadQuery execution,
+and single-solid STEP/STL validation.
 
-## Compatibility and licensing
-
-- Verified on Python 3.12, PyTorch 2.13/CUDA 13, and NVIDIA `sm_120` using
-  PyTorch SDPA without FlashAttention.
-- The project code is Apache-2.0.
-- Model weights and datasets are not redistributed. The research profile shows
-  CC BY-NC 4.0 terms and requires explicit opt-in before downloading or using
-  DA3-LARGE and Cadrille-RL weights.
-- An Apache-2.0 DA3-BASE plus geometric-fitter profile is documented separately
-  with narrower CAD scope and no neural-quality parity claim.
-
-## Evidence boundary
-
-The README reports both successful decoder controls and negative domain-gap
-results. The T-LESS table labels automatic segmentation separately from an
-official-mask oracle; the oracle improves mean IoU from 6.29% to 8.91% but
-remains a poor, non-deployable upper bound. The project does not claim
-production reverse engineering, metric dimensions, or measured accuracy on
-arbitrary phone photos.
-
-## Checklist
-
-- [x] Uses real multi-view DA3 inference.
-- [x] Includes installation and reproducible commands.
-- [x] Includes license and checkpoint provenance.
-- [x] Includes a viewer and example output path.
-- [x] Separates GT-only diagnostics from deployable inference.
+The repository includes a no-network CPU test suite, immutable DA3 source/model
+revisions with complete checkpoint SHA verification, a reproducible 24-view
+Objectron integration example, a synthetic reference-CAD control, explicit
+metric/claim boundaries, and a draft method paper. DA3 weights and external
+datasets are not redistributed; CC BY-NC 4.0 weights require explicit opt-in.
 ```
 
-## Maintainer verification before submission
+## Readiness checklist
 
-1. Confirm `https://github.com/dancher00/DA3-CAD` opens without authentication.
-2. Confirm the public default branch contains `README.md`, `LICENSE`,
-   `benchmarks/release_facts.json`, and `docs/TLESS_RESULTS.md`.
-3. Run `python scripts/build_release_facts.py`; it must reject a missing or
-   partial all-30 automatic or GT-mask-oracle T-LESS report.
-4. Keep the Awesome-list description qualitative. Do not copy GT-only oracle
-   precision into the upstream one-line entry as product accuracy.
+- [x] Public Apache-2.0 source repository.
+- [x] Concise English README and architecture documentation.
+- [x] Default refreshed DA3-LARGE-1.1 checkpoint.
+- [x] Immutable source/model revisions and complete weight SHA-256.
+- [x] Explicit third-party license acceptance; no redistributed weights/data.
+- [x] Real 24-view Internet-video run with valid STEP/STL.
+- [x] Synthetic reference-CAD control with failures reported.
+- [x] Reproduction commands and machine-readable result ledger.
+- [x] CPU CI, strict typing, tests, package build, contribution/security files.
+- [x] Draft paper and citation metadata.
+- [ ] Push v0.2.0 commits and confirm the public CI badge is green.
+- [ ] Optionally add a short demo GIF from content licensed for redistribution.
+- [ ] Open the upstream PR after final repository review.
+
+## Scope statement for reviewers
+
+DA3-CAD does not claim recovered design history or production-ready reverse
+engineering. Its current contribution is the deterministic, inspectable bridge
+from DA3 multi-view geometry to a validated coarse B-Rep, with explicit scale,
+failure, and evaluation contracts.

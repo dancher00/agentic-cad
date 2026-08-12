@@ -11,11 +11,12 @@ dist/
 build/
 
 # Runtime assets and outputs are never committed.
-data/
-weights/
-cache/
-outputs/
-results/
+/data/
+/weights/
+/cache/
+/outputs/
+/results/
+/captures/
 *.safetensors
 *.ckpt
 *.pth
@@ -23,4 +24,14 @@ results/
 # Generated sample artefacts are rebuilt from source; the shipped fixture is
 # explicitly unignored below.
 sample_data/*/generated/
+
+# Local paper builds.
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.pdf
 

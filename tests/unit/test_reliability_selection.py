@@ -7,7 +7,9 @@ from da3_cad.geometry.fusion import FusedPointCloud, FusionReport, ViewFusionSta
 from da3_cad.geometry.reliability import select_reliable_points
 
 
-def _fixture(count_per_view: int = 300) -> tuple[
+def _fixture(
+    count_per_view: int = 300,
+) -> tuple[
     FusedPointCloud,
     np.ndarray,
     np.ndarray,
@@ -66,9 +68,7 @@ def _fixture(count_per_view: int = 300) -> tuple[
 def test_reliability_selection_is_exact_unique_and_repeatable() -> None:
     cloud, depth, confidence, intrinsics, extrinsics, masks = _fixture()
 
-    first = select_reliable_points(
-        cloud, depth, confidence, intrinsics, extrinsics, masks, seed=41
-    )
+    first = select_reliable_points(cloud, depth, confidence, intrinsics, extrinsics, masks, seed=41)
     repeated = select_reliable_points(
         cloud, depth, confidence, intrinsics, extrinsics, masks, seed=41
     )
@@ -90,9 +90,7 @@ def test_reliability_selection_is_exact_unique_and_repeatable() -> None:
 
 def test_reliability_selection_uses_top_quartile_before_fps() -> None:
     cloud, depth, confidence, intrinsics, extrinsics, masks = _fixture(600)
-    result = select_reliable_points(
-        cloud, depth, confidence, intrinsics, extrinsics, masks, seed=7
-    )
+    result = select_reliable_points(cloud, depth, confidence, intrinsics, extrinsics, masks, seed=7)
 
     assert len(result.candidate_indices) == 300
     assert set(result.selected_indices.tolist()).issubset(result.candidate_indices.tolist())
@@ -102,6 +100,4 @@ def test_reliability_selection_uses_top_quartile_before_fps() -> None:
 def test_reliability_selection_rejects_impossible_unique_budget() -> None:
     cloud, depth, confidence, intrinsics, extrinsics, masks = _fixture(100)
     with pytest.raises(ValueError, match="256 unique"):
-        select_reliable_points(
-            cloud, depth, confidence, intrinsics, extrinsics, masks, seed=1
-        )
+        select_reliable_points(cloud, depth, confidence, intrinsics, extrinsics, masks, seed=1)
