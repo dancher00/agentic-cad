@@ -25,6 +25,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--train-views", type=int, default=5)
     parser.add_argument("--held-out-views", type=int, default=4)
+    parser.add_argument("--fitted-indices", nargs="+", type=int)
+    parser.add_argument("--held-out-indices", nargs="+", type=int)
     parser.add_argument("--normalized-maximum-extent", type=float, default=2.0)
     return parser
 
@@ -101,12 +103,27 @@ def _frame(
 
     if companions:
         stem = Path(image_name).stem
-        edge = mask & ~binary_erosion(mask, iterations=1)
+        patch_source = case / "patch_masks" / image_name
+        if patch_source.exists():
+            with Image.open(patch_source) as raw:
+                labels = np.asarray(raw.convert("L"), dtype=np.uint8)
+            if labels.shape != mask.shape:
+                raise ValueError(f"image/patch-mask shape mismatch for {image_name}")
+            labels = labels.copy()
+            labels[~mask] = 0
+        else:
+            labels = np.asarray(mask, dtype=np.uint8)
+        edge = np.zeros(mask.shape, dtype=bool)
+        edge[:-1] |= labels[:-1] != labels[1:]
+        edge[1:] |= labels[1:] != labels[:-1]
+        edge[:, :-1] |= labels[:, :-1] != labels[:, 1:]
+        edge[:, 1:] |= labels[:, 1:] != labels[:, :-1]
+        edge |= mask & ~binary_erosion(mask, iterations=1)
         edge = binary_dilation(edge, iterations=1)
         values = np.asarray(edge, dtype=np.uint8) * 255
         for companion, payload in (
             ("edge_img", values),
-            ("mask_img", np.asarray(mask, dtype=np.uint8) * 255),
+            ("mask_img", labels),
             ("corner_img", np.zeros(mask.shape, dtype=np.uint8)),
             ("line_mask_img", np.zeros(mask.shape, dtype=np.uint8)),
         ):
@@ -157,13 +174,30 @@ def main() -> None:
     scale = args.normalized_maximum_extent / maximum_extent
     normalized_extrinsics = _normalized_extrinsics(extrinsics, center, scale)
 
-    train_indices = greedy_camera_subset(normalized_extrinsics, args.train_views)
+    if args.fitted_indices is None:
+        train_indices = greedy_camera_subset(normalized_extrinsics, args.train_views)
+    else:
+        train_indices = tuple(args.fitted_indices)
+    if len(train_indices) < 2 or len(set(train_indices)) != len(train_indices):
+        raise ValueError("fitted indices must contain at least two unique views")
+    if any(index < 0 or index >= count for index in train_indices):
+        raise ValueError("fitted index outside available cameras")
+
     remaining = tuple(index for index in range(count) if index not in set(train_indices))
-    held_local = greedy_camera_subset(
-        normalized_extrinsics[np.asarray(remaining, dtype=np.int64)],
-        args.held_out_views,
-    )
-    held_indices = tuple(remaining[index] for index in held_local)
+    if args.held_out_indices is None:
+        held_local = greedy_camera_subset(
+            normalized_extrinsics[np.asarray(remaining, dtype=np.int64)],
+            args.held_out_views,
+        )
+        held_indices = tuple(remaining[index] for index in held_local)
+    else:
+        held_indices = tuple(args.held_out_indices)
+    if len(held_indices) < 1 or len(set(held_indices)) != len(held_indices):
+        raise ValueError("held-out indices must contain at least one unique view")
+    if any(index < 0 or index >= count for index in held_indices):
+        raise ValueError("held-out index outside available cameras")
+    if set(train_indices) & set(held_indices):
+        raise ValueError("fitted and held-out indices must be disjoint")
 
     output.mkdir(parents=True)
     with Image.open(case / "views" / image_names[0]) as first:
@@ -228,6 +262,11 @@ def main() -> None:
         "reference_mesh": "evaluator_only/reference_mesh.ply",
         "reference_visible_to_training": False,
         "initial_point_cloud_seed": 0,
+        "patch_mask_source": (
+            "oracle CAD faces; Stage 2 upper-bound only"
+            if (case / "patch_masks").is_dir()
+            else "binary foreground"
+        ),
     }
     (output / "experiment_manifest.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n",
