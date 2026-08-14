@@ -182,3 +182,6 @@ a universal prior or a coverage gate. The next experiment must vary coverage,
 increase objects and seeds, freeze any admission rule on validation data, and
 run the complete Stage 1 → Stage 2 → B-Rep path. Final evidence must include
 face/edge/loop topology and valid STEP rate, not only Gaussian centers.
+
+The next confirmatory experiment was frozen before execution in
+[DA3_PRIOR_SHAPE_HYPOTHESIS.md](experiments/DA3_PRIOR_SHAPE_HYPOTHESIS.md).
