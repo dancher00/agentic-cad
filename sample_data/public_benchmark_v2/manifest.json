@@ -1,0 +1,325 @@
+{
+  "benchmark_id": "public-photo-to-cad-v2",
+  "cases": [
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        58,
+        103,
+        214
+      ],
+      "expected_operation_family": "extrude",
+      "id": "block",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.05572509765625,
+        0.093994140625
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 10.0,
+        "length": 48.0,
+        "width": 32.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "negative control: no invented hole",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Solid block",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        46,
+        139,
+        128
+      ],
+      "expected_operation_family": "extrude",
+      "id": "hex_prism",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0489501953125,
+        0.07379150390625
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "across_corners": 42.0,
+        "height": 14.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "non-rectangular convex sketch",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Hexagonal prism",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        98,
+        89,
+        181
+      ],
+      "expected_operation_family": "extrude",
+      "id": "l_bracket",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0634002685546875,
+        0.11962890625
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 28.0,
+        "length": 50.0,
+        "wall": 6.0,
+        "width": 32.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "concave sketch without a named-part class",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "L bracket",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        38,
+        145,
+        190
+      ],
+      "expected_operation_family": "extrude",
+      "id": "t_bracket",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0619659423828125,
+        0.116180419921875
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 30.0,
+        "length": 50.0,
+        "wall": 7.0,
+        "width": 34.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "branching concave profile",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "T profile",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        44,
+        150,
+        100
+      ],
+      "expected_operation_family": "extrude",
+      "id": "u_channel",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.083465576171875,
+        0.1352386474609375
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 28.0,
+        "length": 52.0,
+        "wall": 6.0,
+        "width": 34.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "two thin walls and an open concavity",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "U channel",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        225,
+        111,
+        63
+      ],
+      "expected_operation_family": "extrude+cut",
+      "id": "key_plate",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.052490234375,
+        0.095001220703125
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 8.0,
+        "hole_diameter": 9.0,
+        "length": 58.0,
+        "width": 30.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "irregular outer sketch plus one circular cut",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Key plate",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        215,
+        72,
+        84
+      ],
+      "expected_operation_family": "extrude+cut",
+      "id": "flange",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0444793701171875,
+        0.085784912109375
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 8.0,
+        "hole_diameter": 12.0,
+        "outer_diameter": 44.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "circular body with one measured through-cut",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Round flange",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        198,
+        79,
+        142
+      ],
+      "expected_operation_family": "extrude+2cut",
+      "id": "two_hole_plate",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0594940185546875,
+        0.107147216796875
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "height": 8.0,
+        "hole_diameter": 8.0,
+        "hole_spacing": 28.0,
+        "length": 58.0,
+        "width": 32.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "multiple repeated enclosed-mask apertures",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Two-hole plate",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        54,
+        119,
+        155
+      ],
+      "expected_operation_family": "revolve",
+      "id": "stepped_shaft",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.057891845703125,
+        0.074432373046875
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "collar": 10.0,
+        "collar_diameter": 34.0,
+        "length": 54.0,
+        "shaft_diameter": 18.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "piecewise axial profile",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Stepped shaft",
+      "views": "views/*.png"
+    },
+    {
+      "camera_bundle": "cameras.npz",
+      "color_rgb": [
+        37,
+        155,
+        172
+      ],
+      "expected_operation_family": "revolve",
+      "id": "bottle_profile",
+      "input_views": 12,
+      "mask_fraction_range": [
+        0.0748443603515625,
+        0.115447998046875
+      ],
+      "masks": "masks/*.png",
+      "parameters_mm": {
+        "body": 34.0,
+        "body_diameter": 38.0,
+        "neck": 20.0,
+        "neck_diameter": 15.0
+      },
+      "reference_available_to_reconstruction": false,
+      "reference_cad": {
+        "mesh": "gt.stl",
+        "step": "gt.step"
+      },
+      "stress": "asymmetric axial profile and narrow neck",
+      "target_source": "project-generated exact visible-instance masks",
+      "title": "Bottle profile",
+      "views": "views/*.png"
+    }
+  ],
+  "ground_truth_policy": "reference STEP/STL is evaluator-only and unavailable to target preparation, DA3, fusion, pose logic and CAD construction",
+  "license": "Apache-2.0 project-generated fixtures",
+  "renderer": {
+    "camera_distance_mm": 155.0,
+    "focal_length_px": 300.0,
+    "image_size": [
+      256,
+      256
+    ],
+    "name": "deterministic studio pinhole triangle painter v2",
+    "views_per_case": 12
+  },
+  "schema_version": "da3-cad-public-benchmark-fixtures-v2"
+}

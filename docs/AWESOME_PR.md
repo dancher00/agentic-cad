@@ -1,59 +1,69 @@
 # Upstream Awesome DA3 submission
 
-The official Depth Anything 3 repository currently invites DA3 integrations via
-a pull request to its `## 🏢 Awesome DA3 Projects` README section.
+The official [Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3)
+README accepts integrations in its **Awesome DA3 Projects** section.
 
-## Proposed pull request
+## Proposed entry
 
-Title:
+PR title:
 
 ```text
 docs: add DA3-CAD to Awesome DA3 Projects
 ```
 
-Add this bullet after `DA3-blender`:
+Project bullet:
 
 ```markdown
-* [DA3-CAD](https://github.com/dancher00/DA3-CAD) : Converts multi-view object photos or moving-camera video into validated, editable CadQuery, STEP and STL using DA3 geometry and a deterministic silhouette/depth visual hull.
+* [DA3-CAD](https://github.com/dancher00/DA3-CAD) : Converts multi-view object photos or moving-camera video into validated, editable CadQuery, STEP and STL using DA3 geometry and a deterministic sketch-and-operation CAD grammar.
 ```
 
-## Suggested PR body
+Suggested PR body:
 
 ```markdown
-DA3-CAD is an open-source research integration that turns DA3 any-view geometry
-into editable B-Rep CAD rather than only a point cloud or renderable scene.
+DA3-CAD is an Apache-2.0 research integration that turns DA3 depth, confidence
+and cameras into editable B-Rep CAD rather than only a point cloud or renderable
+scene.
 
-The default pipeline uses DA3-LARGE-1.1 depth/confidence/cameras, automatic or
-explicit object masks, confidence-gated fusion, deterministic silhouette/depth
-visual-hull carving, cuboid B-Rep decomposition, restricted CadQuery execution,
-and single-solid STEP/STL validation.
+The target-first pipeline accepts a user box or exact mask, runs
+DA3-LARGE-1.1, audits pose and 3D evidence, and evaluates class-free sketch,
+extrude/cut, revolve and shell/loop programs. Generated CadQuery is sandboxed;
+one finite positive-volume STEP solid and its surface provenance are validated
+separately. Unsupported evidence returns ABSTAIN.
 
-The repository includes a no-network CPU test suite, immutable DA3 source/model
-revisions with complete checkpoint SHA verification, a reproducible 24-view
-Objectron integration example, a synthetic reference-CAD control, explicit
-metric/claim boundaries, and a draft method paper. DA3 weights and external
-datasets are not redistributed; CC BY-NC 4.0 weights require explicit opt-in.
+The repository ships a reproducible 10-object / 120-view Apache-2.0 benchmark.
+Current results are 10 kernel-valid STEP and 10 surface-provenance accepts, with
+all four reference through-holes retained. Mean mesh IoU is 86.61%, and 7/10
+pass the stricter evaluator-only ≥80% mesh-IoU plus exact through-hole-topology
+check, so the remaining geometric fidelity failures stay visible. Five pinned
+Internet-video sequences provide a separate no-reference-CAD integration gate;
+their licensed media and all model weights are not redistributed.
+
+DA3-LARGE-1.1 is fetched at an immutable revision with full SHA-256 verification
+and explicit CC BY-NC 4.0 acceptance.
+
+![DA3-CAD pipeline](https://raw.githubusercontent.com/dancher00/DA3-CAD/main/docs/assets/release/teaser.png)
 ```
 
 ## Readiness checklist
 
-- [x] Public Apache-2.0 source repository.
-- [x] Concise English README and architecture documentation.
-- [x] Default refreshed DA3-LARGE-1.1 checkpoint.
-- [x] Immutable source/model revisions and complete weight SHA-256.
-- [x] Explicit third-party license acceptance; no redistributed weights/data.
-- [x] Real 24-view Internet-video run with valid STEP/STL.
-- [x] Synthetic reference-CAD control with failures reported.
-- [x] Reproduction commands and machine-readable result ledger.
-- [x] CPU CI, strict typing, tests, package build, contribution/security files.
-- [x] Draft paper and citation metadata.
-- [ ] Push v0.2.0 commits and confirm the public CI badge is green.
-- [ ] Optionally add a short demo GIF from content licensed for redistribution.
-- [ ] Open the upstream PR after final repository review.
+- [x] Apache-2.0 source, contribution, security and citation files.
+- [x] Short README with one photo-to-CAD path and explicit scope.
+- [x] Static pipeline teaser, reproducible CPU smoke GIF and complete ten-case
+  outcome poster.
+- [x] 10 objects, 120 RGB/mask pairs and evaluator-only reference CAD.
+- [x] Successes and lower-fidelity controlled cases remain in the denominator.
+- [x] Machine-readable ledger and three-page PDF.
+- [x] No redistributed DA3/SAM2 weights or third-party real captures.
+- [x] Immutable upstream revisions and complete checkpoint hashes.
+- [x] CPU CI, strict typing, no-network tests, release hygiene and package build.
+- [x] Draft methods paper.
+- [ ] Push the clean v0.4.0 commit and confirm the public CI badge is green.
+- [ ] Open the upstream pull request after the final GitHub rendering check.
 
-## Scope statement for reviewers
+## Reviewer-facing scope
 
-DA3-CAD does not claim recovered design history or production-ready reverse
-engineering. Its current contribution is the deterministic, inspectable bridge
-from DA3 multi-view geometry to a validated coarse B-Rep, with explicit scale,
-failure, and evaluation contracts.
+DA3-CAD does not claim original design-history recovery or production-ready
+reverse engineering. Its contribution is an inspectable bridge from one
+explicitly selected target, through DA3 multi-view geometry, to a deterministic
+CAD construction grammar with explicit camera, scale, topology, provenance and
+failure contracts.

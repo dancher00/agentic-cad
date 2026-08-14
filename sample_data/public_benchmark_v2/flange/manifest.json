@@ -1,0 +1,30 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    215,
+    72,
+    84
+  ],
+  "expected_operation_family": "extrude+cut",
+  "id": "flange",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0444793701171875,
+    0.085784912109375
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 8.0,
+    "hole_diameter": 12.0,
+    "outer_diameter": 44.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "circular body with one measured through-cut",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Round flange",
+  "views": "views/*.png"
+}

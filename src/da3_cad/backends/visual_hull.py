@@ -87,7 +87,7 @@ class VisualHullVolume:
 
 @dataclass(frozen=True, slots=True)
 class VisualHullReport:
-    template: str
+    program_family: str
     input_views: int
     input_points: int
     parameters_normalized: dict[str, float]
@@ -100,7 +100,7 @@ class VisualHullReport:
 
     def as_dict(self) -> dict[str, object]:
         return {
-            "template": self.template,
+            "program_family": self.program_family,
             "input_views": self.input_views,
             "input_points": self.input_points,
             "parameters_normalized": self.parameters_normalized,
@@ -635,7 +635,7 @@ class VisualHullCadBackend:
             )
 
         self.last_report = VisualHullReport(
-            template="visual-hull-box-decomposition",
+            program_family="visual-hull-box-decomposition",
             input_views=int(prediction.depth.shape[0]),
             input_points=int(len(_orientation_stage_points(canonical))),
             parameters_normalized=normalized_parameters,
@@ -650,6 +650,6 @@ class VisualHullCadBackend:
             source=source,
             parameters=emitted,
             backend=self.name,
-            template_id="visual-hull-box-decomposition",
+            program_family="visual-hull-box-decomposition",
             warnings=tuple(warnings),
         )

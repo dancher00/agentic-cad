@@ -125,7 +125,7 @@ class StubCadBackend:
             source=render_stub_program(parameters),
             parameters=parameters,
             backend=self.name,
-            template_id="phase-a-plate-with-through-hole-v1",
+            program_family="phase-a-plate-with-through-hole-v1",
             warnings=(
                 "STUB BACKEND: parameters are image-derived smoke-test values, not CAD accuracy",
                 "output units are normalized test units, not millimetres",

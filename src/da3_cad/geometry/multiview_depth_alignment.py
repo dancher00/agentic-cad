@@ -19,6 +19,7 @@ from da3_cad.geometry.unprojection import (
 from da3_cad.models import BoolArray, DepthPrediction, FloatArray, IntArray
 
 AlignmentCriterion = Literal["projected-local-depth", "fixed-local-plane"]
+AlignmentSelection = Literal["always", "auto"]
 
 SCALE_BOUNDS = (0.5, 2.0)
 CENTER_RATIO_BOUNDS = (0.5, 2.0)
@@ -225,6 +226,17 @@ class DepthAlignmentResult:
 
     prediction: DepthPrediction
     parameters: tuple[DepthAlignmentParameters, ...]
+    report: dict[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class DepthHypothesisResult:
+    """Selected identity/aligned depth hypothesis with GT-blind evidence."""
+
+    prediction: DepthPrediction
+    identity_prediction: DepthPrediction
+    aligned_prediction: DepthPrediction
+    selected: Literal["identity", "aligned"]
     report: dict[str, object]
 
 
@@ -1310,5 +1322,119 @@ def align_multiview_depths(
     return DepthAlignmentResult(
         prediction=corrected_prediction,
         parameters=parameters,
+        report=report,
+    )
+
+
+def select_depth_hypothesis(
+    prediction: DepthPrediction,
+    masks: BoolArray,
+    *,
+    criterion: AlignmentCriterion,
+    selection: AlignmentSelection,
+    seed: int,
+    maximum_loss_ratio: float = 0.8,
+    maximum_scale_ratio: float = 1.25,
+    maximum_center_ratio_deviation: float = 0.08,
+) -> DepthHypothesisResult:
+    """Keep identity unless an aligned hypothesis passes conservative gates.
+
+    The automatic policy sees only DA3 depth/confidence, cameras and object
+    masks. It never accepts a mesh, CAD model or benchmark ground truth. The
+    identity depth is deliberately retained as a real candidate rather than
+    overwritten before the reconstruction can audit the decision.
+    """
+
+    if selection not in {"always", "auto"}:
+        raise ValueError(f"unsupported depth hypothesis selection: {selection}")
+    if not 0.0 < maximum_loss_ratio < 1.0:
+        raise ValueError("maximum_loss_ratio must be in (0,1)")
+    if maximum_scale_ratio <= 1.0 or not np.isfinite(maximum_scale_ratio):
+        raise ValueError("maximum_scale_ratio must be finite and greater than one")
+    if not 0.0 < maximum_center_ratio_deviation < 1.0:
+        raise ValueError("maximum_center_ratio_deviation must be in (0,1)")
+
+    aligned = align_multiview_depths(
+        prediction,
+        masks,
+        criterion=criterion,
+        seed=seed,
+    )
+    loss_payload = aligned.report.get("loss")
+    if isinstance(loss_payload, dict):
+        initial_loss = float(loss_payload["initial"])
+        final_loss = float(loss_payload["final"])
+        loss_ratio = final_loss / initial_loss if initial_loss > 1e-15 else 1.0
+    else:
+        initial_loss = None
+        final_loss = None
+        loss_ratio = 1.0
+
+    scale_ratio = max(
+        max(parameter.scale, 1.0 / parameter.scale) for parameter in aligned.parameters
+    )
+    center_deviation = max(abs(parameter.center_ratio - 1.0) for parameter in aligned.parameters)
+    fully_connected = aligned.report.get("status") == "complete"
+    no_boundary_hits = not any(
+        parameter.scale_boundary_hit or parameter.center_ratio_boundary_hit
+        for parameter in aligned.parameters
+    )
+    changed = bool(aligned.report.get("depth_changed", False))
+    checks = {
+        "multi_view_complete": fully_connected,
+        "depth_changed": changed,
+        "loss_ratio_at_most_limit": loss_ratio <= maximum_loss_ratio,
+        "no_optimizer_boundary_hits": no_boundary_hits,
+        "scale_ratio_at_most_limit": scale_ratio <= maximum_scale_ratio,
+        "center_ratio_deviation_at_most_limit": (
+            center_deviation <= maximum_center_ratio_deviation
+        ),
+    }
+    auto_accept = all(checks.values())
+    select_aligned = selection == "always" or auto_accept
+    selected: Literal["identity", "aligned"] = "aligned" if select_aligned else "identity"
+    selected_prediction = aligned.prediction if select_aligned else prediction
+    report: dict[str, object] = {
+        "schema_version": "da3-cad-depth-hypothesis-selection-v1",
+        "status": "selected",
+        "gt_blind": True,
+        "accepted_inputs": "depth, confidence, K, E, reconstruction masks, seed",
+        "gt_or_mesh_argument_available": False,
+        "selection": selection,
+        "selected_hypothesis": selected,
+        "selection_rule": (
+            "aligned is mandatory"
+            if selection == "always"
+            else "aligned must pass every conservative observation-only gate; otherwise identity"
+        ),
+        "thresholds": {
+            "maximum_loss_ratio": maximum_loss_ratio,
+            "maximum_scale_ratio": maximum_scale_ratio,
+            "maximum_center_ratio_deviation": maximum_center_ratio_deviation,
+        },
+        "candidate_evidence": {
+            "identity": {
+                "selected": selected == "identity",
+                "depth_sha256": _array_sha256(prediction.depth),
+                "observation_loss": initial_loss,
+            },
+            "aligned": {
+                "selected": selected == "aligned",
+                "criterion": criterion,
+                "depth_sha256": aligned.report["output_depth_sha256"],
+                "observation_loss": final_loss,
+                "loss_ratio": loss_ratio,
+                "maximum_scale_ratio": scale_ratio,
+                "maximum_center_ratio_deviation": center_deviation,
+                "checks": checks,
+            },
+        },
+        "alignment": aligned.report,
+    }
+    return DepthHypothesisResult(
+        prediction=selected_prediction,
+        identity_prediction=prediction,
+        aligned_prediction=aligned.prediction,
+        selected=selected,
         report=report,
     )

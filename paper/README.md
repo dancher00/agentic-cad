@@ -4,8 +4,14 @@ Working title: **DA3-CAD: Deterministic Multi-View RGB-to-B-Rep
 Reconstruction with Depth Anything 3**.
 
 The manuscript is an initial methods-and-evidence draft, not a submitted paper.
-It deliberately reports the missed synthetic hole and distinguishes input
-consistency from reference-CAD accuracy.
+It reports explicit target preparation, separate observed/trusted/filtered
+geometry channels, camera coverage and CAD-surface provenance,
+the class-free construction grammar, calibrated extrusion results on three parts,
+and the gated axial-revolution family. A five-video licensed Objectron gate now evaluates 40-frame pools with adaptive
+DA3-pose selection. It adds one evidence-consistent accepted STEP, one
+provenance-unsafe candidate, and three explicit abstentions. Since those real
+objects have no reference CAD, integration evidence remains separate from
+reference-CAD accuracy.
 
 Build from the repository root:
 
@@ -26,8 +32,8 @@ Before submission:
 
 - replace the contributor placeholder with the agreed author list and
   affiliations;
-- freeze a clean tested code commit in `docs/results/v0.2.0.json`;
+- freeze a clean tested code commit in the result ledger;
 - add a category-diverse reference-CAD benchmark and uncertainty intervals;
-- add licensed qualitative real-object figures;
+- add redistributable qualitative real-object figures (a local licensed audit grid exists);
 - select a venue/template and complete its ethics/reproducibility checklist;
 - archive code/results and mint a DOI.

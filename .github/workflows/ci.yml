@@ -33,6 +33,8 @@ jobs:
         env:
           DA3_CAD_TEST_NO_NETWORK: "1"
         run: pytest -m 'not gpu and not weights and not benchmark'
+      - name: Public release hygiene
+        run: python scripts/check_release.py
       - name: Build wheel and source distribution
         run: python -m build
       - name: Inspect distributions

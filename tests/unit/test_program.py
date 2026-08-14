@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 
 from da3_cad.cad.ast_policy import AstPolicyError, validate_source
-from da3_cad.cad.program import edit_parameters, extract_parameters
+from da3_cad.cad.program import edit_parameters, extract_parameters, rigid_axis_angle_degrees
 
 VALID_PROGRAM = """\
 import cadquery as cq
@@ -44,3 +46,15 @@ def test_parameter_edit_is_named_and_deterministic() -> None:
 def test_parameter_edit_rejects_unknown_name() -> None:
     with pytest.raises(ValueError, match="unknown parameter"):
         edit_parameters(VALID_PROGRAM, {"missing": 1.0})
+
+
+def test_rigid_axis_angle_projects_noisy_matrix_to_rotation() -> None:
+    expected = Rotation.from_euler("xyz", (17.0, -9.0, 31.0), degrees=True).as_matrix()
+    noisy = expected.copy()
+    noisy[0, 1] += 1e-7
+
+    axis, angle = rigid_axis_angle_degrees(noisy)
+    recovered = Rotation.from_rotvec(np.deg2rad(angle) * np.asarray(axis)).as_matrix()
+
+    assert np.linalg.det(recovered) == pytest.approx(1.0)
+    assert recovered == pytest.approx(expected, abs=1e-7)

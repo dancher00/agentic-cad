@@ -297,6 +297,43 @@ def _volumetric_axes(
         y_axis = y_axis / np.linalg.norm(y_axis)
         z_axis = np.cross(x_axis, y_axis)
         axes = np.column_stack((x_axis, y_axis, z_axis / np.linalg.norm(z_axis)))
+    symmetry_snap: dict[str, object] = {
+        "performed": False,
+        "reason": "no accepted symmetry normal sufficiently close to a PCA axis",
+    }
+    if symmetry.accepted:
+        normal = canonical_vector_sign(np.asarray(symmetry.normal, dtype=np.float64))
+        alignments = np.abs(axes.T @ normal)
+        snap_index = int(np.argmax(alignments))
+        alignment = float(alignments[snap_index])
+        minimum_alignment = float(np.cos(np.deg2rad(5.0)))
+        if alignment >= minimum_alignment:
+            snapped = normal
+            if float(snapped @ axes[:, snap_index]) < 0.0:
+                snapped = -snapped
+            if snap_index == 0:
+                x_axis = snapped
+                y_axis = axes[:, 1] - float(axes[:, 1] @ x_axis) * x_axis
+                y_axis /= np.linalg.norm(y_axis)
+                z_axis = np.cross(x_axis, y_axis)
+            elif snap_index == 1:
+                y_axis = snapped
+                x_axis = axes[:, 0] - float(axes[:, 0] @ y_axis) * y_axis
+                x_axis /= np.linalg.norm(x_axis)
+                z_axis = np.cross(x_axis, y_axis)
+            else:
+                z_axis = snapped
+                x_axis = axes[:, 0] - float(axes[:, 0] @ z_axis) * z_axis
+                x_axis /= np.linalg.norm(x_axis)
+                y_axis = np.cross(z_axis, x_axis)
+            axes = np.column_stack((x_axis, y_axis, z_axis))
+            symmetry_snap = {
+                "performed": True,
+                "axis": snap_index,
+                "alignment_before": alignment,
+                "maximum_angle_degrees": 5.0,
+                "source": symmetry.candidate_source,
+            }
     if float(np.linalg.det(axes)) < 0.0:
         axes[:, 1] *= -1.0
     return axes, {
@@ -304,6 +341,7 @@ def _volumetric_axes(
         "eigenvalue_gap_12": gap_12,
         "tie_tolerance": tie_tolerance,
         "tie_break": tie_break,
+        "symmetry_axis_snap": symmetry_snap,
     }
 
 

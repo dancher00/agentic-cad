@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "da3-cad"
-version = "0.2.0"
+version = "0.4.0"
 description = "Deterministic multi-view RGB to editable B-Rep CAD with Depth Anything 3"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
 authors = [{name = "DA3-CAD contributors"}]
-keywords = ["cad", "depth-anything-3", "3d-reconstruction", "visual-hull", "cadquery"]
+keywords = ["cad", "depth-anything-3", "3d-reconstruction", "cad-grammar", "cadquery"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Operating System :: POSIX :: Linux",
@@ -59,6 +59,14 @@ video = [
   "opencv-python-headless==4.11.0.86",
   "pycolmap>=3.13,<3.14",
 ]
+target = [
+  "hydra-core==1.3.2",
+  "iopath==0.1.10",
+  "protobuf>=6.31,<7",
+]
+reports = [
+  "weasyprint==69.0",
+]
 [project.urls]
 Homepage = "https://github.com/dancher00/DA3-CAD"
 Documentation = "https://github.com/dancher00/DA3-CAD#readme"
@@ -75,7 +83,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-da3_cad = ["py.typed", "viewer/*.html"]
+da3_cad = ["py.typed", "viewer/*.html", "*.proto"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-config --strict-markers"
@@ -90,7 +98,6 @@ markers = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

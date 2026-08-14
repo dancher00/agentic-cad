@@ -104,3 +104,21 @@ def test_fusion_refuses_missing_confidence_without_explicit_opt_out() -> None:
     )
     assert cloud.report.confidence_thresholds == (None, None)
     assert cloud.report.fused_points == 8
+
+
+def test_observed_channel_keeps_masked_depth_when_confidence_is_missing() -> None:
+    confidence = np.ones((2, 2, 2), dtype=np.float32)
+    confidence[0, 0, 0] = np.nan
+
+    cloud = fuse_prediction(
+        _prediction(confidence),
+        np.ones((2, 2, 2), dtype=np.bool_),
+        mask_source="observed-channel",
+        confidence_percentile=None,
+        minimum_confidence=None,
+        require_confidence=False,
+    )
+
+    assert cloud.report.fused_points == 8
+    assert cloud.report.views[0].confidence_selected == 4
+    assert np.isnan(cloud.confidences[0])

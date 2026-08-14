@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    98,
+    89,
+    181
+  ],
+  "expected_operation_family": "extrude",
+  "id": "l_bracket",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0634002685546875,
+    0.11962890625
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 28.0,
+    "length": 50.0,
+    "wall": 6.0,
+    "width": 32.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "concave sketch without a named-part class",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "L bracket",
+  "views": "views/*.png"
+}

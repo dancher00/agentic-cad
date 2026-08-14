@@ -1,0 +1,30 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    58,
+    103,
+    214
+  ],
+  "expected_operation_family": "extrude",
+  "id": "block",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.05572509765625,
+    0.093994140625
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 10.0,
+    "length": 48.0,
+    "width": 32.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "negative control: no invented hole",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Solid block",
+  "views": "views/*.png"
+}

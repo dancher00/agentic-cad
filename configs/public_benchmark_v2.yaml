@@ -1,0 +1,59 @@
+profile: research
+device: cuda
+seed: 20260810
+debug_artefacts: true
+depth_backend: da3-large-1.1
+cad_backend: construction-grammar
+da3:
+  checkpoint: large-1.1
+  source_dir: data/upstream/Depth-Anything-3
+  cache_dir: data/hf
+  process_resolution: 504
+  process_resolution_method: upper_bound_resize
+  local_files_only: true
+  use_ray_pose: false
+geometry:
+  segmentation_backend: explicit-mask
+  segmentation_minimum_fraction: 0.001
+  segmentation_confidence_percentile: 20.0
+  segmentation_depth_percentile: 85.0
+  fusion_confidence_percentile: 35.0
+  minimum_confidence: null
+  depth_alignment_criterion: fixed-local-plane
+  depth_alignment_selection: auto
+pose_admission:
+  enabled: true
+  minimum_views: 3
+  samples_per_view: 2048
+  center_distance_fraction: 0.55
+  surface_distance_fraction: 0.15
+  minimum_component_fraction: 0.5
+  refinement_enabled: true
+  refinement_maximum_translation_fraction: 1.5
+  refinement_maximum_rotation_degrees: 15.0
+  refinement_maximum_surface_distance_fraction: 0.12
+  refinement_maximum_residual_ratio: 0.5
+  refinement_maximum_held_out_residual_ratio: 0.75
+  refinement_minimum_support_views: 2
+  refinement_held_out_fraction: 0.34
+  refinement_optimization_iterations: 12
+  refinement_trim_fraction: 0.7
+  refinement_minimum_reprojection_samples: 32
+  refinement_minimum_reprojection_mask_overlap: 0.5
+  refinement_maximum_reprojection_residual_ratio: 0.9
+  refinement_translation_preference_ratio_tolerance: 0.01
+  refinement_maximum_extent_ratio: 1.35
+loop_feature_admission:
+  enabled: true
+  samples_per_view: 2048
+  surface_distance_fraction: 0.02
+  minimum_consistent_views: 2
+  hole_ring_dilation_fraction: 0.12
+canonicalizer:
+  symmetry_completion_enabled: false
+view_selection:
+  enabled: false
+sandbox:
+  memory_limit_mb: 8192
+  cpu_seconds: 90
+  wall_seconds: 120

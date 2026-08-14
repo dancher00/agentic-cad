@@ -2,35 +2,41 @@
 
 DA3-CAD separates visual geometry, CAD construction, and evidence. Depth
 Anything 3 predicts observations; deterministic project code turns those
-observations into a constrained solid and records every boundary between them.
+observations into a structured solid and records every boundary between them.
 
 ## System boundary
 
 ```text
 ordered RGB views
-  ├─ optional external camera bundle (K, world-to-camera E)
-  └─ optional binary masks
+  ├─ selected target: per-view box or source-resolution mask
+  └─ optional source camera bundle (K, world-to-camera E)
+        ↓
+SAM2 box prompt or explicit mask
+        ↓
+shared-shape target/context crop + preserved masks + translated K
         ↓
 DA3-LARGE-1.1: depth, confidence, K, E, processed RGB
         ↓
-automatic or explicit foreground masks
+three evidence channels:
+  observed masked depth + trusted geometry + preserved silhouettes
         ↓
-confidence-gated unprojection and multi-view fusion
+bounded whole-view pose refinement + re-audit + feature-wise 3D admission
         ↓
-outlier/consistency filters, canonical orientation, scale channel
+camera-pose coverage + trusted canonical orientation + scale channel
         ↓
-visual hull + conservative front-surface depth carving
+independent extrusion and revolution hypotheses
         ↓
-6-connected occupancy + manifold-contact regularization
+line/circle extrusion sketch + cuts, or axial revolve profile
         ↓
-greedy disjoint cuboids → parameterized CadQuery
+canonical-to-world transform → parameterized CadQuery
         ↓
 AST policy + resource-limited subprocess
         ↓
 one validated B-Rep solid, STEP, STL, parameters and provenance
 ```
 
-The default path has no learned CAD generator. Its only model checkpoint is DA3.
+The default path has no learned CAD generator or named-part classifier. DA3 and
+optional SAM2 are perception checkpoints; CAD construction remains deterministic.
 
 ## Input contract
 
@@ -69,14 +75,42 @@ peak memory, and whether tensors left the GPU after inference.
 
 ## Segmentation
 
-The default `internet-object-depth-seeded-grabcut-v2` backend assumes one
-prominent object near the image centre. It combines border-colour statistics,
-a near central DA3-depth seed, a restricted search region, confidence, GrabCut,
-morphology, and connected-component selection. It has no segmentation weights.
+The product path begins with explicit target selection. A user, robot, or
+dataset supplies a loose per-view box or a source-resolution binary mask. A box
+is converted to an instance mask by pinned SAM2.1 Small; low-score views may use
+deterministic centre-positive and corner-negative refinement. Post-processing
+keeps one box-associated component while preserving enclosed holes. It does not
+predict an object class and is not an open-vocabulary detector.
 
-This is deliberately not described as open-vocabulary segmentation. A cluttered
-scene, background-matched object, truncation, or multiple objects should use
-explicit masks. Every run writes masks and overlays for visual inspection.
+`prepare-target` then creates one common crop width and height for the sequence.
+It keeps the complete mask, reduces optional margin before inventing padding,
+expands real context until the short:long ratio is at least 3:4, and never
+resizes individual views. If source cameras are supplied, `K` is translated by
+the crop origin while `E` is unchanged. The prepared masks remain the exact
+support used by fusion and topology checks. This ordering lets DA3 see enough
+context for pose and depth while preventing background points from entering the
+object cloud.
+
+## Adaptive view selection
+
+When `view_selection.enabled=true`, DA3 first processes the complete prepared
+image pool to estimate camera poses. DA3-CAD rejects views whose target mask is
+nearly empty, then greedily maximizes spherical camera-direction coverage. It
+keeps at least 24 and at most 40 views, stops early only after the observability
+gate passes, and records every marginal gain in `view_selection.json`.
+
+DA3 predictions are joint-context dependent. Therefore the full-pool depth is
+not sliced and reused: if any view was dropped, DA3 is run a second time on the
+selected subset, and only this second prediction enters alignment, fusion and
+CAD. `sufficient`, `capped`, and `exhausted` distinguish a passed gate from a
+limited input capture. Pose coverage remains a capture diagnostic; final
+acceptance is decided after projecting CAD surfaces back into the observations.
+
+
+The older `internet-object-depth-seeded-grabcut-v3` backend remains a convenience
+path for simple central product photos. It runs after DA3 and combines border
+colour, central depth, confidence, GrabCut and connected components. Cluttered,
+off-centre, background-matched or multi-object scenes should use `prepare-target`.
 
 ## Unprojection and fusion
 
@@ -87,13 +121,51 @@ x_cam   = z K^-1 [u,v,1]^T
 x_world = E^-1 x_cam
 ```
 
-Per view, points pass finite-positive-depth, foreground-mask, and confidence
-gates. Confidence thresholds are percentiles computed only over eligible pixels.
-Surviving points retain colour, confidence, source view, and source pixel.
+Geometry extraction deliberately emits separate channels:
+
+- observed_cloud: every finite positive depth pixel inside the target mask;
+  this is inspectable DA3 evidence and is not fed directly to the CAD fitter;
+- trusted_geometry: mask observations passing the per-view confidence gate;
+  these points retain colour, confidence, source view and source pixel;
+- preserved masks/silhouettes: independent evidence for boundaries, enclosed
+  voids and topology.
+
+This separation prevents low-confidence edge depth from filling an aperture
+while keeping those observations visible for diagnosis. The compatibility file
+fused_cloud aliases trusted_geometry; it is not a raw/all-mask cloud.
+
+When cameras come from DA3 rather than an external calibrated bundle, a
+whole-view refinement/admission stage runs before these channels are finalized.
+It builds a graph over provisional masked unprojections using robust object-
+centre distance and bidirectional nearest-surface distance. For each disconnected
+view it compares a centre-aligned translation with a trimmed rigid SE(3)
+candidate. Candidate fitting sees only an optimization split of the admitted
+views. Acceptance is decided on disjoint held-out views using symmetric surface
+distance, mask overlap and depth reprojection, with object-relative translation,
+15-degree rotation and per-view extent bounds. `K` and depth are immutable. A
+complete graph re-admission is mandatory and failed candidates are rolled back.
+The original prediction and both before/after samples are persisted whenever an
+island is found. This prevents detached islands from inflating global filter
+radii without claiming non-rigid depth repair, arbitrary global registration,
+TSDF or surfel fusion.
+
+Residual pose error can be local rather than a detached whole view: a thin
+off-body loop may appear as several individually supported nearby surfaces
+while the axial body remains usable. For a repeated loop grammar,
+`loop_feature_admission` samples the hole-adjacent surface in each supporting
+view, builds pairwise bidirectional median-surface tests, and admits only the
+largest all-pairs-consistent group to trusted 3D. Other supporting views
+contribute only their detected axial-body region to trusted geometry. Their
+complete masks remain unchanged for boundary and topology inference, and their
+complete masked-depth points remain in `observed_cloud` for audit. The gate is
+bypassed for verified external cameras; it never modifies `K/E` or creates
+completed points. Its decisions and per-view geometry masks are stored in
+`loop_feature_admission.json` and `geometry_mask_*.png`.
 
 The canonicalizer then applies, in a recorded sequence:
 
-1. a second confidence filter;
+1. an optional second confidence filter, disabled in product profiles because
+   fusion already performs the per-view confidence gate;
 2. statistical and radius outlier filters;
 3. measured multi-view neighbourhood support;
 4. optional symmetry detection (completion is off by default);
@@ -101,8 +173,37 @@ The canonicalizer then applies, in a recorded sequence:
 6. deterministic sampling of 256 diagnostic points;
 7. isotropic bbox normalization.
 
-The full oriented cloud, not only the 256-point diagnostic sample, drives CAD.
-No per-axis normalization is allowed.
+The full denoised oriented cloud, not only the 256-point diagnostic sample,
+drives axis and surface scoring. The unfiltered measured input is retained as a
+separate profile-evidence channel so hard denoisers cannot erase valid
+silhouettes. An accepted reflection symmetry normal snaps a PCA axis when their
+misalignment is below five degrees. No per-axis normalization is allowed.
+
+Before canonicalization, product profiles compare identity DA3 depth with a
+fixed-local-plane affine alignment. The aligned candidate must pass bounded
+observation-only loss, connectivity and parameter checks. The current CAD
+grammar then evaluates both safe clouds and chooses the smaller normalized P90
+extrusion-surface residual, with a stable tie in favour of identity. Reference
+CAD is not accepted by either API.
+
+## Observability and conditional completion
+
+The recovered world-to-camera extrinsics are converted to camera centres around
+the robust object centre. View directions are clustered by angular distance;
+the report records unique pose clusters, maximum pairwise separation, spherical
+direction coverage, and suggested missing camera directions. Sixteen temporal
+frames can therefore be reported as only four or five effective directions.
+
+After B-Rep validation, deterministic area-weighted CAD surface samples are
+projected back into every mask/depth view. Each sample is labelled measured,
+weakly measured, unobserved, or contradicted.
+
+A grammar operation may be labelled as completion only when directional
+coverage is insufficient, enough CAD surface is unobserved, and the contradicted
+fraction stays below its configured safety limit. Inferred patches remain
+explicitly distinct from measurements. The current surface classifier is also
+persisted as diagnostic evidence so thresholds can be calibrated before it is
+used as a hard release gate.
 
 ## Scale channel
 
@@ -112,42 +213,98 @@ has either:
 - `unresolved`: canonical or arbitrary world units; or
 - `known`: a recorded conversion to millimetres and its evidence.
 
-`--known-dimension body_width=120mm` is accepted only if the chosen CAD template
-emits `body_width`. The resulting uniform scale and reference are recorded in
+`--known-dimension extrusion_length=120mm` is accepted only if the CAD program
+emits `extrusion_length`. The resulting uniform scale and reference are recorded in
 `parameters.json`. No EXIF guess, category prior, or bbox convention invents
 millimetres.
 
-## Visual-hull CAD backend
+## CAD construction grammar
 
-The default backend builds a voxel grid inside robust oriented bounds. A voxel
-is tested only in cameras where it projects in front of the image plane. It must
-receive foreground support in a configured fraction of visible views. A
-conservative depth test rejects space clearly in front of DA3's observed
-surface, with tolerance proportional to object depth span.
+The default product backend is `construction-grammar-v1`. It generates
+independent `extrude`, `revolve`, and `axial-shell-loop` hypotheses, rejects
+unsupported hypotheses, and selects the smallest input-evidence fit plus an
+operation-count penalty. Reference CAD is not available to this selector.
 
-After carving:
+The extrusion family:
 
-1. the largest 6-connected component is kept;
-2. edge/vertex-only voxel contacts are minimally filled to avoid non-manifold
-   pinch points;
-3. grid resolution is reduced deterministically if the requested result cannot
-   satisfy occupancy or cuboid limits;
-4. a greedy stable-order algorithm covers occupied voxels with disjoint cuboids;
-5. cuboid coordinates are expressed as fractions of three primary parameters:
-   `body_width`, `body_depth`, and `body_height`;
-6. CadQuery unions the cuboids into one B-Rep solid.
+1. tries each canonical axis as an extrusion direction;
+2. keeps denoised surface and complete raw-profile channels separate;
+3. recovers an analytic circle or a feature-preserving arbitrary line loop;
+4. uses repeated mask topology plus raw 3D void evidence for circular cuts;
+5. refines extrusion length from side-sensitive calibrated silhouettes, while
+   retaining the 3D length as a regularized prior;
+6. may replace a noisy polyline by a shared horizontal/vertical cell complex
+   only when it preserves the source profile and improves end-view silhouettes;
+7. may apply a bounded rigid orientation correction only when the all-view mask
+   gain clears a regularized admission gate and the optimum is not on the search
+   boundary;
+8. scores the side wall, end planes, raw-profile preservation and calibrated
+   mask evidence; and
+9. emits sketch + optional circular cut loops + extrude.
 
-Visual hull cannot recover concavities that never affect any silhouette. The
-cuboid program is editable, but it is not the object's original design history.
+The revolution family:
 
-## Geometric-template backend
+1. tries each canonical axis as the rotation axis;
+2. bins raw evidence axially and estimates a robust outer radius envelope;
+3. requires sufficient axial and angular coverage and radial symmetry;
+4. if every raw-3D axis rejects, may align and aggregate mask half-width profiles;
+5. admits that silhouette fallback only with at least five usable views, low
+   width-ratio variation, low bilateral-axis drift, and low profile deviation;
+6. maps the median axial profile to the longest canonical axis and records that
+   unseen azimuths are a 360-degree CAD hypothesis, not measured surface;
+7. detects repeated radial plateaus separated by two axial shoulders and may
+   replace a noisy envelope by that piecewise profile only when raw 3D and
+   side-view masks agree; smooth profiles remain unchanged;
+8. simplifies the recovered axial profile without a named object class;
+9. detects an inner radial wall only when it is visibly supported in raw 3D from
+   an open
+   end, producing a shell/inner profile; and
+10. emits one 360-degree CadQuery revolve and restores the world orientation.
 
-`configs/photo_geometric.yaml` provides a narrower control backend. It compares
-box/cylinder residuals and searches top-surface gaps for a locally supported
-circular void. It emits only rectangular or circular extrusions and, when the
-evidence passes conservative angular and spacing gates, one circular through
-hole. Rejected evidence is written to `artefacts/cad_report.json`; no hole is
-invented to improve a benchmark.
+The axial-shell-loop composition family:
+
+1. removes thin appendages morphologically to recover a thick axial body in each
+   mask, without assigning a semantic object class;
+2. requires at least three side-like body views and the same off-body loop
+   aperture in at least two views;
+3. estimates body and loop ratios from the best-supported side silhouettes;
+4. requires a near-axial view where DA3 depth independently measures a central
+   cavity behind the rim;
+5. measures outer and inner rim edges in RGB and rejects implausible wall ratios;
+6. measures far/top/bottom loop-band thickness in the strongest side view and
+   front-back handle depth in the cavity-confirming near-axial view;
+7. compares the variable rounded-band silhouette against the constant-round
+   sweep baseline, then emits
+   `revolve -> shell -> profile-extrude -> fillet -> union -> cut(cavity)`
+   when the evidence gates pass; otherwise the round sweep is an explicit
+   fallback rather than an asserted measurement;
+8. validates an open handle aperture, positive body/handle overlap, zero cavity
+   intrusion and exactly one solid in the CAD kernel; and
+9. keeps the CAD upright when independently cropped Internet-photo poses do not
+   establish a reliable common CAD-to-camera transform. In that case 3D surface
+   provenance is explicitly unavailable pending CAD-conditioned camera
+   refinement, rather than being computed in the wrong frame.
+
+A block is a line-loop extrusion, a flange is a circular extrusion with a cut,
+a bottle-like solid is an axial-profile revolution, and an axial hollow body with
+one loop uses the composition above. There is no part-name dictionary and no
+learned CAD-generator weight. Current limits are a single extrusion, a single
+revolution, or one axial shell plus one planar profiled loop; line/circle outer
+extrusion loops; circular through cuts; and evidence-gated open cavities. Raw DA3
+fusion can be a dense but partial visible surface; filtering is a separate
+support/orientation channel, not a monotonic improvement. The simple-revolve
+silhouette fallback creates only an outer solid profile and cannot invent a
+shell. The profiled loop supports a rounded planar band and bounded attachment
+overlap, but not yet an arbitrary 3D centreline or multiple section loft.
+General operation trees, arcs, splines, loft, chamfer, pattern,
+multi-body transforms, and unrestricted booleans remain unsupported.
+
+## Optional visual-hull backend
+
+`cad_backend: visual-hull` remains an explicit coarse research alternative. It
+carves a silhouette/depth voxel occupancy and decomposes it into cuboids. It is
+not selected by the photo profiles and is never used as a silent fallback when
+sketch extrusion is unsupported.
 
 ## Validation and export
 
@@ -156,7 +313,11 @@ subprocess with address-space, CPU, and wall-time limits and an isolated working
 directory. The worker must return exactly one solid with finite bounds and
 strictly positive volume before STEP/STL artifacts are accepted.
 
-For visual hull, the validated STL is independently scored against:
+For sketch extrusion, each axis candidate records its normalized point-to-side/
+end-plane residual and raw profile-occupancy IoU; this input evidence selects
+the program family and never uses reference CAD.
+
+Without reference CAD, validation reports compare:
 
 - the canonical input cloud using symmetric squared Chamfer; and
 - all input masks using rendered silhouette precision, recall, and IoU.

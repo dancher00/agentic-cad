@@ -62,6 +62,52 @@ def run(source_path: Path, output_dir: Path) -> int:
         volume = float(shape.Volume())
         if not volume > 0.0:
             raise ValueError("program produced a non-positive-volume shape")
+
+        topology_invariants: dict[str, object] = {}
+        non_penetration_shapes = (
+            ("NON_PENETRATION_CAVITY", "non_penetration_cavity"),
+            ("NON_PENETRATION_HANDLE_APERTURE", "non_penetration_handle_aperture"),
+        )
+        for namespace_name, report_name in non_penetration_shapes:
+            non_penetration_shape = namespace.get(namespace_name)
+            if non_penetration_shape is None:
+                continue
+            if not hasattr(result, "intersect"):
+                raise ValueError("non-penetration invariant requires a CadQuery workplane")
+            overlap = result.intersect(non_penetration_shape)
+            overlap_shape = overlap.val() if hasattr(overlap, "val") else overlap
+            intrusion_volume = 0.0 if overlap_shape is None else float(overlap_shape.Volume())
+            tolerance = max(1e-12, 1e-9 * volume)
+            if intrusion_volume > tolerance:
+                raise ValueError(
+                    f"generated solid penetrates {namespace_name}: "
+                    f"{intrusion_volume:.12g} > {tolerance:.12g}"
+                )
+            topology_invariants[report_name] = {
+                "intrusion_volume": intrusion_volume,
+                "tolerance": tolerance,
+                "passed": True,
+            }
+        required_union_overlap = namespace.get("REQUIRED_UNION_OVERLAP")
+        if required_union_overlap is not None:
+            overlap_shape = (
+                required_union_overlap.val()
+                if hasattr(required_union_overlap, "val")
+                else required_union_overlap
+            )
+            overlap_volume = 0.0 if overlap_shape is None else float(overlap_shape.Volume())
+            tolerance = max(1e-12, 1e-9 * volume)
+            if overlap_volume <= tolerance:
+                raise ValueError(
+                    "generated features do not satisfy REQUIRED_UNION_OVERLAP: "
+                    f"{overlap_volume:.12g} <= {tolerance:.12g}"
+                )
+            topology_invariants["required_union_overlap"] = {
+                "overlap_volume": overlap_volume,
+                "tolerance": tolerance,
+                "passed": True,
+            }
+
         bbox = shape.BoundingBox()
         bbox_values = [bbox.xmin, bbox.ymin, bbox.zmin, bbox.xmax, bbox.ymax, bbox.zmax]
         if not all(float("-inf") < float(value) < float("inf") for value in bbox_values):
@@ -80,6 +126,7 @@ def run(source_path: Path, output_dir: Path) -> int:
                 "volume": volume,
                 "bbox": [float(value) for value in bbox_values],
                 "solid_count": solid_count,
+                "topology_invariants": topology_invariants,
             },
         )
         return 0

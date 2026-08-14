@@ -207,11 +207,17 @@ def cad_coordinate_contract(
 ) -> CadCoordinateContract:
     """Build a backend-aware output-space contract after solid validation."""
 
-    if backend in {"geometric-fitter-v1", "visual-hull-v1"} and scale.status == "known":
+    geometry_backends = {
+        "construction-grammar-v1",
+        "revolve-v1",
+        "sketch-extrusion-v1",
+        "visual-hull-v1",
+    }
+    if backend in geometry_backends and scale.status == "known":
         kind: NativeSpaceKind = "metric-mm-space"
         units = "mm"
         mm_per_native = 1.0
-    elif backend in {"geometric-fitter-v1", "visual-hull-v1"}:
+    elif backend in geometry_backends:
         kind = "canonical-model-space"
         units = "canonical-model-unit"
         mm_per_native = None

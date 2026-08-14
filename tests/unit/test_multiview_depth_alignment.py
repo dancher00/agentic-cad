@@ -3,7 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from da3_cad.geometry.multiview_depth_alignment import align_multiview_depths
+from da3_cad.geometry.multiview_depth_alignment import (
+    align_multiview_depths,
+    select_depth_hypothesis,
+)
 from da3_cad.models import BoolArray, DepthPrediction
 
 
@@ -119,3 +122,41 @@ def test_single_view_is_an_explicit_identity_noop() -> None:
     assert result.report["status"] == "not-applicable-single-view"
     assert result.report["depth_changed"] is False
     assert np.array_equal(result.prediction.depth, single.depth)
+
+
+def test_auto_hypothesis_accepts_safe_observation_improvement() -> None:
+    prediction, masks, _, _ = _sloped_plane_prediction()
+
+    result = select_depth_hypothesis(
+        prediction,
+        masks,
+        criterion="fixed-local-plane",
+        selection="auto",
+        seed=1123,
+        maximum_scale_ratio=1.5,
+        maximum_center_ratio_deviation=0.25,
+    )
+
+    assert result.selected == "aligned"
+    assert result.prediction is result.aligned_prediction
+    assert result.identity_prediction is prediction
+    assert result.report["gt_blind"] is True
+    assert result.report["gt_or_mesh_argument_available"] is False
+
+
+def test_auto_hypothesis_keeps_identity_when_safety_gate_fails() -> None:
+    prediction, masks, _, _ = _sloped_plane_prediction()
+
+    result = select_depth_hypothesis(
+        prediction,
+        masks,
+        criterion="fixed-local-plane",
+        selection="auto",
+        seed=1123,
+        maximum_scale_ratio=1.01,
+    )
+
+    assert result.selected == "identity"
+    assert result.prediction is prediction
+    aligned = result.report["candidate_evidence"]["aligned"]  # type: ignore[index]
+    assert aligned["checks"]["scale_ratio_at_most_limit"] is False  # type: ignore[index]

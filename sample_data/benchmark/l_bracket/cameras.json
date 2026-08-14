@@ -1,0 +1,52 @@
+{
+  "camera_center_rank": 3,
+  "camera_center_singular_values": [
+    195.03941345214844,
+    175.48350524902344,
+    76.68746948242188
+  ],
+  "count": 8,
+  "details": {
+    "camera_distance_mm": 130.0,
+    "distortion": "none",
+    "focal_length_px": 180.0,
+    "image_size": [
+      128,
+      128
+    ],
+    "principal_point_convention": "pixel-centre",
+    "target_mm": [
+      0.0,
+      0.0,
+      11.0
+    ]
+  },
+  "extrinsic_convention": "world_to_camera",
+  "extrinsics_shape": [
+    8,
+    4,
+    4
+  ],
+  "image_names": [
+    "view_000.png",
+    "view_001.png",
+    "view_002.png",
+    "view_003.png",
+    "view_004.png",
+    "view_005.png",
+    "view_006.png",
+    "view_007.png"
+  ],
+  "intrinsics_shape": [
+    8,
+    3,
+    3
+  ],
+  "scale": {
+    "status": "known",
+    "world_units": "millimetre",
+    "world_units_to_mm": 1.0
+  },
+  "schema_version": "1.0",
+  "source": "synthetic-fixed-pinhole-v1"
+}

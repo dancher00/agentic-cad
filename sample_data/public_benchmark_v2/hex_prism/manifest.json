@@ -1,0 +1,29 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    46,
+    139,
+    128
+  ],
+  "expected_operation_family": "extrude",
+  "id": "hex_prism",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0489501953125,
+    0.07379150390625
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "across_corners": 42.0,
+    "height": 14.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "non-rectangular convex sketch",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Hexagonal prism",
+  "views": "views/*.png"
+}

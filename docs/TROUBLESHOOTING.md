@@ -24,7 +24,7 @@ python -m pip check
 
 The measured 24-view run peaked at about 6.02 GB allocated and 8.67 GB reserved.
 If memory is constrained, reduce views or `da3.process_resolution`; lowering the
-visual-hull grid affects CPU geometry, not DA3's main GPU allocation.
+sketch raster resolution affects CPU geometry, not DA3's main GPU allocation.
 
 ## DA3 source revision mismatch
 
@@ -87,7 +87,7 @@ DA3 any-view and COLMAP geometry have unresolved similarity scale. Pass one
 measured dimension whose name exists in the emitted template, for example:
 
 ```bash
---known-dimension body_width=120mm
+--known-dimension extrusion_length=120mm
 ```
 
 If the requested parameter is absent, scale remains pending or the run fails;
@@ -95,23 +95,46 @@ DA3-CAD does not invent a mapping.
 
 ## A visible hole was not recovered
 
-The visual-hull backend is voxel-limited and a hole must be supported by masks
-and camera geometry along enough rays. The geometric backend accepts a circular
-void only with local spacing and angular-boundary support. Review
-`artefacts/cad_report.json`. Do not lower a threshold solely to improve one
-example: the strongest empty region may be a missing surface patch rather than a
-hole.
+The default sketch backend currently accepts only circular through-cuts with a
+closed background component repeated in at least two object masks. Review the
+masks and the `cad-generation.details.report.apertures` provenance field. A gap
+in the point cloud alone is deliberately not treated as a manufactured hole.
 
-Explicit masks, more oblique/top views, better cameras, and higher visual-hull
-resolution are legitimate next checks. Threads and blind internal features are
-not supported.
+Inspect explicit masks, add near-axis and oblique views, and improve camera
+calibration before changing thresholds. General line/arc pockets, blind holes,
+threads and internal features are not yet supported.
+
+## The point cloud contains a detached duplicate or island
+
+Inspect `artefacts/geometry/artefacts/pose_admission.json` and
+`pose_admission_samples.npz`. With DA3-estimated cameras, DA3-CAD rejects a
+whole view only when its centre and bidirectional masked-surface distances
+disconnect it from the main view component. A rejection also preserves
+`camera_prediction_before_pose_admission.npz`; the final camera prediction and
+cloud contain admitted views only. Calibrated external cameras intentionally
+bypass this gate.
+
+The gate does not repair a slightly wrong camera pose. If the views remain as
+overlapping body-wide ghost surfaces, capture more opposing views or supply
+calibrated `K/E`. Automatic per-view SE(3) refinement is not yet accepted
+without silhouette/depth reprojection and CAD-surface contradiction checks.
+
+If only a thin off-body loop appears several times, inspect
+`loop_feature_admission.json` and `geometry_mask_*.png`. `observed_cloud`
+intentionally retains every pose-admitted mask/depth hypothesis, so several
+handles there are an audit of unresolved DA3 poses. `trusted_geometry` and
+canonicalizer stage `00_input` should contain only the largest pairwise-
+consistent loop group while full masks remain available to the CAD grammar.
+The report status `feature-3d-unavailable` means no two loop views agreed; it
+does not silently choose one view or synthesize a handle. External calibrated
+cameras bypass feature admission.
 
 ## STEP generation times out or returns multiple solids
 
 Generated code runs under an AST allow-list, memory/CPU limits, and a wall
 timeout. The worker must return one finite positive-volume solid. The error is
-recorded; no cached or stub geometry is substituted. Try a lower grid resolution
-or cuboid limit only if the report identifies Boolean complexity as the cause.
+recorded; no cached or stub geometry is substituted. Inspect the generated
+profile and validation report before changing sandbox resource limits.
 
 ## CadQuery / NumPy resolver conflict
 

@@ -1,0 +1,142 @@
+{
+  "schema_version": "da3-cad-grammar-refinement-v1",
+  "run_date": "2026-08-14",
+  "claim_boundary": {
+    "input": "the same 10 project-generated objects and 120 RGB views as public-photo-to-cad-v2",
+    "reconstruction_reference_cad_access": false,
+    "selection_evidence": "DA3 depth/confidence, calibrated cameras, exact target masks and reconstructed 3D only",
+    "reference_cad_role": "post-selection evaluator only",
+    "purpose": "measure generic CAD-grammar refinements and their negative controls; not category-level real-photo accuracy"
+  },
+  "summary": {
+    "cases": 10,
+    "mean_iou_before_percent": 80.87988561680255,
+    "mean_iou_after_percent": 86.61111964699901,
+    "mean_iou_delta_percentage_points": 5.73123403019646,
+    "surface_and_topology_passes_before": 5,
+    "surface_and_topology_passes_after": 7,
+    "valid_steps_after": 10,
+    "topology_correct_after": 10
+  },
+  "targeted_cases": [
+    {
+      "id": "hex_prism",
+      "iou_before_percent": 77.09828161658359,
+      "iou_after_percent": 93.71746450984018,
+      "delta_percentage_points": 16.619182893256593,
+      "admitted_rules": [
+        "side-view-weighted extrusion-length refinement"
+      ],
+      "evidence": {
+        "length_scale": 0.82,
+        "side_weighted_mask_iou_before": 0.8990036820939489,
+        "side_weighted_mask_iou_after": 0.9489875343229893,
+        "rectilinear_profile_applied": false,
+        "rigid_pose_refinement_applied": false
+      }
+    },
+    {
+      "id": "t_bracket",
+      "iou_before_percent": 65.90781155432823,
+      "iou_after_percent": 71.78646456763464,
+      "delta_percentage_points": 5.878653013306405,
+      "admitted_rules": [
+        "side-view-weighted extrusion-length refinement",
+        "shared horizontal/vertical line cell complex",
+        "bounded calibrated silhouette pose refinement"
+      ],
+      "evidence": {
+        "length_scale": 0.98,
+        "profile_vertices_before": 23,
+        "profile_vertices_after": 8,
+        "end_weighted_mask_iou_before": 0.9094475452582861,
+        "end_weighted_mask_iou_after": 0.9271177500363312,
+        "pose_rotation_degrees_local_xyz": [0.5, 1.5, -0.5],
+        "all_view_mask_iou_before_pose": 0.9353446021426947,
+        "all_view_mask_iou_after_pose": 0.9403492179320061
+      }
+    },
+    {
+      "id": "u_channel",
+      "iou_before_percent": 59.10044839358615,
+      "iou_after_percent": 77.69151881831678,
+      "delta_percentage_points": 18.59107042473063,
+      "admitted_rules": [
+        "side-view-weighted extrusion-length refinement",
+        "bounded calibrated silhouette pose refinement"
+      ],
+      "rejected_rules": [
+        "shared horizontal/vertical line cell complex"
+      ],
+      "evidence": {
+        "length_scale": 0.95,
+        "rectilinear_mask_score_gain": -0.009616536885474702,
+        "pose_rotation_degrees_local_xyz": [-1.5, 1.5, 1.0],
+        "all_view_mask_iou_before_pose": 0.9443263130525086,
+        "all_view_mask_iou_after_pose": 0.9524404951000475
+      }
+    },
+    {
+      "id": "stepped_shaft",
+      "iou_before_percent": 75.10064667991865,
+      "iou_after_percent": 88.70313520998943,
+      "delta_percentage_points": 13.602488530070772,
+      "admitted_rules": [
+        "two radial plateaus joined by two axial shoulders"
+      ],
+      "evidence": {
+        "outer_profile_vertices_after": 6,
+        "low_radius_normalized": 0.43430388300108536,
+        "high_radius_normalized": 0.7709756704352063,
+        "selected_center_fraction": 0.5,
+        "selected_width_fraction": 0.18,
+        "side_weighted_mask_iou_before": 0.9405162696668906,
+        "side_weighted_mask_iou_after": 0.9531017473281943,
+        "capture_offset_is_nuisance_only": true
+      }
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "block",
+      "iou_before_percent": 96.26841178361646,
+      "iou_after_percent": 96.26841178361646
+    },
+    {
+      "id": "key_plate",
+      "iou_before_percent": 88.0636633065371,
+      "iou_after_percent": 88.0636633065371,
+      "through_holes_after": 1
+    },
+    {
+      "id": "flange",
+      "iou_before_percent": 89.74751920209206,
+      "iou_after_percent": 89.74751920209206,
+      "through_holes_after": 1
+    },
+    {
+      "id": "two_hole_plate",
+      "iou_before_percent": 88.94912473249096,
+      "iou_after_percent": 88.94912473249096,
+      "through_holes_after": 2
+    },
+    {
+      "id": "bottle_profile",
+      "iou_before_percent": 91.46949700316578,
+      "iou_after_percent": 91.46949700316578,
+      "step_profile_refinement_applied": false
+    }
+  ],
+  "additional_change": {
+    "id": "l_bracket",
+    "iou_before_percent": 77.09345189570648,
+    "iou_after_percent": 79.71439733630675,
+    "delta_percentage_points": 2.6209454406002664
+  },
+  "verification": {
+    "end_to_end_run": "outputs/public-benchmark-v2-release-v3",
+    "frozen_evidence_ablation": "outputs/public-benchmark-v2-grammar-refined-v3",
+    "tests": "212 passed, 2 GPU runtime tests skipped by explicit opt-in",
+    "lint": "ruff check passed"
+  }
+}

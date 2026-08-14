@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    54,
+    119,
+    155
+  ],
+  "expected_operation_family": "revolve",
+  "id": "stepped_shaft",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.057891845703125,
+    0.074432373046875
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "collar": 10.0,
+    "collar_diameter": 34.0,
+    "length": 54.0,
+    "shaft_diameter": 18.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "piecewise axial profile",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Stepped shaft",
+  "views": "views/*.png"
+}

@@ -1,0 +1,32 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    198,
+    79,
+    142
+  ],
+  "expected_operation_family": "extrude+2cut",
+  "id": "two_hole_plate",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0594940185546875,
+    0.107147216796875
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 8.0,
+    "hole_diameter": 8.0,
+    "hole_spacing": 28.0,
+    "length": 58.0,
+    "width": 32.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "multiple repeated enclosed-mask apertures",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Two-hole plate",
+  "views": "views/*.png"
+}

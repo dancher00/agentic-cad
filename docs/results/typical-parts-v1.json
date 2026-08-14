@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.5",
+  "benchmark_id": "typical-parts-v1",
+  "created_at": "2026-08-13",
+  "status": "working-tree-verified",
+  "input": {
+    "views_per_case": 8,
+    "image_size": [128, 128],
+    "renderer": "perspective CPU triangle painter v1",
+    "camera_model": "fixed pinhole, f=180 px, distance=130 mm",
+    "camera_bundle": "per-case cameras.npz, world_to_camera, known millimetre scale",
+    "reference_cad_available_to_reconstruction": false
+  },
+  "pipeline": {
+    "depth": "DA3-LARGE-1.1",
+    "depth_license": "CC BY-NC 4.0",
+    "cad_backend": "construction-grammar-v1",
+    "candidate_families": ["extrude", "revolve"],
+    "depth_hypotheses": "identity plus bounded fixed-local-plane alignment",
+    "hypothesis_selection": "GT-blind observation gates, then grammar fit plus operation-count penalty; all three cases select extrude and reject revolve on radial symmetry",
+    "profile_evidence": "filtered observations estimate orientation and score surfaces; the outer sketch uses raw 3D occupancy optionally intersected with multi-view silhouette consensus",
+    "orientation": "PCA plus accepted reflection symmetry; near-coincident PCA axes are snapped to the measured symmetry normal",
+    "aperture_evidence": "repeated RGB-mask voids gate topology; matching enclosed raw 3D-profile void measures center and radius",
+    "config": "configs/photo_geometric.yaml",
+    "gpu": "NVIDIA GeForce RTX 5080 16 GB"
+  },
+  "cases": [
+    {
+      "id": "block",
+      "ground_truth": "48 x 32 x 10 mm solid block",
+      "scale_evidence": "known camera bundle, 1 world unit = 1 mm",
+      "run": "outputs/benchmark-grammar-v1/block",
+      "selected_depth_hypothesis": "aligned",
+      "operation_family": "sketch-extrusion",
+      "outer_profile": "4 lines from raw 3D intersected with five-of-eight silhouette consensus",
+      "valid_step": true,
+      "topology": "correct; no hole",
+      "raw_silhouette_iou": 0.9748437750360519,
+      "mesh_iou_percent": 87.9855723324652,
+      "profile_occupancy_iou": 1.0,
+      "chamfer_squared_x1000": 0.38181305707930197
+    },
+    {
+      "id": "flange",
+      "ground_truth": "outer diameter 44 mm x 8 mm, through-hole diameter 12 mm",
+      "scale_evidence": "known camera bundle, 1 world unit = 1 mm",
+      "run": "outputs/benchmark-grammar-v1/flange",
+      "selected_depth_hypothesis": "aligned",
+      "operation_family": "sketch-extrusion",
+      "outer_profile": "circle",
+      "apertures": "one circle: topology supported by views 4, 5, 6, 7; radius measured from matching enclosed raw 3D-profile void",
+      "recovered_hole_diameter_mm": 10.828921025940724,
+      "reference_hole_diameter_mm": 12.0,
+      "valid_step": true,
+      "topology": "correct circular body and through-hole",
+      "profile_occupancy_iou": 0.9635556814426662,
+      "mesh_iou_percent": 91.81561398466208,
+      "chamfer_squared_x1000": 0.27641871985942507
+    },
+    {
+      "id": "l_bracket",
+      "ground_truth": "50 x 32 x 28 mm L-bracket with 6 mm walls",
+      "scale_evidence": "known camera bundle, 1 world unit = 1 mm",
+      "run": "outputs/benchmark-grammar-v1/l_bracket",
+      "selected_depth_hypothesis": "identity",
+      "operation_family": "sketch-extrusion",
+      "outer_profile": "20-line concave polyline from raw 3D intersected with seven-of-eight silhouette consensus",
+      "valid_step": true,
+      "topology": "concave L-like profile recovered without a part class; no template or reference CAD is used",
+      "profile_occupancy_iou": 0.9455655206776283,
+      "raw_silhouette_iou": 0.7293698424606152,
+      "mesh_iou_percent": 89.24333205776954,
+      "chamfer_squared_x1000": 0.3303300984937934
+    }
+  ],
+  "claim_boundary": "Three deterministic calibrated integration cases, not category-level accuracy. Valid STEP does not imply correct CAD topology or dimensions."
+}

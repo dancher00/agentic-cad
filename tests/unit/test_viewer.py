@@ -50,4 +50,6 @@ def test_build_viewer_embeds_geometry_parameters_and_downloads(tmp_path: Path) -
     assert '"name":"width"' in html
     assert '"original_points":8' in html
     assert "model.step" in html
+    assert "triangle edges hidden" in html
+    assert "ctx.stroke()" not in html
     assert "__DA3_CAD_VIEWER_PAYLOAD__" not in html

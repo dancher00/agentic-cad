@@ -1,0 +1,59 @@
+{
+  "camera_bundle": "cameras.npz",
+  "camera_schedule": [
+    {
+      "azimuth_deg": 0.0,
+      "elevation_deg": 32.0
+    },
+    {
+      "azimuth_deg": 90.0,
+      "elevation_deg": 24.0
+    },
+    {
+      "azimuth_deg": 180.0,
+      "elevation_deg": 38.0
+    },
+    {
+      "azimuth_deg": 270.0,
+      "elevation_deg": 20.0
+    },
+    {
+      "azimuth_deg": 45.0,
+      "elevation_deg": 58.0
+    },
+    {
+      "azimuth_deg": 135.0,
+      "elevation_deg": 62.0
+    },
+    {
+      "azimuth_deg": 225.0,
+      "elevation_deg": 55.0
+    },
+    {
+      "azimuth_deg": 315.0,
+      "elevation_deg": 65.0
+    }
+  ],
+  "expected_operation_family": "sketch-extrusion",
+  "id": "flange",
+  "input_views": 8,
+  "parameters_mm": {
+    "height": 8.0,
+    "hole_diameter": 12.0,
+    "outer_diameter": 44.0
+  },
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "renderer": {
+    "camera_distance_mm": 130.0,
+    "focal_length_px": 180.0,
+    "image_size": [
+      128,
+      128
+    ],
+    "name": "perspective CPU triangle painter v1",
+    "projection": "pinhole"
+  }
+}

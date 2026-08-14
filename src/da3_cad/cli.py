@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import shutil
+import time
 from pathlib import Path
-from typing import Annotated
+from tempfile import TemporaryDirectory
+from typing import Annotated, cast
 
 import typer
 from rich.console import Console
@@ -21,6 +24,12 @@ from da3_cad.geometry_pipeline import run_geometry
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.pipeline import edit_run, inspect_run, reconstruct
 from da3_cad.reconstruction_pipeline import reconstruct_full
+from da3_cad.segmentation.sam2_box import load_box_prompts, segment_box_prompts_sam2
+from da3_cad.target_preparation import (
+    TargetSelectionSource,
+    match_explicit_masks,
+    prepare_target_from_masks,
+)
 from da3_cad.viewer import build_viewer
 
 app = typer.Typer(
@@ -29,6 +38,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+CPU_SMOKE_BUDGET_SECONDS = 60.0
+CPU_SMOKE_FIXTURE = Path("sample_data/plate/views")
 
 ConfigOption = Annotated[Path | None, typer.Option("--config", help="YAML configuration file.")]
 DeviceOption = Annotated[
@@ -78,6 +90,187 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
+def _cpu_smoke_fixture() -> Path:
+    """Resolve the checked-in smoke fixture from a source checkout."""
+
+    candidates = (CPU_SMOKE_FIXTURE, Path(__file__).resolve().parents[2] / CPU_SMOKE_FIXTURE)
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+    raise ValueError("CPU smoke fixture not found; run this command from a DA3-CAD source checkout")
+
+
+@app.command("prepare-target")
+def prepare_target_command(
+    input_dir: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Full-resolution images of one explicitly selected object.",
+        ),
+    ],
+    output_dir: Annotated[
+        Path, typer.Option("--output", "-o", help="New prepared-target directory.")
+    ],
+    masks: Annotated[
+        Path | None,
+        typer.Option(
+            "--masks",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Source-resolution binary PNGs matched to images by stem.",
+        ),
+    ] = None,
+    boxes: Annotated[
+        Path | None,
+        typer.Option(
+            "--boxes",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Per-view explicit XYXY boxes; SAM2.1 Small converts them to masks.",
+        ),
+    ] = None,
+    cameras: Annotated[
+        Path | None,
+        typer.Option(
+            "--cameras",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Optional source-image cameras.npz to translate into crop pixels.",
+        ),
+    ] = None,
+    crop_margin: Annotated[
+        float,
+        typer.Option(
+            "--crop-margin",
+            min=0.0,
+            max=1.0,
+            help="Object-extent fraction added on every side of the shared-shape crop.",
+        ),
+    ] = 0.15,
+    selection_source: Annotated[
+        str,
+        typer.Option(
+            "--selection-source",
+            help="Mask provenance for --masks: user-mask, robot-mask, or dataset-mask-oracle.",
+        ),
+    ] = "user-mask",
+    segment_device: Annotated[
+        str,
+        typer.Option("--segment-device", help="Device for optional SAM2 segmentation."),
+    ] = "auto",
+    sam2_source: Annotated[
+        Path,
+        typer.Option("--sam2-source", help="Pinned official SAM2 source checkout."),
+    ] = Path("data/upstream/SAM2"),
+    sam2_checkpoint: Annotated[
+        Path,
+        typer.Option("--sam2-checkpoint", help="Verified SAM2.1 Small checkpoint."),
+    ] = Path("data/checkpoints/sam2.1_hiera_small.pt"),
+    dry_run: DryRunOption = False,
+) -> None:
+    """Segment an explicitly selected object, crop it, and preserve camera geometry."""
+
+    if (masks is None) == (boxes is None):
+        console.print(
+            "[red]Target preparation failed:[/red] provide exactly one of --masks or --boxes"
+        )
+        raise typer.Exit(2)
+    allowed_mask_sources = {"user-mask", "robot-mask", "dataset-mask-oracle"}
+    if masks is not None and selection_source not in allowed_mask_sources:
+        console.print(
+            "[red]Target preparation failed:[/red] invalid --selection-source for explicit masks"
+        )
+        raise typer.Exit(2)
+    try:
+        observations = load_observations(input_dir)
+        if masks is not None:
+            matched_masks = match_explicit_masks(observations.images, masks)
+            prompt_summary: object = [path.name for path in matched_masks]
+            effective_source = selection_source
+        else:
+            assert boxes is not None
+            prompts = load_box_prompts(boxes, observations.images)
+            prompt_summary = [list(prompt.xyxy_normalized) for prompt in prompts]
+            effective_source = "sam2-box"
+        if dry_run:
+            console.print(
+                Pretty(
+                    {
+                        "command": "prepare-target",
+                        "input": str(input_dir.resolve()),
+                        "output": str(output_dir.resolve()),
+                        "images": len(observations.images),
+                        "masks": str(masks.resolve()) if masks is not None else None,
+                        "boxes": str(boxes.resolve()) if boxes is not None else None,
+                        "prompts": prompt_summary,
+                        "cameras": str(cameras.resolve()) if cameras is not None else None,
+                        "crop_margin_fraction_per_side": crop_margin,
+                        "selection_source": effective_source,
+                        "segment_device": segment_device if boxes is not None else None,
+                        "writes": False,
+                    }
+                )
+            )
+            return
+
+        if masks is not None:
+            result = prepare_target_from_masks(
+                input_dir,
+                output_dir,
+                masks,
+                camera_bundle_path=cameras,
+                margin_fraction=crop_margin,
+                selection_source=cast(TargetSelectionSource, selection_source),
+            )
+        else:
+            assert boxes is not None
+            with TemporaryDirectory(prefix="da3-cad-sam2-") as temporary:
+                segmentation = segment_box_prompts_sam2(
+                    input_dir,
+                    boxes,
+                    Path(temporary) / "masks",
+                    source_dir=sam2_source,
+                    checkpoint_path=sam2_checkpoint,
+                    device=segment_device,
+                )
+                result = prepare_target_from_masks(
+                    input_dir,
+                    output_dir,
+                    segmentation.masks_dir,
+                    camera_bundle_path=cameras,
+                    margin_fraction=crop_margin,
+                    selection_source="sam2-box",
+                )
+                source_masks = output_dir / "source_masks"
+                source_masks.mkdir(exist_ok=False)
+                for mask_path in sorted(segmentation.masks_dir.glob("*.png")):
+                    shutil.copy2(mask_path, source_masks / mask_path.name)
+                result.report["segmentation"] = segmentation.report
+                result.report["source_masks"] = {
+                    "path": source_masks.name,
+                    "coordinate_space": "EXIF-corrected source pixels",
+                }
+                result.manifest_path.write_text(
+                    json.dumps(result.report, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Target preparation failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(f"[green]Prepared RGB:[/green] {result.images_dir}")
+    console.print(f"[green]Prepared masks:[/green] {result.masks_dir}")
+    console.print(f"[green]Visual review:[/green] {result.overlays_dir}")
+    if result.camera_bundle_path is not None:
+        console.print(f"[green]Adjusted cameras:[/green] {result.camera_bundle_path}")
+    console.print(f"[green]Target manifest:[/green] {result.manifest_path}")
+
+
 @app.command("prepare-video")
 def prepare_video_command(
     video_path: Annotated[
@@ -99,6 +292,15 @@ def prepare_video_command(
             help="Sampled video frames considered per selected output view.",
         ),
     ] = 5,
+    center_crop_fraction: Annotated[
+        float,
+        typer.Option(
+            "--center-crop",
+            min=0.25,
+            max=1.0,
+            help="Centered fraction of each video frame retained before selection.",
+        ),
+    ] = 1.0,
     start_seconds: Annotated[
         float, typer.Option("--start", min=0.0, help="Trim start in seconds.")
     ] = 0.0,
@@ -125,6 +327,7 @@ def prepare_video_command(
                     "output": str(output_dir.resolve()),
                     "views": views,
                     "candidate_multiplier": candidate_multiplier,
+                    "center_crop_fraction": center_crop_fraction,
                     "trim_seconds": [start_seconds, end_seconds],
                     "recover_cameras": recover_cameras,
                     "writes": False,
@@ -139,6 +342,7 @@ def prepare_video_command(
                 output_dir,
                 views=views,
                 candidate_multiplier=candidate_multiplier,
+                center_crop_fraction=center_crop_fraction,
                 start_seconds=start_seconds,
                 end_seconds=end_seconds,
             )
@@ -165,6 +369,56 @@ def prepare_video_command(
     console.print(
         "[yellow]COLMAP scale is arbitrary. Add a known dimension or calibrated metric "
         "camera bundle before claiming millimetres.[/yellow]"
+    )
+
+
+@app.command("cpu-smoke")
+def cpu_smoke_command(
+    output_dir: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            help="New output directory for the bundled CPU smoke run.",
+        ),
+    ] = Path("outputs/cpu-smoke"),
+) -> None:
+    """Turn the bundled four-image fixture into STEP without GPU, weights, or network."""
+
+    started = time.monotonic()
+    try:
+        input_dir = _cpu_smoke_fixture()
+        view_count = sum(1 for _ in input_dir.glob("*.png"))
+        if view_count != 4:
+            raise ValueError(
+                f"CPU smoke fixture must contain exactly 4 PNG views; found {view_count}"
+            )
+        settings = AppConfig(
+            profile="stub",
+            device="cpu",
+            seed=20260810,
+            depth_backend="stub",
+            cad_backend="stub",
+        )
+        console.print(f"[bold]Fixture:[/bold] {input_dir} ({view_count} PNG views)")
+        console.print("[bold]Backends:[/bold] pixel-derived CPU stubs; DA3 is not run")
+        with console.status("Running the offline CPU export smoke test..."):
+            result = reconstruct(input_dir, output_dir, settings)
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]CPU smoke failed:[/red] {error}")
+        raise typer.Exit(1) from error
+
+    elapsed = time.monotonic() - started
+    if not result.valid:
+        console.print(f"[red]Generated program is invalid:[/red] {result.error}")
+        raise typer.Exit(1)
+    console.print(f"[green]Valid STEP:[/green] {result.step_path}")
+    console.print(
+        f"[green]Elapsed:[/green] {elapsed:.2f}s ({CPU_SMOKE_BUDGET_SECONDS:.0f}s smoke budget)"
+    )
+    console.print("[green]Reference CAD:[/green] not read")
+    console.print(
+        "[yellow]SMOKE ONLY: this is not DA3 or a reconstruction-accuracy claim.[/yellow]"
     )
 
 
@@ -340,6 +594,7 @@ def geometry_command(
                 accepted_noncommercial=accept_noncommercial_weights,
                 camera_bundle_path=cameras,
                 segmentation_mask_dir=masks,
+                cad_grammar_rerank=False,
             )
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print(f"[red]Geometry failed:[/red] {error}")

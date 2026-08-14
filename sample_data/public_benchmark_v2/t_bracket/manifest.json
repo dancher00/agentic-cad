@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    38,
+    145,
+    190
+  ],
+  "expected_operation_family": "extrude",
+  "id": "t_bracket",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0619659423828125,
+    0.116180419921875
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 30.0,
+    "length": 50.0,
+    "wall": 7.0,
+    "width": 34.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "branching concave profile",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "T profile",
+  "views": "views/*.png"
+}

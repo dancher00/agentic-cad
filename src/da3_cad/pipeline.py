@@ -42,7 +42,7 @@ def _parameter_payload(
     parameters: dict[str, float],
     validation: ValidationResult,
 ) -> dict[str, object]:
-    semantics = classify_parameters(parameters, backend="stub", mode="explicit-template")
+    semantics = classify_parameters(parameters, backend="stub", mode="explicit-program")
     coordinate_spaces: dict[str, object]
     if validation.bbox is None:
         coordinate_spaces = {
@@ -56,7 +56,7 @@ def _parameter_payload(
             scale=unresolved_scale(),
         ).as_dict()
     return {
-        "schema_version": "2.0",
+        "schema_version": "3.0",
         "backend": "stub",
         "units": "stub-test-unit",
         "warnings": ["STUB output is not calibrated in millimetres"],
@@ -149,7 +149,7 @@ def reconstruct(input_dir: Path, output_dir: Path, config: AppConfig) -> Validat
             backend=program.backend,
             status="stub",
             seconds=time.monotonic() - started,
-            details={"template_id": program.template_id, "parameters": program.parameters},
+            details={"program_family": program.program_family, "parameters": program.parameters},
         )
     )
     (output_dir / "model.py").write_text(program.source, encoding="utf-8")

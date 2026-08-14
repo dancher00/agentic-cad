@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal
 
-ParameterizationMode = Literal["explicit-template", "ast-literal-lift", "model-emitted"]
+ParameterizationMode = Literal["explicit-program", "ast-literal-lift", "model-emitted"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +45,7 @@ def _quantity(name: str) -> str:
         "center_y",
         "center_z",
     )
-    if any(token in lowered for token in length_tokens):
+    if any(token in lowered for token in length_tokens) or lowered.endswith(("_x", "_y", "_z")):
         return "length"
     return "unknown"
 
@@ -76,8 +76,10 @@ def classify_parameters(
 ) -> ParameterSemantics:
     """Expose only parameters backed by a hand-defined engineering schema as primary."""
 
-    if mode == "explicit-template" and backend in {
-        "geometric-fitter-v1",
+    if mode == "explicit-program" and backend in {
+        "construction-grammar-v1",
+        "revolve-v1",
+        "sketch-extrusion-v1",
         "visual-hull-v1",
         "stub",
     }:
@@ -87,7 +89,7 @@ def classify_parameters(
                 value,
                 category="primary-engineering-parameter",
                 editable=True,
-                evidence=f"explicit {backend} template schema",
+                evidence=f"explicit {backend} program schema",
             )
             for name, value in sorted(parameters.items())
         )

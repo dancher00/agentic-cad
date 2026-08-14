@@ -74,6 +74,7 @@ def _select_component(mask: BoolArray, *, minimum_fraction: float) -> BoolArray:
 def _central_depth_seed(
     depth: FloatArray,
     reliable: BoolArray,
+    maximum_fraction: float,
     *,
     depth_percentile: float,
     minimum_fraction: float,
@@ -107,7 +108,7 @@ def _central_depth_seed(
     )
     selected: BoolArray = np.asarray(component_labels == selected_label, dtype=np.bool_)
     fraction = float(selected.mean())
-    if fraction < minimum_fraction or fraction >= 0.55:
+    if fraction < minimum_fraction or fraction >= maximum_fraction:
         raise ValueError(f"central depth seed has implausible foreground fraction {fraction:.1%}")
     return selected
 
@@ -155,6 +156,7 @@ def _grabcut_refine(
 
 def segment_internet_object(
     prediction: DepthPrediction,
+    maximum_seed_fraction: float = 0.55,
     *,
     confidence_percentile: float = 20.0,
     depth_percentile: float = 85.0,
@@ -174,6 +176,7 @@ def segment_internet_object(
     masks: list[BoolArray] = []
     grabcut_views = 0
     color_seed_fallback_views = 0
+    uniform_border_expansion_views = 0
     for view_index, image in enumerate(prediction.processed_images):
         values = np.asarray(image, dtype=np.uint8)
         height, width = values.shape[:2]
@@ -202,6 +205,7 @@ def segment_internet_object(
         color_threshold = max(10.0, median_distance + 4.0 * max(mad, 1.0))
         color_distance = np.linalg.norm(float_values - background, axis=2)
         color_foreground = color_distance > color_threshold
+        uniform_border = float(np.percentile(border_distance, 95.0)) <= 12.0
 
         confidence_threshold = float(np.percentile(view_confidence[valid], confidence_percentile))
         reliable = valid & (view_confidence >= confidence_threshold)
@@ -211,17 +215,37 @@ def segment_internet_object(
                 reliable,
                 depth_percentile=depth_percentile,
                 minimum_fraction=minimum_fraction,
+                maximum_fraction=maximum_seed_fraction,
             )
-        except ValueError:
-            foreground_seed = _select_component(
-                color_foreground & reliable,
-                minimum_fraction=minimum_fraction,
-            )
+        except ValueError as depth_error:
+            try:
+                foreground_seed = _select_component(
+                    color_foreground & reliable,
+                    minimum_fraction=minimum_fraction,
+                )
+            except ValueError as color_error:
+                raise ValueError(
+                    f"view {view_index}: depth seed rejected ({depth_error}); "
+                    f"color fallback rejected ({color_error})"
+                ) from color_error
             color_seed_fallback_views += 1
 
         search_radius = max(2, int(round(0.06 * float(min(height, width)))))
         search_region = binary_dilation(foreground_seed, iterations=search_radius)
         probable_foreground = foreground_seed | (color_foreground & reliable & search_region)
+        if uniform_border:
+            try:
+                color_component = _select_component(
+                    color_foreground & valid,
+                    minimum_fraction=minimum_fraction,
+                )
+            except ValueError:
+                color_component = None
+            if color_component is not None and np.any(color_component & foreground_seed):
+                color_margin = max(2, int(round(0.02 * float(min(height, width)))))
+                search_region = binary_dilation(color_component, iterations=color_margin)
+                probable_foreground = foreground_seed | color_component
+                uniform_border_expansion_views += 1
         definite_foreground = binary_erosion(
             foreground_seed,
             iterations=max(1, search_radius // 3),
@@ -242,10 +266,12 @@ def segment_internet_object(
         structure = np.ones((2 * morphology_size + 1, 2 * morphology_size + 1), dtype=np.bool_)
         cleaned = binary_opening(refined, structure=structure)
         cleaned = binary_closing(cleaned, structure=structure)
-        selected = _select_component(
-            cleaned.astype(np.bool_),
-            minimum_fraction=minimum_fraction,
-        )
+        try:
+            selected = _select_component(
+                cleaned.astype(np.bool_), minimum_fraction=minimum_fraction
+            )
+        except ValueError as error:
+            raise ValueError(f"view {view_index}: {error}") from error
         foreground_fraction = float(selected.mean())
         if foreground_fraction >= 0.9:
             raise ValueError(
@@ -256,12 +282,19 @@ def segment_internet_object(
 
     return SegmentationResult(
         masks=np.stack(masks).astype(np.bool_),
-        backend="internet-object-depth-seeded-grabcut-v2",
+        backend="internet-object-depth-seeded-grabcut-v3",
         warnings=(
             "automatic internet-object mask assumes one prominent object near the image centre",
             "background-matched, truncated or multi-object images require explicit masks",
-            "GrabCut search is restricted around a near central DA3-depth component",
+            (
+                "uniform borders admit the complete connected color object; other scenes "
+                "restrict GrabCut around a near central DA3-depth component"
+            ),
             f"OpenCV GrabCut refinement used for {grabcut_views}/{len(masks)} views",
             f"color-only seed fallback used for {color_seed_fallback_views}/{len(masks)} views",
+            (
+                "uniform-border connected-color expansion used for "
+                f"{uniform_border_expansion_views}/{len(masks)} views"
+            ),
         ),
     )

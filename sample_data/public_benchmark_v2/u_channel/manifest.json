@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    44,
+    150,
+    100
+  ],
+  "expected_operation_family": "extrude",
+  "id": "u_channel",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.083465576171875,
+    0.1352386474609375
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 28.0,
+    "length": 52.0,
+    "wall": 6.0,
+    "width": 34.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "two thin walls and an open concavity",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "U channel",
+  "views": "views/*.png"
+}

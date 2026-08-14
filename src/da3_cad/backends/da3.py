@@ -289,6 +289,12 @@ class Da3Backend:
         local_files_only: bool = False,
         accepted_noncommercial: bool = False,
         use_ray_pose: bool = False,
+        ref_view_strategy: Literal[
+            "first",
+            "middle",
+            "saddle_balanced",
+            "saddle_sim_range",
+        ] = "saddle_balanced",
         model_class_loader: Callable[[Path], type[Any]] = _import_da3_model_class,
     ) -> None:
         self.spec = get_da3_model_spec(checkpoint)
@@ -302,6 +308,7 @@ class Da3Backend:
         self.process_resolution_method = process_resolution_method
         self.local_files_only = local_files_only
         self.use_ray_pose = use_ray_pose
+        self.ref_view_strategy = ref_view_strategy
         self._model_class_loader = model_class_loader
         self.last_lifecycle: ModelLifecycleReport | None = None
         self.last_runtime_report: dict[str, object] | None = None
@@ -376,6 +383,7 @@ class Da3Backend:
                 process_res_method=self.process_resolution_method,
                 export_dir=None,
                 use_ray_pose=self.use_ray_pose,
+                ref_view_strategy=self.ref_view_strategy,
             )
 
         raw, lifecycle = StagedModelManager(device).execute(load_model, infer)
@@ -391,6 +399,7 @@ class Da3Backend:
             "process_resolution": self.process_resolution,
             "process_resolution_method": self.process_resolution_method,
             "use_ray_pose": self.use_ray_pose,
+            "ref_view_strategy": self.ref_view_strategy,
             "camera_conditioning": pose_extrinsics is not None,
             "align_to_input_ext_scale": (
                 align_to_input_ext_scale if pose_extrinsics is not None else None

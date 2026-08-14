@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use DA3-CAD, please cite this software and Depth Anything 3."
 title: "DA3-CAD: deterministic multi-view RGB-to-B-Rep reconstruction"
 type: software
-version: 0.2.0
-date-released: 2026-08-12
+version: 0.4.0
+date-released: 2026-08-13
 authors:
   - name: "DA3-CAD contributors"
 repository-code: "https://github.com/dancher00/DA3-CAD"
@@ -12,13 +12,14 @@ license: Apache-2.0
 abstract: >-
   DA3-CAD converts object-centric multi-view RGB images or moving-camera video
   into validated editable CadQuery, STEP, and STL using Depth Anything 3
-  geometry and deterministic silhouette/depth visual-hull construction.
+  geometry and a deterministic, class-free sketch-and-operation CAD grammar
+  with evidence-gated feature recovery.
 keywords:
   - computer-aided design
   - 3D reconstruction
   - Depth Anything 3
   - B-Rep
-  - visual hull
+  - CAD grammar
 preferred-citation:
   type: article
   title: "DA3-CAD: Deterministic Multi-View RGB-to-B-Rep Reconstruction with Depth Anything 3"

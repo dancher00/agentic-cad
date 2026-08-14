@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    225,
+    111,
+    63
+  ],
+  "expected_operation_family": "extrude+cut",
+  "id": "key_plate",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.052490234375,
+    0.095001220703125
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "height": 8.0,
+    "hole_diameter": 9.0,
+    "length": 58.0,
+    "width": 30.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "irregular outer sketch plus one circular cut",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Key plate",
+  "views": "views/*.png"
+}

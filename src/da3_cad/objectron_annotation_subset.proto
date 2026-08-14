@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+// Wire-compatible subset of Google Objectron's annotation_data.proto.
+// Unknown camera, 3D, timestamp and plane fields are intentionally skipped.
+// Source schema:
+// https://github.com/google-research-datasets/Objectron/blob/master/objectron/schema/annotation_data.proto
+package da3cad.objectron;
+
+message NormalizedPoint2D {
+  float x = 1;
+  float y = 2;
+  float depth = 3;
+}
+
+message AnnotatedKeyPoint {
+  int32 id = 1;
+  NormalizedPoint2D point_2d = 3;
+}
+
+message ObjectAnnotation {
+  int32 object_id = 1;
+  repeated AnnotatedKeyPoint keypoints = 2;
+  float visibility = 3;
+}
+
+message FrameAnnotation {
+  int32 frame_id = 1;
+  repeated ObjectAnnotation annotations = 2;
+}
+
+message Sequence {
+  repeated FrameAnnotation frame_annotations = 2;
+}

@@ -138,6 +138,7 @@ def validate_and_export(
                 "stage": "complete",
                 "worker_returncode": process.returncode,
                 "solid_count": solid_count,
+                "topology_invariants": payload.get("topology_invariants", {}),
                 "limits": config.model_dump(),
             },
         )

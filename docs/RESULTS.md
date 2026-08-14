@@ -1,10 +1,77 @@
 # Results and claim boundaries
 
-DA3-CAD v0.2.0 reports two complementary integration cases. Neither is a broad
-benchmark. One tests a real Internet-sourced object without reference CAD; the
-other tests reference-CAD metrics on a simple synthetic part.
+## Public photo-to-CAD benchmark v2
 
-The exact ledger is [`results/v0.2.0.json`](results/v0.2.0.json).
+The current controlled release set contains 10 project-generated objects,
+12 RGB views per object, exact masks, calibrated cameras and evaluator-only
+reference STEP/STL. DA3-CAD never receives reference geometry during target
+preparation, depth inference, fusion, pose logic or CAD construction.
+
+| Outcome | Count |
+|---|---:|
+| Kernel-valid STEP | 10/10 |
+| Product surface-provenance acceptance | 10/10 |
+| STEP rejected by provenance | 0/10 |
+| Explicit abstention | 0/10 |
+| ≥80% mesh IoU and exact through-hole topology | 7/10 |
+
+All ten controlled cases emit a valid, surface-provenance-safe STEP, and all
+four reference through-holes are retained. Mean mesh IoU is 86.61%, and seven
+cases clear the stricter evaluator-only 80% IoU threshold. T/U concavities remain
+the largest fidelity gaps and L is just below the gate; no case is removed from
+the denominator and product acceptance is kept separate from reference accuracy.
+
+See the [illustrated report](PUBLIC_BENCHMARK.md),
+[PDF](DA3-CAD_public_benchmark_v2.pdf) and
+[machine-readable ledger](results/public-benchmark-v2.json).
+The GT-blind U/T/hex/shaft comparison and unchanged negative controls are in
+[`results/grammar-refinement-v1.json`](results/grammar-refinement-v1.json).
+
+The separate five-sequence Internet-photo gate has no reference CAD or physical
+scale. It therefore measures integration, provenance and abstention only. Its
+licensed media are not redistributed; exact source IDs and decisions are in
+[`results/real-photo-v3.json`](results/real-photo-v3.json).
+
+## Current pose-refinement regression gate
+
+The five licensed real-photo inputs and three calibrated typical parts were
+rerun for the original bounded-translation regression ledger.
+All 183 prior real-photo reconstruction views were already pose-consistent, so
+the new stage was a no-op on all five inputs. Their product acceptance boundary
+was preserved: book remains the only accepted result; bottle and laptop are
+rejected by surface provenance; camera and cup abstain. Laptop's internal state
+changed from early abstention to an unsafe one-body sketch candidate because the
+CAD grammar is now broader, not because pose refinement ran.
+
+The independent mug collage is the activation case: two detached views are
+recovered and a complete graph re-audit changes `9+1+1` pose components to one
+11-view component. The three calibrated parts bypass pose refinement, remain
+valid single-solid STEP files, and retain their topology; flange still has one
+parametric through-hole with recovered diameter 10.828921 mm.
+
+Exact measurements and claim boundaries are in
+[`results/pose-refinement-regression-v1.json`](results/pose-refinement-regression-v1.json).
+The ignored local four-page visual report is generated at
+`outputs/pose-refinement-regression-v1/report.pdf`. This regression gate is not
+a statistical proof of universal generalization or metric accuracy on real
+objects.
+
+The product stage has since been upgraded to bounded rigid SE(3). A separate
+deterministic control benchmark covers an unchanged consistent input, bounded
+translation, bounded rotation, mixed SE(3), excessive rotation, non-rigid depth
+scale and unbounded translation. All seven named outcomes pass; the three unsafe
+failure modes remain rejected and depth/intrinsics remain bitwise unchanged.
+The portable result is
+[`results/pose-error-controls-v1.json`](results/pose-error-controls-v1.json), and
+the ignored local three-page point-space report is
+`outputs/pose-error-controls-v1/report.pdf`. This control suite tests failure-mode
+logic, not category-level generalization.
+
+## Archived v0.2.0 evidence
+
+The sections below preserve the earlier release claims. Current configs no
+longer select the old geometric fitter. The exact historical ledger is
+[`results/v0.2.0.json`](results/v0.2.0.json).
 
 ## Real Objectron camera sequence
 
@@ -116,7 +183,7 @@ accuracy, superiority over mesh reconstruction, or performance on arbitrary
 unrelated product images. The missed synthetic hole shows why CAD validity and
 CAD correctness must remain separate columns.
 
-## Next benchmark
+## Next benchmark milestone
 
 A credible next result set should include at least 100 objects across simple
 machined, household, glossy, thin, symmetric, and freeform categories, with:

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+import time
 from pathlib import Path
 
+import cadquery as cq
 from typer.testing import CliRunner
 
-from da3_cad.cli import app
+from da3_cad.cli import CPU_SMOKE_BUDGET_SECONDS, app
 
 runner = CliRunner()
 
@@ -15,7 +19,9 @@ def test_cli_lists_product_commands() -> None:
 
     assert result.exit_code == 0
     for command in (
+        "prepare-target",
         "prepare-video",
+        "cpu-smoke",
         "reconstruct",
         "inspect",
         "edit",
@@ -41,12 +47,15 @@ def test_prepare_video_dry_run_does_not_decode_or_write(tmp_path: Path) -> None:
             str(output),
             "--views",
             "8",
+            "--center-crop",
+            "0.5",
             "--dry-run",
         ],
     )
 
     assert result.exit_code == 0, result.stdout
     assert "'views': 8" in result.stdout
+    assert "'center_crop_fraction': 0.5" in result.stdout
     assert "'writes': False" in result.stdout
     assert not output.exists()
 
@@ -73,6 +82,46 @@ def test_reconstruct_dry_run_does_not_create_output(sample_case: Path, tmp_path:
     assert result.exit_code == 0, result.stdout
     assert "'writes': False" in result.stdout
     assert not output_dir.exists()
+
+
+def test_bundled_cpu_smoke_writes_valid_step_under_one_minute(tmp_path: Path) -> None:
+    output_dir = tmp_path / "cpu-smoke"
+    started = time.monotonic()
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "da3_cad",
+            "cpu-smoke",
+            "--output",
+            str(output_dir),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    elapsed = time.monotonic() - started
+    output = completed.stdout + completed.stderr
+
+    assert completed.returncode == 0, output
+    assert elapsed < CPU_SMOKE_BUDGET_SECONDS
+    assert "DA3 is not run" in output
+    assert "Reference CAD: not read" in " ".join(output.split())
+    step_path = output_dir / "model.step"
+    assert step_path.is_file()
+    shape = cq.importers.importStep(str(step_path)).val()
+    assert isinstance(shape, cq.Shape)
+    assert shape.isValid()
+    assert len(shape.Solids()) == 1
+
+    provenance = json.loads((output_dir / "provenance.json").read_text(encoding="utf-8"))
+    assert [item["path"] for item in provenance["inputs"]] == [
+        "view_000.png",
+        "view_001.png",
+        "view_002.png",
+        "view_003.png",
+    ]
 
 
 def test_offline_smoke_is_explicitly_not_a_metric_result(sample_case: Path, tmp_path: Path) -> None:

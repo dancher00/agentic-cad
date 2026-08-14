@@ -17,6 +17,9 @@ build/
 /outputs/
 /results/
 /captures/
+
+# Ad-hoc local captures supplied for manual reconstruction experiments.
+/mug*.jpg
 *.safetensors
 *.ckpt
 *.pth
@@ -34,4 +37,3 @@ paper/*.fls
 paper/*.log
 paper/*.out
 paper/*.pdf
-

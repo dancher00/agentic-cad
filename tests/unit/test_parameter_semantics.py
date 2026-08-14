@@ -18,11 +18,11 @@ def test_untyped_generated_literals_are_not_claimed_as_engineering_parameters() 
     assert "not advertised as engineering parameters" in semantics.warning
 
 
-def test_explicit_template_dimensions_are_primary_and_editable() -> None:
+def test_explicit_program_dimensions_are_primary_and_editable() -> None:
     semantics = classify_parameters(
         {"body_width": 1.0, "body_height": 0.1, "hole_1_diameter": 0.2},
-        backend="geometric-fitter-v1",
-        mode="explicit-template",
+        backend="sketch-extrusion-v1",
+        mode="explicit-program",
     )
 
     assert semantics.status == "explicit-engineering-schema"

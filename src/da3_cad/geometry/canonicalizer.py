@@ -123,6 +123,8 @@ class CanonicalCloud:
     normalization: BboxNormalization | None
     scale: ScaleDecision
     warnings: tuple[str, ...]
+    observed_points_world: FloatArray | None = None
+    observed_view_indices: IntArray | None = None
 
     def __post_init__(self) -> None:
         expected = (256, 3)
@@ -136,6 +138,12 @@ class CanonicalCloud:
             raise ValueError("sampled/unit point arrays must have shape (256,3)")
         if self.sampled_view_indices.shape != (256,) or self.sampled_inferred.shape != (256,):
             raise ValueError("sampled provenance arrays must have shape (256,)")
+        if self.observed_points_world is not None:
+            count = len(self.observed_points_world)
+            if self.observed_points_world.shape != (count, 3):
+                raise ValueError("observed points must have shape (N,3)")
+            if self.observed_view_indices is None or self.observed_view_indices.shape != (count,):
+                raise ValueError("observed view indices must match observed points")
 
     @property
     def normalized_tensor(self) -> FloatArray:
@@ -160,6 +168,15 @@ class CanonicalCloud:
             "normalization": self.normalization.as_dict() if self.normalization else None,
             "scale": self.scale.as_dict(),
             "warnings": list(self.warnings),
+            "secondary_observed_evidence": {
+                "available": self.observed_points_world is not None,
+                "point_count": (
+                    int(len(self.observed_points_world))
+                    if self.observed_points_world is not None
+                    else 0
+                ),
+                "geometry_role": "per-view CAD measurement; not canonical frame estimation",
+            },
         }
 
 
@@ -245,6 +262,7 @@ class PointCloudCanonicalizer:
         *,
         seed: int,
         known_dimension: KnownDimension | None = None,
+        observed_cloud: FusedPointCloud | None = None,
     ) -> CanonicalCloud:
         config = self.config
         state = _CloudState(
@@ -494,6 +512,16 @@ class PointCloudCanonicalizer:
             normalization=normalization,
             scale=scale,
             warnings=tuple(warnings),
+            observed_points_world=(
+                np.asarray(observed_cloud.points, dtype=np.float32).copy()
+                if observed_cloud is not None
+                else None
+            ),
+            observed_view_indices=(
+                np.asarray(observed_cloud.view_indices, dtype=np.int32).copy()
+                if observed_cloud is not None
+                else None
+            ),
         )
 
 

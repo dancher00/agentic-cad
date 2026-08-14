@@ -34,6 +34,10 @@ def test_geometry_diagnostics_write_inspectable_artifacts(tmp_path: Path) -> Non
         "confidence_000.png",
         "mask_000.png",
         "mask_overlay_000.png",
+        "observed_cloud.npz",
+        "observed_cloud.ply",
+        "trusted_geometry.npz",
+        "trusted_geometry.ply",
         "fused_cloud.npz",
         "fused_cloud.ply",
         "fusion_report.json",
@@ -41,4 +45,7 @@ def test_geometry_diagnostics_write_inspectable_artifacts(tmp_path: Path) -> Non
     assert expected <= {path.name for path in tmp_path.iterdir()}
     report = json.loads((tmp_path / "fusion_report.json").read_text())
     assert report["fusion"]["fused_points"] == 4
+    assert report["channels"]["observed"]["used_for_cad_fitting"] is False
+    assert report["channels"]["trusted"]["used_for_cad_fitting"] is True
+    assert report["channels"]["silhouettes"]["used_for_cad_fitting"] is True
     assert report["scale"]["status"] == "unresolved"

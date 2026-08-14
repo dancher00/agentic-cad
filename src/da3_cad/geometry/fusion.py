@@ -191,8 +191,13 @@ def fuse_prediction(
             prediction.depth[view_index] > 0.0
         )
         mask_gate = finite_depth & mask_values[view_index]
-        confidence_gate = np.isfinite(confidence[view_index])
         threshold = thresholds[view_index]
+        if threshold is None and not require_confidence:
+            # The observed channel is selected by finite depth and target mask.
+            # Missing confidence is metadata, not evidence that the surface is absent.
+            confidence_gate = np.ones((height, width), dtype=np.bool_)
+        else:
+            confidence_gate = np.isfinite(confidence[view_index])
         if threshold is not None:
             confidence_gate &= confidence[view_index] >= threshold
         keep = unprojected.valid_mask & mask_gate & confidence_gate

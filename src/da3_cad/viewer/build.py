@@ -21,7 +21,7 @@ from da3_cad.observations import IMAGE_EXTENSIONS
 from da3_cad.pipeline import inspect_run
 
 MAX_CLOUD_POINTS = 25_000
-MAX_SOLID_FACES = 7_500
+MAX_SOLID_FACES = 50_000
 MAX_INPUT_PREVIEWS = 16
 
 
@@ -71,11 +71,21 @@ def _solid_payload(path: Path | None) -> dict[str, object] | None:
         return None
     mesh = load_mesh(path, TessellationConfig())
     faces = np.asarray(mesh.faces, dtype=np.int64)
-    chosen = faces[_indices(len(faces), MAX_SOLID_FACES)]
-    triangles = np.asarray(mesh.vertices, dtype=np.float64)[chosen]
+    original_faces = len(faces)
+    rendered_mesh = mesh
+    if original_faces > MAX_SOLID_FACES:
+        try:
+            candidate = mesh.simplify_quadric_decimation(face_count=MAX_SOLID_FACES)
+            if candidate.is_watertight:
+                rendered_mesh = candidate
+        except Exception:
+            # The optional simplifier must never fall back to a holey face sample.
+            pass
+    rendered_faces = np.asarray(rendered_mesh.faces, dtype=np.int64)
+    triangles = np.asarray(rendered_mesh.vertices, dtype=np.float64)[rendered_faces]
     return {
         "source": path.name,
-        "original_faces": len(faces),
+        "original_faces": original_faces,
         "displayed_faces": len(triangles),
         "triangles": triangles.reshape(-1, 9).tolist(),
     }

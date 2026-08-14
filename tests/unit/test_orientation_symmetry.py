@@ -77,6 +77,10 @@ def test_volumetric_orientation_is_right_handed() -> None:
     )
     assert result.method == "pca-symmetry"
     assert result.determinant == pytest.approx(1.0, abs=1e-10)
+    snap = result.details["symmetry_axis_snap"]
+    assert isinstance(snap, dict)
+    assert snap["performed"] is True
+    assert float(snap["alignment_before"]) >= np.cos(np.deg2rad(5.0))
 
 
 def test_rank_one_cloud_is_rejected() -> None:

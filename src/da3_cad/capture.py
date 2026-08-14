@@ -31,6 +31,22 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _center_crop(
+    bgr: npt.NDArray[np.uint8],
+    fraction: float,
+) -> npt.NDArray[np.uint8]:
+    if not 0.25 <= fraction <= 1.0:
+        raise ValueError("center_crop_fraction must be in [0.25,1.0]")
+    if fraction == 1.0:
+        return bgr
+    height, width = bgr.shape[:2]
+    crop_height = max(1, int(round(height * fraction)))
+    crop_width = max(1, int(round(width * fraction)))
+    y0 = (height - crop_height) // 2
+    x0 = (width - crop_width) // 2
+    return np.asarray(bgr[y0 : y0 + crop_height, x0 : x0 + crop_width], dtype=np.uint8)
+
+
 @dataclass(frozen=True, slots=True)
 class VideoFrameCandidate:
     frame_index: int
@@ -146,12 +162,40 @@ def _select_diverse(
     return sorted((candidates[index] for index in selected), key=lambda item: item.frame_index)
 
 
+def _enable_display_orientation(cv2: Any, capture: Any) -> tuple[float, bool]:
+    """Make decoded pixels match the video display orientation metadata."""
+
+    meta_property = getattr(cv2, "CAP_PROP_ORIENTATION_META", None)
+    auto_property = getattr(cv2, "CAP_PROP_ORIENTATION_AUTO", None)
+    if meta_property is None:
+        return 0.0, False
+    degrees = float(capture.get(meta_property))
+    if not np.isfinite(degrees):
+        degrees = 0.0
+    requires_transform = not math.isclose(degrees % 360.0, 0.0, abs_tol=0.5)
+    if not requires_transform:
+        return degrees, False
+    if auto_property is None or not bool(capture.set(auto_property, 1.0)):
+        raise RuntimeError(
+            f"video declares {degrees:g} degree display rotation, but this OpenCV "
+            "backend cannot apply it safely"
+        )
+    applied = float(capture.get(auto_property)) >= 0.5
+    if not applied:
+        raise RuntimeError(
+            f"video declares {degrees:g} degree display rotation, but OpenCV left "
+            "orientation auto-application disabled"
+        )
+    return degrees, True
+
+
 def extract_video_keyframes(
     video_path: Path,
     output_dir: Path,
     *,
     views: int = 16,
     candidate_multiplier: int = 5,
+    center_crop_fraction: float = 1.0,
     start_seconds: float = 0.0,
     end_seconds: float | None = None,
 ) -> VideoCaptureResult:
@@ -161,6 +205,8 @@ def extract_video_keyframes(
         raise ValueError("video key-frame count must be in [3,64]")
     if candidate_multiplier < 1 or candidate_multiplier > 20:
         raise ValueError("candidate_multiplier must be in [1,20]")
+    if not 0.25 <= center_crop_fraction <= 1.0:
+        raise ValueError("center_crop_fraction must be in [0.25,1.0]")
     if start_seconds < 0.0 or (end_seconds is not None and end_seconds <= start_seconds):
         raise ValueError("video trim times are invalid")
     video_path = video_path.resolve()
@@ -174,6 +220,7 @@ def extract_video_keyframes(
     if not capture.isOpened():
         raise ValueError(f"OpenCV could not open video: {video_path}")
     try:
+        orientation_degrees, orientation_applied = _enable_display_orientation(cv2, capture)
         fps = float(capture.get(cv2.CAP_PROP_FPS))
         total_frames = int(round(float(capture.get(cv2.CAP_PROP_FRAME_COUNT))))
         width = int(round(float(capture.get(cv2.CAP_PROP_FRAME_WIDTH))))
@@ -201,12 +248,16 @@ def extract_video_keyframes(
             if not ok:
                 break
             if frame_index in targets:
-                descriptor, blur, exposure, quality = _frame_descriptor(frame)
+                cropped = _center_crop(
+                    np.asarray(frame, dtype=np.uint8),
+                    center_crop_fraction,
+                )
+                descriptor, blur, exposure, quality = _frame_descriptor(cropped)
                 candidates.append(
                     VideoFrameCandidate(
                         frame_index=frame_index,
                         timestamp_seconds=frame_index / fps,
-                        bgr=np.asarray(frame, dtype=np.uint8),
+                        bgr=cropped,
                         descriptor=descriptor,
                         blur_score=blur,
                         exposure_score=exposure,
@@ -257,12 +308,19 @@ def extract_video_keyframes(
             "total_frames": total_frames,
             "duration_seconds": duration,
             "resolution": [width, height],
+            "display_orientation_degrees": orientation_degrees,
+            "display_orientation_applied": orientation_applied,
         },
         "capture_contract": {
             "acquisition_mode": "stationary-object-moving-camera",
             "turntable_capture_supported": False,
             "requested_views": views,
             "candidate_multiplier": candidate_multiplier,
+            "center_crop_fraction": center_crop_fraction,
+            "output_resolution": [
+                int(round(width * center_crop_fraction)),
+                int(round(height * center_crop_fraction)),
+            ],
             "trim_seconds": [start_seconds, effective_end],
             "selection": "quality-seeded greedy visual-plus-temporal farthest point",
         },

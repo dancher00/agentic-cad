@@ -1,0 +1,31 @@
+{
+  "camera_bundle": "cameras.npz",
+  "color_rgb": [
+    37,
+    155,
+    172
+  ],
+  "expected_operation_family": "revolve",
+  "id": "bottle_profile",
+  "input_views": 12,
+  "mask_fraction_range": [
+    0.0748443603515625,
+    0.115447998046875
+  ],
+  "masks": "masks/*.png",
+  "parameters_mm": {
+    "body": 34.0,
+    "body_diameter": 38.0,
+    "neck": 20.0,
+    "neck_diameter": 15.0
+  },
+  "reference_available_to_reconstruction": false,
+  "reference_cad": {
+    "mesh": "gt.stl",
+    "step": "gt.step"
+  },
+  "stress": "asymmetric axial profile and narrow neck",
+  "target_source": "project-generated exact visible-instance masks",
+  "title": "Bottle profile",
+  "views": "views/*.png"
+}

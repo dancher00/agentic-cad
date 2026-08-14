@@ -1,0 +1,355 @@
+{
+  "benchmark_id": "public-photo-to-cad-v2",
+  "cases": [
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude",
+      "id": "block",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.17941713415860222,
+        "mesh_iou_percent": 96.26841178361646
+      },
+      "selected_family": "extrude",
+      "stress": "negative control: no invented hole",
+      "surface_provenance": {
+        "contradicted": 0.0,
+        "measured": 0.6678466796875,
+        "safe": true,
+        "unobserved": 0.3310546875,
+        "weakly_measured": 0.0010986328125
+      },
+      "title": "Solid block",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude",
+      "id": "hex_prism",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.28446430645867476,
+        "mesh_iou_percent": 93.71746450984018
+      },
+      "selected_family": "extrude",
+      "stress": "non-rectangular convex sketch",
+      "surface_provenance": {
+        "contradicted": 0.00390625,
+        "measured": 0.5308837890625,
+        "safe": true,
+        "unobserved": 0.345947265625,
+        "weakly_measured": 0.1192626953125
+      },
+      "title": "Hexagonal prism",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude",
+      "id": "l_bracket",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.4915097931341727,
+        "mesh_iou_percent": 79.71439733630675
+      },
+      "selected_family": "extrude",
+      "stress": "concave sketch without a named-part class",
+      "surface_provenance": {
+        "contradicted": 0.0,
+        "measured": 0.7440214738897023,
+        "safe": true,
+        "unobserved": 0.25427037579306977,
+        "weakly_measured": 0.001708150317227916
+      },
+      "title": "L bracket",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude",
+      "id": "t_bracket",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 1.252179204374568,
+        "mesh_iou_percent": 71.78646456763464
+      },
+      "selected_family": "extrude",
+      "stress": "branching concave profile",
+      "surface_provenance": {
+        "contradicted": 0.006346106907493288,
+        "measured": 0.5357578716133756,
+        "safe": true,
+        "unobserved": 0.3618501342445692,
+        "weakly_measured": 0.09604588723456188
+      },
+      "title": "T profile",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude",
+      "id": "u_channel",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.7297854077889252,
+        "mesh_iou_percent": 77.69151881831678
+      },
+      "selected_family": "extrude",
+      "stress": "two thin walls and an open concavity",
+      "surface_provenance": {
+        "contradicted": 0.00012212994626282364,
+        "measured": 0.767953102100635,
+        "safe": true,
+        "unobserved": 0.20994137762579385,
+        "weakly_measured": 0.021983390327308255
+      },
+      "title": "U channel",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude+cut",
+      "id": "key_plate",
+      "input_views": 12,
+      "operation_count": 2,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.27357872207184913,
+        "mesh_iou_percent": 88.0636633065371
+      },
+      "selected_family": "extrude",
+      "stress": "irregular outer sketch plus one circular cut",
+      "surface_provenance": {
+        "contradicted": 0.015429122468659595,
+        "measured": 0.6209016393442623,
+        "safe": true,
+        "unobserved": 0.343297974927676,
+        "weakly_measured": 0.020371263259402122
+      },
+      "title": "Key plate",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 1,
+        "recovered_through_holes": 1
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude+cut",
+      "id": "flange",
+      "input_views": 12,
+      "operation_count": 2,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.2963123877561501,
+        "mesh_iou_percent": 89.74751920209206
+      },
+      "selected_family": "extrude",
+      "stress": "circular body with one measured through-cut",
+      "surface_provenance": {
+        "contradicted": 0.0001199616122840691,
+        "measured": 0.6536708253358925,
+        "safe": true,
+        "unobserved": 0.33205374280230326,
+        "weakly_measured": 0.014155470249520154
+      },
+      "title": "Round flange",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 1,
+        "recovered_through_holes": 1
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "extrude+2cut",
+      "id": "two_hole_plate",
+      "input_views": 12,
+      "operation_count": 3,
+      "product_decision": "accept",
+      "program_family": "sketch-extrusion",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.29961079315353817,
+        "mesh_iou_percent": 88.94912473249096
+      },
+      "selected_family": "extrude",
+      "stress": "multiple repeated enclosed-mask apertures",
+      "surface_provenance": {
+        "contradicted": 0.0057553956834532375,
+        "measured": 0.6217026378896883,
+        "safe": true,
+        "unobserved": 0.3306954436450839,
+        "weakly_measured": 0.04184652278177458
+      },
+      "title": "Two-hole plate",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 2,
+        "recovered_through_holes": 2
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "revolve",
+      "id": "stepped_shaft",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "revolve",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.3555487598446718,
+        "mesh_iou_percent": 88.70313520998943
+      },
+      "selected_family": "revolve",
+      "stress": "piecewise axial profile",
+      "surface_provenance": {
+        "contradicted": 0.03914761163653777,
+        "measured": 0.6309110499221836,
+        "safe": true,
+        "unobserved": 0.23596312702023226,
+        "weakly_measured": 0.09397821142104633
+      },
+      "title": "Stepped shaft",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    },
+    {
+      "failure_reason": null,
+      "failure_summary": null,
+      "ground_truth_family": "revolve",
+      "id": "bottle_profile",
+      "input_views": 12,
+      "operation_count": 1,
+      "product_decision": "accept",
+      "program_family": "revolve",
+      "reference_metrics": {
+        "chamfer_squared_x1000": 0.498495014587079,
+        "mesh_iou_percent": 91.46949700316578
+      },
+      "selected_family": "revolve",
+      "stress": "asymmetric axial profile and narrow neck",
+      "surface_provenance": {
+        "contradicted": 0.0062266500622665,
+        "measured": 0.7974640552473679,
+        "safe": true,
+        "unobserved": 0.16064757160647572,
+        "weakly_measured": 0.03566172308388996
+      },
+      "title": "Bottle profile",
+      "topology": {
+        "correct": true,
+        "ground_truth_through_holes": 0,
+        "recovered_through_holes": 0
+      },
+      "valid_step": true
+    }
+  ],
+  "claim_boundary": {
+    "assets": "Apache-2.0 project-generated RGB, masks and reference CAD",
+    "external_camera_bundle": true,
+    "physical_scale": "known millimetre scale from the synthetic camera bundle",
+    "purpose": "controlled integration and failure benchmark; not category-level real-photo accuracy and not recovery of original design history",
+    "reference_cad_available_to_reconstruction": false,
+    "target_masks": "exact visible-instance masks supplied as user target input"
+  },
+  "input": {
+    "cases": 10,
+    "fixture_manifest": "sample_data/public_benchmark_v2/manifest.json",
+    "image_size": [
+      256,
+      256
+    ],
+    "total_rgb_views": 120,
+    "views_per_case": 12
+  },
+  "pipeline": {
+    "cad_backend": "construction-grammar-v1",
+    "config": "configs/public_benchmark_v2.yaml",
+    "depth": "DA3-LARGE-1.1",
+    "depth_revision": "da3-large-1.1@0e109ae307c5+gt-blind-depth-alignment",
+    "evaluator": "da3-cad-evaluator-v2-centered; no ICP or per-axis scaling",
+    "seed": 20260810,
+    "tested_code": {
+      "da3_cad": "0.4.0",
+      "implementation": "CPython",
+      "pipeline_source_sha256": "48c4481f8940ed7240ca902aa2ac28ecfb432066b445dc299245146d7b9df37d",
+      "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+      "python": "3.12.13",
+      "repository_base_commit": "7c83a44638c852bac9aea80c09a1795d128519e8",
+      "repository_working_tree_clean": "false"
+    }
+  },
+  "run_date": "2026-08-14",
+  "schema_version": "da3-cad-public-benchmark-v2",
+  "summary": {
+    "abstentions": 0,
+    "cases": 10,
+    "product_accepts": 10,
+    "product_accepts_with_missed_topology": 0,
+    "provenance_rejects": 0,
+    "reference_surface_and_topology_passes": 7,
+    "rgb_views": 120,
+    "valid_step_mean_iou_percent": 86.61111964699901,
+    "valid_step_median_iou_percent": 88.82612997124019,
+    "valid_step_topology_correct": 10,
+    "valid_steps": 10
+  }
+}

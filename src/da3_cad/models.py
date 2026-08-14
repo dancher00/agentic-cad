@@ -106,7 +106,7 @@ class CadProgram:
     source: str
     parameters: dict[str, float]
     backend: str
-    template_id: str
+    program_family: str
     warnings: tuple[str, ...] = ()
 
 

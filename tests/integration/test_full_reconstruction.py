@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 
@@ -92,7 +93,7 @@ def test_full_permissive_pipeline_writes_valid_parameterized_step(
         profile="permissive",
         device="cpu",
         depth_backend="da3-base",
-        cad_backend="geometric-fitter",
+        cad_backend="sketch-extrusion",
         da3=Da3Config(checkpoint="base"),
         canonicalizer=CanonicalizerConfig(
             confidence_percentile=0.0,
@@ -116,7 +117,7 @@ def test_full_permissive_pipeline_writes_valid_parameterized_step(
     assert (output / "artefacts" / "canonicalizer" / "normalized_sample.npy").is_file()
     assert (output / "artefacts" / "generated_program.py").is_file()
     quality = json.loads((output / "quality.json").read_text(encoding="utf-8"))
-    assert quality["backend"] == "geometric-fitter-v1"
+    assert quality["backend"] == "sketch-extrusion-v1"
     assert quality["fallback_used"] is False
     provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
     assert [stage["name"] for stage in provenance["stages"]] == [
@@ -127,26 +128,72 @@ def test_full_permissive_pipeline_writes_valid_parameterized_step(
     ]
 
     parameter_payload = json.loads((output / "parameters.json").read_text(encoding="utf-8"))
-    assert parameter_payload["schema_version"] == "2.0"
+    assert parameter_payload["schema_version"] == "3.0"
     assert parameter_payload["parameter_semantics"]["status"] == ("explicit-engineering-schema")
     parameters = {item["name"]: item["value"] for item in parameter_payload["primary_parameters"]}
     edited_output = tmp_path / "edited"
-    edited_width = parameters["body_width"] * 1.1
-    edited = edit_run(output, edited_output, {"body_width": edited_width}, config)
+    edited_length = parameters["extrusion_length"] * 1.1
+    edited = edit_run(output, edited_output, {"extrusion_length": edited_length}, config)
     assert edited.valid, edited.error
     assert result.validation.bbox is not None
     assert result.validation.volume is not None
     assert edited.bbox is not None
     assert edited.volume is not None
-    assert edited.bbox[3] - edited.bbox[0] == pytest.approx(edited_width)
+    assert edited.bbox[5] - edited.bbox[2] == pytest.approx(edited_length)
     assert edited.volume == pytest.approx(result.validation.volume * 1.1)
     edited_parameters = json.loads((edited_output / "parameters.json").read_text(encoding="utf-8"))
     edited_quality = json.loads((edited_output / "quality.json").read_text(encoding="utf-8"))
     edited_provenance = json.loads((edited_output / "provenance.json").read_text(encoding="utf-8"))
-    assert edited_parameters["backend"] == "geometric-fitter-v1"
+    assert edited_parameters["backend"] == "sketch-extrusion-v1"
     assert edited_parameters["units"] == "canonical-model-unit"
     assert edited_parameters["coordinate_spaces"]["normalized_cube"]["container"] == ("[0,1]^3")
     assert edited_parameters["primary_parameters"]
-    assert edited_quality["backend"] == "geometric-fitter-v1"
+    assert edited_quality["backend"] == "sketch-extrusion-v1"
     assert edited_quality["fallback_used"] is False
-    assert edited_provenance["stages"][0]["details"]["source_backend"] == ("geometric-fitter-v1")
+    assert edited_provenance["stages"][0]["details"]["source_backend"] == ("sketch-extrusion-v1")
+
+
+def test_reconstruction_api_import_is_order_independent() -> None:
+    module = importlib.import_module("da3_cad.reconstruction_pipeline")
+    assert callable(module.reconstruct_full)
+
+
+def test_full_construction_grammar_selects_extrude_and_writes_step(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "da3_cad.reconstruction_pipeline.run_geometry",
+        lambda _input, output, _config, accepted_noncommercial, **_kwargs: _geometry_result(output),
+    )
+    config = AppConfig(
+        profile="permissive",
+        device="cpu",
+        depth_backend="da3-base",
+        cad_backend="construction-grammar",
+        da3=Da3Config(checkpoint="base"),
+        canonicalizer=CanonicalizerConfig(
+            confidence_percentile=0.0,
+            outlier_enabled=False,
+            consistency_radius_fraction=0.001,
+            plane_ransac_iterations=64,
+        ),
+    )
+    output = tmp_path / "grammar-run"
+    result = reconstruct_full(
+        Path("sample_data/plate/views"),
+        output,
+        config,
+        accepted_da3_noncommercial=False,
+    )
+
+    assert result.validation.valid, result.validation.error
+    assert result.program.backend == "construction-grammar-v1"
+    assert result.program.program_family == "sketch-extrusion"
+    report = json.loads((output / "artefacts" / "cad_report.json").read_text(encoding="utf-8"))
+    grammar = report["report"]
+    assert grammar["gt_blind"] is True
+    assert grammar["selected_family"] == "extrude"
+    parameters = json.loads((output / "parameters.json").read_text(encoding="utf-8"))
+    assert parameters["backend"] == "construction-grammar-v1"
+    assert parameters["parameter_semantics"]["status"] == "explicit-engineering-schema"

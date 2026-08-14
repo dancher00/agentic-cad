@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from da3_cad.capture import extract_video_keyframes
+from da3_cad.capture import _enable_display_orientation, extract_video_keyframes
 
 cv2 = pytest.importorskip("cv2")
 
@@ -80,4 +80,50 @@ def test_video_keyframes_are_diverse_ordered_and_repeatable(tmp_path: Path) -> N
     manifest = json.loads(first.manifest_path.read_text(encoding="utf-8"))
     assert manifest["capture_contract"]["acquisition_mode"] == ("stationary-object-moving-camera")
     assert manifest["capture_contract"]["turntable_capture_supported"] is False
+    assert manifest["capture_contract"]["center_crop_fraction"] == 1.0
+    assert manifest["capture_contract"]["output_resolution"] == [160, 120]
+    assert manifest["source"]["display_orientation_degrees"] == 0.0
+    assert manifest["source"]["display_orientation_applied"] is False
     assert len(list(first.frames_dir.glob("*.png"))) == 8
+
+
+def test_video_keyframes_can_be_center_cropped(tmp_path: Path) -> None:
+    video = tmp_path / "orbit.avi"
+    _write_test_video(video)
+
+    result = extract_video_keyframes(
+        video,
+        tmp_path / "cropped",
+        views=6,
+        candidate_multiplier=2,
+        center_crop_fraction=0.5,
+    )
+
+    frame = cv2.imread(str(result.frames_dir / "view_000.png"))
+    assert frame.shape[:2] == (60, 80)
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["capture_contract"]["center_crop_fraction"] == 0.5
+    assert manifest["capture_contract"]["output_resolution"] == [80, 60]
+
+
+def test_nonzero_video_orientation_is_applied_or_fails_closed() -> None:
+    class FakeCv2:
+        CAP_PROP_ORIENTATION_META = 48
+        CAP_PROP_ORIENTATION_AUTO = 49
+
+    class FakeCapture:
+        auto = 0.0
+
+        def get(self, key: int) -> float:
+            return 90.0 if key == 48 else self.auto
+
+        def set(self, key: int, value: float) -> bool:
+            if key != 49:
+                return False
+            self.auto = value
+            return True
+
+    degrees, applied = _enable_display_orientation(FakeCv2(), FakeCapture())
+
+    assert degrees == 90.0
+    assert applied is True
