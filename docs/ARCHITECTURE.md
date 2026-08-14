@@ -127,27 +127,45 @@ Geometry extraction deliberately emits separate channels:
   this is inspectable DA3 evidence and is not fed directly to the CAD fitter;
 - trusted_geometry: mask observations passing the per-view confidence gate;
   these points retain colour, confidence, source view and source pixel;
-- preserved masks/silhouettes: independent evidence for boundaries, enclosed
-  voids and topology.
+- preserved RGB, masks/silhouettes and dense depth: independent evidence for
+  boundaries and topology. A mask void is direct evidence; when segmentation
+  fills a visible hole, an RGB ellipse is admitted only if its interior departs
+  from the affine DA3 depth plane fitted to the surrounding annulus.
 
 This separation prevents low-confidence edge depth from filling an aperture
-while keeping those observations visible for diagnosis. The compatibility file
+while keeping those observations visible for diagnosis. A painted circle on a
+planar depth patch cannot change CAD topology. The compatibility file
 fused_cloud aliases trusted_geometry; it is not a raw/all-mask cloud.
 
 When cameras come from DA3 rather than an external calibrated bundle, a
 whole-view refinement/admission stage runs before these channels are finalized.
-It builds a graph over provisional masked unprojections using robust object-
-centre distance and bidirectional nearest-surface distance. For each disconnected
-view it compares a centre-aligned translation with a trimmed rigid SE(3)
-candidate. Candidate fitting sees only an optimization split of the admitted
-views. Acceptance is decided on disjoint held-out views using symmetric surface
-distance, mask overlap and depth reprojection, with object-relative translation,
-15-degree rotation and per-view extent bounds. `K` and depth are immutable. A
-complete graph re-admission is mandatory and failed candidates are rolled back.
-The original prediction and both before/after samples are persisted whenever an
-island is found. This prevents detached islands from inflating global filter
-radii without claiming non-rigid depth repair, arbitrary global registration,
-TSDF or surfel fusion.
+It first builds a graph over provisional masked unprojections using robust
+object-centre distance and bidirectional nearest-surface distance. An
+insufficient graph receives only a bounded all-view translation consensus; a
+detached view in an otherwise sufficient graph may compare centre translation
+with trimmed rigid SE(3). Candidate fitting and audit use disjoint view or point
+splits, and complete graph re-admission is mandatory.
+
+The same DA3 inference pass exports layer-11 dense features, projected
+deterministically to 64 normalized dimensions; CPU SIFT is a fallback. After
+coarse admission, fixed feature/depth correspondences can optimize a bounded
+joint SE(3) bundle with one gauge camera. Fit matches, held-out matches,
+bidirectional RGB reprojection and independent DA3 surface samples are separate
+gates. When the strong-match graph splits into multi-view components, a
+component-rig proposal applies one transform to every camera in a component,
+preserving all internal relative poses. It is accepted only when held-out
+surface error, forward/reverse mask overlap and depth reprojection all improve.
+
+A repeated concentric RGB boundary with a non-planar DA3 interior activates a
+topology guard before either connected or component-rig refinement. Such axial
+surfaces are registration-symmetric: nearest-surface and reprojection scores can
+improve while the camera-to-opening relation and a through-hole disappear. The
+guard therefore retains the pre-bundle cameras and records
+topology-guarded-abstention. K, RGB, masks and depth are immutable throughout;
+failed candidates are byte-equivalent rollbacks. The original prediction and
+before/after samples are persisted for every applied correction. This prevents
+detached islands from inflating global filter radii without claiming non-rigid
+depth repair, arbitrary global registration, TSDF or surfel fusion.
 
 Residual pose error can be local rather than a detached whole view: a thin
 off-body loop may appear as several individually supported nearby surfaces
@@ -256,10 +274,22 @@ The revolution family:
    replace a noisy envelope by that piecewise profile only when raw 3D and
    side-view masks agree; smooth profiles remain unchanged;
 8. simplifies the recovered axial profile without a named object class;
-9. detects an inner radial wall only when it is visibly supported in raw 3D from
-   an open
-   end, producing a shell/inner profile; and
-10. emits one 360-degree CadQuery revolve and restores the world orientation.
+9. detects an inner radial wall when visibly supported in raw 3D; alternatively,
+   repeated full inner RGB ellipses may propose an opening only when DA3 depth
+   violates the local plane, a larger concentric rim repeats across end-on views,
+   and the radius ratio is stable;
+10. assigns each photometric rim to an axial silhouette endpoint and scores four
+    topology hypotheses: solid, either blind-cavity orientation, and through.
+    Through is admitted only when both endpoint groups repeat and their admitted
+    camera directions have sufficient angular separation; otherwise the result
+    remains blind or ambiguous;
+11. may simplify a mild perspective-induced end taper only when the fixed DA3
+    surface and every original mask improve; severe endpoint corrections are
+    rejected as unidentifiable;
+12. runs bounded pose-first CAD refinement only after a minimum baseline
+    CAD-to-mask gate. Topology remains frozen; DA3 surface residual, per-view
+    IoU, regularization and search-boundary gates can all force rollback; and
+13. emits one 360-degree CadQuery revolve and restores the world orientation.
 
 The axial-shell-loop composition family:
 

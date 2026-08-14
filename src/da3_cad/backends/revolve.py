@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, replace
+from itertools import product
 
 import cv2
 import numpy as np
@@ -19,6 +20,10 @@ from da3_cad.backends.sketch_extrusion import (
 from da3_cad.cad.program import float_matrix3_rows, rigid_axis_angle_degrees
 from da3_cad.config import RevolveConfig
 from da3_cad.geometry.canonicalizer import CanonicalCloud
+from da3_cad.geometry.interior_ellipse import (
+    InteriorEllipseEvidence,
+    detect_concentric_interior,
+)
 from da3_cad.geometry.scale import (
     KnownDimension,
     ScaleDecision,
@@ -46,6 +51,27 @@ class AxialProfile:
             "inner_points": [list(point) for point in self.inner_points],
             "shell": self.shell,
             "opening": self.opening,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PhotometricTopologyHypothesis:
+    """One discrete interior topology scored only against reconstruction evidence."""
+
+    topology: str
+    evidence_cost: float
+    admitted: bool
+    selected: bool
+    reason: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "topology": self.topology,
+            "evidence_cost": self.evidence_cost,
+            "admitted": self.admitted,
+            "selected": self.selected,
+            "reason": self.reason,
+            "ground_truth_access": False,
         }
 
 
@@ -107,6 +133,104 @@ class RevolveStepRefinement:
 
 
 @dataclass(frozen=True, slots=True)
+class RevolvePlateauSimplification:
+    """Evidence ledger for removing perspective-induced axial end taper."""
+
+    applied: bool
+    reason: str
+    plateau_radius: float
+    central_radius_cv: float
+    endpoint_radius_ratio: float
+    baseline_surface_p90_fraction: float
+    selected_surface_p90_fraction: float
+    baseline_mean_iou: float
+    selected_mean_iou: float
+    baseline_view_iou: tuple[float, ...]
+    selected_view_iou: tuple[float, ...]
+    original_outer_vertices: int
+    selected_outer_vertices: int
+    topology: str
+    topology_preserved: bool
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "ground_truth_access": False,
+            "mask_access": "original reconstruction input segmentation masks only",
+            "geometry_prior": "fixed DA3 observed surface",
+            "grammar": (
+                "dominant constant radial plateau; projected end taper is removed only "
+                "when both DA3 surface and every calibrated input view improve"
+            ),
+            "applied": self.applied,
+            "reason": self.reason,
+            "plateau_radius": self.plateau_radius,
+            "central_radius_cv": self.central_radius_cv,
+            "endpoint_radius_ratio": self.endpoint_radius_ratio,
+            "baseline_surface_p90_fraction": self.baseline_surface_p90_fraction,
+            "selected_surface_p90_fraction": self.selected_surface_p90_fraction,
+            "baseline_mean_iou": self.baseline_mean_iou,
+            "selected_mean_iou": self.selected_mean_iou,
+            "baseline_view_iou": list(self.baseline_view_iou),
+            "selected_view_iou": list(self.selected_view_iou),
+            "original_outer_vertices": self.original_outer_vertices,
+            "selected_outer_vertices": self.selected_outer_vertices,
+            "topology": self.topology,
+            "topology_preserved": self.topology_preserved,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class RevolveCadRefinement:
+    """Bounded CAD-to-input refinement with the selected topology frozen."""
+
+    applied: bool
+    reason: str
+    axial_scale: float
+    radial_scale: float
+    axial_offset_fraction: float
+    rotation_degrees: tuple[float, float, float]
+    baseline_mean_iou: float | None
+    selected_mean_iou: float | None
+    score_gain: float | None
+    regularization_penalty: float | None
+    regularized_score_gain: float | None
+    baseline_surface_p90_fraction: float | None
+    selected_surface_p90_fraction: float | None
+    baseline_view_iou: tuple[float, ...]
+    selected_view_iou: tuple[float, ...]
+    topology: str
+    topology_preserved: bool
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "ground_truth_access": False,
+            "mask_access": "original reconstruction input segmentation masks only",
+            "geometry_prior": "fixed DA3 observed surface; no DA3 rerun on CAD renders",
+            "objective": (
+                "maximize mean calibrated CAD silhouette IoU over every non-empty "
+                "input view under a bounded DA3-surface and per-view rollback gate"
+            ),
+            "applied": self.applied,
+            "reason": self.reason,
+            "axial_scale": self.axial_scale,
+            "radial_scale": self.radial_scale,
+            "axial_offset_fraction": self.axial_offset_fraction,
+            "rotation_degrees": list(self.rotation_degrees),
+            "baseline_mean_iou": self.baseline_mean_iou,
+            "selected_mean_iou": self.selected_mean_iou,
+            "score_gain": self.score_gain,
+            "regularization_penalty": self.regularization_penalty,
+            "regularized_score_gain": self.regularized_score_gain,
+            "baseline_surface_p90_fraction": self.baseline_surface_p90_fraction,
+            "selected_surface_p90_fraction": self.selected_surface_p90_fraction,
+            "baseline_view_iou": list(self.baseline_view_iou),
+            "selected_view_iou": list(self.selected_view_iou),
+            "topology": self.topology,
+            "topology_preserved": self.topology_preserved,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class RevolveAxisCandidate:
     axis: int
     lower: float
@@ -126,6 +250,7 @@ class RevolveAxisCandidate:
     fit_cost: float
     fit_metric: str
     silhouette_metrics: dict[str, float] | None
+    topology_hypotheses: tuple[PhotometricTopologyHypothesis, ...] = ()
     frame_canonical_columns: tuple[
         tuple[float, float, float],
         tuple[float, float, float],
@@ -133,6 +258,8 @@ class RevolveAxisCandidate:
     ] = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
     axis_refinement_degrees: float = 0.0
     step_refinement: RevolveStepRefinement | None = None
+    plateau_simplification: RevolvePlateauSimplification | None = None
+    cad_refinement: RevolveCadRefinement | None = None
 
     @property
     def operation_count(self) -> int:
@@ -161,10 +288,21 @@ class RevolveAxisCandidate:
             "fit_cost": self.fit_cost,
             "fit_metric": self.fit_metric,
             "silhouette_metrics": self.silhouette_metrics,
+            "topology_hypotheses": [
+                hypothesis.as_dict() for hypothesis in self.topology_hypotheses
+            ],
             "frame_canonical_columns": [list(row) for row in self.frame_canonical_columns],
             "axis_refinement_degrees": self.axis_refinement_degrees,
             "step_refinement": (
                 self.step_refinement.as_dict() if self.step_refinement is not None else None
+            ),
+            "plateau_simplification": (
+                self.plateau_simplification.as_dict()
+                if self.plateau_simplification is not None
+                else None
+            ),
+            "cad_refinement": (
+                self.cad_refinement.as_dict() if self.cad_refinement is not None else None
             ),
         }
 
@@ -418,6 +556,758 @@ def _render_revolve_silhouette(
 def _silhouette_iou(first: BoolArray, second: BoolArray) -> float:
     union = int(np.logical_or(first, second).sum())
     return float(np.logical_and(first, second).sum() / max(union, 1))
+
+
+def _revolve_topology(profile: AxialProfile) -> str:
+    if not profile.shell:
+        return "solid"
+    return profile.opening or "shell"
+
+
+def _revolve_local_rotation_matrix(rotation_degrees: tuple[float, float, float]) -> FloatArray:
+    x_angle, y_angle, z_angle = np.deg2rad(rotation_degrees)
+    sx, cx = float(np.sin(x_angle)), float(np.cos(x_angle))
+    sy, cy = float(np.sin(y_angle)), float(np.cos(y_angle))
+    sz, cz = float(np.sin(z_angle)), float(np.cos(z_angle))
+    rotate_x = np.asarray(
+        ((1.0, 0.0, 0.0), (0.0, cx, -sx), (0.0, sx, cx)),
+        dtype=np.float64,
+    )
+    rotate_y = np.asarray(
+        ((cy, 0.0, sy), (0.0, 1.0, 0.0), (-sy, 0.0, cy)),
+        dtype=np.float64,
+    )
+    rotate_z = np.asarray(
+        ((cz, -sz, 0.0), (sz, cz, 0.0), (0.0, 0.0, 1.0)),
+        dtype=np.float64,
+    )
+    return rotate_z @ rotate_y @ rotate_x
+
+
+def _candidate_with_cad_refinement(
+    candidate: RevolveAxisCandidate,
+    *,
+    axial_scale: float,
+    radial_scale: float,
+    axial_offset_fraction: float,
+    rotation_degrees: tuple[float, float, float],
+) -> RevolveAxisCandidate:
+    """Apply a positive affine profile update without changing its topology."""
+
+    midpoint = 0.5 * (candidate.lower + candidate.upper)
+    span = candidate.upper - candidate.lower
+    offset = axial_offset_fraction * span
+
+    def axial(value: float) -> float:
+        return midpoint + axial_scale * (value - midpoint) + offset
+
+    def point(value: tuple[float, float]) -> tuple[float, float]:
+        radius, position = value
+        # Radial scale is a CAD-coordinate scale, not an outer-wall edit.
+        # Applying it to every non-axis point preserves bore/body ratios and
+        # cannot silently shrink a previously selected through-hole.
+        radius *= radial_scale
+        return float(radius), axial(float(position))
+
+    profile = AxialProfile(
+        points=tuple(point(value) for value in candidate.profile.points),
+        outer_points=tuple(point(value) for value in candidate.profile.outer_points),
+        inner_points=tuple(point(value) for value in candidate.profile.inner_points),
+        shell=candidate.profile.shell,
+        opening=candidate.profile.opening,
+    )
+    frame = np.asarray(candidate.frame_canonical_columns, dtype=np.float64)
+    refined_frame = frame @ _revolve_local_rotation_matrix(rotation_degrees)
+    return replace(
+        candidate,
+        lower=axial(candidate.lower),
+        upper=axial(candidate.upper),
+        profile=profile,
+        frame_canonical_columns=float_matrix3_rows(refined_frame),
+    )
+
+
+def _valid_refined_revolve_profile(profile: AxialProfile) -> bool:
+    outer = np.asarray(profile.outer_points, dtype=np.float64)
+    if (
+        outer.ndim != 2
+        or outer.shape[1] != 2
+        or len(outer) < 2
+        or not np.isfinite(outer).all()
+        or np.any(outer[:, 0] <= 1e-8)
+        or np.any(np.diff(outer[:, 1]) < -1e-9)
+    ):
+        return False
+    if not profile.shell:
+        return not profile.inner_points
+    inner = np.asarray(profile.inner_points, dtype=np.float64)
+    if (
+        inner.ndim != 2
+        or inner.shape[1] != 2
+        or len(inner) < 2
+        or not np.isfinite(inner).all()
+        or np.any(inner[:, 0] <= 1e-8)
+    ):
+        return False
+    for inner_radius, inner_axis in inner:
+        outer_radii: list[float] = []
+        for first, second in zip(outer[:-1], outer[1:], strict=True):
+            low = min(first[1], second[1]) - 1e-9
+            high = max(first[1], second[1]) + 1e-9
+            if not low <= inner_axis <= high:
+                continue
+            delta = second[1] - first[1]
+            if abs(float(delta)) <= 1e-12:
+                outer_radii.extend((float(first[0]), float(second[0])))
+            else:
+                fraction = float((inner_axis - first[1]) / delta)
+                outer_radii.append(float(first[0] + fraction * (second[0] - first[0])))
+        if not outer_radii or inner_radius >= max(outer_radii) - 1e-7:
+            return False
+    return True
+
+
+def _revolve_surface_residual(
+    canonical: CanonicalCloud,
+    candidate: RevolveAxisCandidate,
+    *,
+    maximum_samples: int,
+) -> tuple[float, float, float]:
+    raw, _ = _observed_profile_evidence_with_views(canonical)
+    values = np.asarray(raw, dtype=np.float64)
+    if len(values) > maximum_samples:
+        indices = np.linspace(0, len(values) - 1, maximum_samples, dtype=np.int64)
+        values = values[indices]
+    frame = np.asarray(candidate.frame_canonical_columns, dtype=np.float64)
+    local = values @ frame
+    transverse = tuple(index for index in range(3) if index != candidate.axis)
+    centered = local[:, transverse] - np.asarray(candidate.center_transverse)[None, :]
+    radii = np.linalg.norm(centered, axis=1)
+    axial = local[:, candidate.axis]
+    residual = _distance_to_profile(radii, axial, candidate.profile)
+    outer = np.asarray(candidate.profile.outer_points, dtype=np.float64)
+    largest_extent = max(
+        candidate.upper - candidate.lower,
+        2.0 * float(np.max(outer[:, 0])),
+        1e-8,
+    )
+    median = float(np.median(residual))
+    p90 = float(np.percentile(residual, 90.0))
+    return median, p90, p90 / largest_extent
+
+
+def _profile_with_outer_points(
+    profile: AxialProfile,
+    outer_points: tuple[tuple[float, float], ...],
+    *,
+    inner_radius: float | None = None,
+) -> AxialProfile:
+    outer = tuple(sorted(outer_points, key=lambda point: point[1]))
+    inner = tuple(
+        (
+            float(inner_radius if inner_radius is not None else radius),
+            float(position),
+        )
+        for radius, position in profile.inner_points
+    )
+    if not profile.shell:
+        polygon = ((0.0, outer[0][1]), *outer, (0.0, outer[-1][1]))
+    elif profile.opening == "through":
+        polygon = (*outer, *reversed(inner))
+    elif profile.opening == "upper":
+        polygon = (
+            (0.0, outer[0][1]),
+            *outer,
+            *reversed(inner),
+            (0.0, inner[0][1]),
+        )
+    elif profile.opening == "lower":
+        polygon = (
+            (0.0, outer[-1][1]),
+            *reversed(outer),
+            *inner,
+            (0.0, inner[-1][1]),
+        )
+    else:
+        raise ValueError("shell profile has no supported opening orientation")
+    return AxialProfile(
+        points=tuple(polygon),
+        outer_points=outer,
+        inner_points=inner,
+        shell=profile.shell,
+        opening=profile.opening,
+    )
+
+
+def _revolve_plateau_simplification(
+    canonical: CanonicalCloud,
+    prediction: DepthPrediction | None,
+    masks: BoolArray | None,
+    candidate: RevolveAxisCandidate,
+    config: RevolveConfig,
+) -> RevolveAxisCandidate:
+    """Remove silhouette end taper only when both 2D and fixed 3D evidence agree."""
+
+    if (
+        not config.plateau_simplification_enabled
+        or prediction is None
+        or masks is None
+        or "multi-view-silhouette" not in candidate.evidence_source
+        or len(candidate.profile.outer_points) < 4
+    ):
+        return candidate
+    target_masks = np.asarray(masks, dtype=np.bool_)
+    if target_masks.shape != prediction.depth.shape or canonical.orientation is None:
+        return candidate
+    nonempty = np.asarray([bool(mask.any()) for mask in target_masks], dtype=np.bool_)
+    if int(nonempty.sum()) < config.cad_refinement_minimum_views:
+        return candidate
+    outer = np.asarray(candidate.profile.outer_points, dtype=np.float64)
+    order = np.argsort(outer[:, 1])
+    outer = outer[order]
+    first, last = float(outer[0, 1]), float(outer[-1, 1])
+    span = last - first
+    if span <= 1e-8:
+        return candidate
+    axial = np.linspace(first, last, config.axial_bins)
+    radii = np.interp(axial, outer[:, 1], outer[:, 0])
+    margin = 0.5 * (1.0 - config.plateau_simplification_central_fraction)
+    central = radii[(axial >= first + margin * span) & (axial <= last - margin * span)]
+    if len(central) < 4:
+        return candidate
+    plateau_radius = float(np.median(central))
+    central_cv = float(np.std(central) / max(plateau_radius, 1e-8))
+    endpoint_ratio = float(max(outer[0, 0], outer[-1, 0]) / max(plateau_radius, 1e-8))
+    if (
+        central_cv > config.plateau_simplification_maximum_central_cv
+        or endpoint_ratio < config.plateau_simplification_minimum_endpoint_ratio
+        or endpoint_ratio > config.plateau_simplification_maximum_endpoint_ratio
+    ):
+        return candidate
+    ratio = None
+    if candidate.profile.shell and candidate.silhouette_metrics is not None:
+        measured = candidate.silhouette_metrics.get("interior_radius_ratio")
+        if measured is not None and 0.0 < measured < 1.0:
+            ratio = float(measured)
+    selected_profile = _profile_with_outer_points(
+        candidate.profile,
+        (
+            (plateau_radius, first),
+            (plateau_radius, last),
+        ),
+        inner_radius=(ratio * plateau_radius if ratio is not None else None),
+    )
+    if not _valid_refined_revolve_profile(selected_profile):
+        return candidate
+    selected_candidate = replace(candidate, profile=selected_profile)
+    topology = _revolve_topology(candidate.profile)
+    topology_preserved = (
+        _revolve_topology(selected_profile) == topology
+        and selected_profile.shell == candidate.profile.shell
+        and len(selected_profile.inner_points) == len(candidate.profile.inner_points)
+    )
+    if not topology_preserved:
+        return candidate
+
+    def mask_scores(value: RevolveAxisCandidate) -> tuple[float, FloatArray]:
+        rings = _capture_revolve_rings(canonical, value, value.profile)
+        scores = np.asarray(
+            [
+                _silhouette_iou(
+                    _render_revolve_silhouette(
+                        rings,
+                        prediction.intrinsics[index],
+                        prediction.extrinsics[index],
+                        (target_masks.shape[1], target_masks.shape[2]),
+                    ),
+                    target_masks[index],
+                )
+                for index in range(len(target_masks))
+            ],
+            dtype=np.float64,
+        )
+        return float(np.average(scores, weights=nonempty.astype(np.float64))), scores
+
+    try:
+        baseline_surface = _revolve_surface_residual(
+            canonical,
+            candidate,
+            maximum_samples=config.cad_refinement_surface_samples,
+        )
+        selected_surface = _revolve_surface_residual(
+            canonical,
+            selected_candidate,
+            maximum_samples=config.cad_refinement_surface_samples,
+        )
+        baseline_iou, baseline_views = mask_scores(candidate)
+        selected_iou, selected_views = mask_scores(selected_candidate)
+    except (ValueError, FloatingPointError):
+        return candidate
+    surface_gain = baseline_surface[2] - selected_surface[2]
+    mask_gain = selected_iou - baseline_iou
+    view_drop = bool(
+        np.any(
+            selected_views[nonempty] + config.plateau_simplification_maximum_view_iou_drop
+            < baseline_views[nonempty]
+        )
+    )
+    applied = (
+        surface_gain >= config.plateau_simplification_minimum_surface_p90_gain
+        and mask_gain >= config.plateau_simplification_minimum_mask_gain
+        and not view_drop
+    )
+    if surface_gain < config.plateau_simplification_minimum_surface_p90_gain:
+        reason = "constant plateau does not improve the fixed DA3 surface enough"
+    elif mask_gain < config.plateau_simplification_minimum_mask_gain:
+        reason = "constant plateau does not improve all-view silhouette score enough"
+    elif view_drop:
+        reason = "constant plateau improves the mean but regresses an input view"
+    else:
+        reason = "DA3 surface and every input view support the simpler radial plateau"
+    refinement = RevolvePlateauSimplification(
+        applied=applied,
+        reason=reason,
+        plateau_radius=plateau_radius,
+        central_radius_cv=central_cv,
+        endpoint_radius_ratio=endpoint_ratio,
+        baseline_surface_p90_fraction=baseline_surface[2],
+        selected_surface_p90_fraction=selected_surface[2],
+        baseline_mean_iou=baseline_iou,
+        selected_mean_iou=selected_iou,
+        baseline_view_iou=tuple(float(value) for value in baseline_views),
+        selected_view_iou=tuple(float(value) for value in selected_views),
+        original_outer_vertices=len(candidate.profile.outer_points),
+        selected_outer_vertices=len(selected_profile.outer_points),
+        topology=topology,
+        topology_preserved=topology_preserved,
+    )
+    if not applied:
+        return replace(candidate, plateau_simplification=refinement)
+    metrics = dict(candidate.silhouette_metrics or {})
+    metrics.update(
+        {
+            "plateau_simplification_claimed": 1.0,
+            "plateau_radius": plateau_radius,
+            "plateau_central_radius_cv": central_cv,
+            "plateau_endpoint_radius_ratio": endpoint_ratio,
+        }
+    )
+    return replace(
+        selected_candidate,
+        surface_median=selected_surface[0],
+        surface_p90=selected_surface[1],
+        normalized_surface_p90=selected_surface[2],
+        evidence_source=candidate.evidence_source + "+constant-radial-plateau",
+        silhouette_metrics=metrics,
+        plateau_simplification=refinement,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _RevolveRefinementTrial:
+    candidate: RevolveAxisCandidate
+    mean_iou: float
+    view_iou: FloatArray
+    surface_median: float
+    surface_p90: float
+    surface_p90_fraction: float
+    axial_scale: float
+    radial_scale: float
+    axial_offset_fraction: float
+    rotation_degrees: tuple[float, float, float]
+    penalty: float
+
+    @property
+    def objective(self) -> float:
+        return self.mean_iou - self.penalty
+
+
+def _cad_conditioned_revolve_refinement(
+    canonical: CanonicalCloud,
+    prediction: DepthPrediction | None,
+    masks: BoolArray | None,
+    candidate: RevolveAxisCandidate,
+    config: RevolveConfig,
+) -> RevolveAxisCandidate:
+    """Refine continuous revolve parameters against the original calibrated views.
+
+    The selected discrete topology and dimensionless inner/outer relationships
+    are immutable. DA3 is not rerun: its observed surface remains a bounded 3D prior while the
+    CAD is rendered back into every original segmentation mask.
+    """
+
+    if not config.cad_refinement_enabled or prediction is None or masks is None:
+        return candidate
+    target_masks = np.asarray(masks, dtype=np.bool_)
+    if target_masks.shape != prediction.depth.shape or canonical.orientation is None:
+        return candidate
+    nonempty = np.asarray([bool(mask.any()) for mask in target_masks], dtype=np.bool_)
+    if int(nonempty.sum()) < config.cad_refinement_minimum_views:
+        return candidate
+    weights = nonempty.astype(np.float64)
+    topology = _revolve_topology(candidate.profile)
+
+    def render_score(trial: RevolveAxisCandidate) -> tuple[float, FloatArray]:
+        rings = _capture_revolve_rings(canonical, trial, trial.profile)
+        values = np.asarray(
+            [
+                _silhouette_iou(
+                    _render_revolve_silhouette(
+                        rings,
+                        prediction.intrinsics[index],
+                        prediction.extrinsics[index],
+                        (target_masks.shape[1], target_masks.shape[2]),
+                    ),
+                    target_masks[index],
+                )
+                for index in range(len(target_masks))
+            ],
+            dtype=np.float64,
+        )
+        return float(np.average(values, weights=weights)), values
+
+    try:
+        baseline_score, baseline_views = render_score(candidate)
+        baseline_surface = _revolve_surface_residual(
+            canonical,
+            candidate,
+            maximum_samples=config.cad_refinement_surface_samples,
+        )
+    except (ValueError, FloatingPointError):
+        return candidate
+    if baseline_score < config.cad_refinement_minimum_baseline_iou:
+        refinement = RevolveCadRefinement(
+            applied=False,
+            reason=(
+                "baseline CAD-to-mask projection is too weak for shape-conditioned "
+                "optimization; camera refinement must be solved first"
+            ),
+            axial_scale=1.0,
+            radial_scale=1.0,
+            axial_offset_fraction=0.0,
+            rotation_degrees=(0.0, 0.0, 0.0),
+            baseline_mean_iou=baseline_score,
+            selected_mean_iou=baseline_score,
+            score_gain=0.0,
+            regularization_penalty=0.0,
+            regularized_score_gain=0.0,
+            baseline_surface_p90_fraction=baseline_surface[2],
+            selected_surface_p90_fraction=baseline_surface[2],
+            baseline_view_iou=tuple(float(value) for value in baseline_views),
+            selected_view_iou=tuple(float(value) for value in baseline_views),
+            topology=topology,
+            topology_preserved=True,
+        )
+        return replace(candidate, cad_refinement=refinement)
+    surface_limit = max(
+        baseline_surface[2] * config.cad_refinement_maximum_surface_residual_ratio,
+        baseline_surface[2] + config.cad_refinement_surface_tolerance_fraction,
+    )
+
+    def regularization(
+        axial_scale: float,
+        radial_scale: float,
+        axial_offset_fraction: float,
+        rotation_degrees: tuple[float, float, float],
+    ) -> float:
+        pose_fraction = float(np.linalg.norm(rotation_degrees)) / max(
+            config.cad_refinement_pose_maximum_degrees,
+            1e-8,
+        )
+        magnitude = (
+            abs(float(np.log(axial_scale)))
+            + abs(float(np.log(radial_scale)))
+            + abs(axial_offset_fraction)
+            + pose_fraction
+        )
+        return config.cad_refinement_regularization_weight * magnitude
+
+    def trial(
+        axial_scale: float,
+        radial_scale: float,
+        axial_offset_fraction: float,
+        rotation_degrees: tuple[float, float, float],
+    ) -> _RevolveRefinementTrial | None:
+        value = _candidate_with_cad_refinement(
+            candidate,
+            axial_scale=axial_scale,
+            radial_scale=radial_scale,
+            axial_offset_fraction=axial_offset_fraction,
+            rotation_degrees=rotation_degrees,
+        )
+        if not _valid_refined_revolve_profile(value.profile):
+            return None
+        if _revolve_topology(value.profile) != topology:
+            return None
+        try:
+            surface = _revolve_surface_residual(
+                canonical,
+                value,
+                maximum_samples=config.cad_refinement_surface_samples,
+            )
+            if surface[2] > surface_limit:
+                return None
+            score, view_iou = render_score(value)
+        except (ValueError, FloatingPointError):
+            return None
+        return _RevolveRefinementTrial(
+            candidate=value,
+            mean_iou=score,
+            view_iou=view_iou,
+            surface_median=surface[0],
+            surface_p90=surface[1],
+            surface_p90_fraction=surface[2],
+            axial_scale=axial_scale,
+            radial_scale=radial_scale,
+            axial_offset_fraction=axial_offset_fraction,
+            rotation_degrees=rotation_degrees,
+            penalty=regularization(
+                axial_scale,
+                radial_scale,
+                axial_offset_fraction,
+                rotation_degrees,
+            ),
+        )
+
+    baseline = _RevolveRefinementTrial(
+        candidate=candidate,
+        mean_iou=baseline_score,
+        view_iou=baseline_views,
+        surface_median=baseline_surface[0],
+        surface_p90=baseline_surface[1],
+        surface_p90_fraction=baseline_surface[2],
+        axial_scale=1.0,
+        radial_scale=1.0,
+        axial_offset_fraction=0.0,
+        rotation_degrees=(0.0, 0.0, 0.0),
+        penalty=0.0,
+    )
+    axial_scales = np.linspace(
+        config.cad_refinement_axial_scale_minimum,
+        config.cad_refinement_axial_scale_maximum,
+        config.cad_refinement_axial_scale_steps,
+    )
+    radial_scales = np.linspace(
+        config.cad_refinement_radial_scale_minimum,
+        config.cad_refinement_radial_scale_maximum,
+        config.cad_refinement_radial_scale_steps,
+    )
+    offsets = np.linspace(
+        -config.cad_refinement_axial_offset_fraction,
+        config.cad_refinement_axial_offset_fraction,
+        config.cad_refinement_axial_offset_steps,
+    )
+    axial_scales = np.unique(np.append(axial_scales, 1.0))
+    radial_scales = np.unique(np.append(radial_scales, 1.0))
+    offsets = np.unique(np.append(offsets, 0.0))
+    maximum = config.cad_refinement_pose_maximum_degrees
+    coarse_step = config.cad_refinement_pose_coarse_step_degrees
+    coarse_values = np.arange(-maximum, maximum + 0.5 * coarse_step, coarse_step)
+    coarse_values = np.unique(
+        np.clip(np.append(coarse_values, (-maximum, 0.0, maximum)), -maximum, maximum)
+    )
+    transverse_axes = tuple(index for index in range(3) if index != candidate.axis)
+
+    def rotation(values: tuple[float, float]) -> tuple[float, float, float]:
+        result = [0.0, 0.0, 0.0]
+        result[transverse_axes[0]] = values[0]
+        result[transverse_axes[1]] = values[1]
+        return float(result[0]), float(result[1]), float(result[2])
+
+    # Correct the rigid CAD frame first. Letting anisotropic shape parameters
+    # move before pose encourages them to compensate for a camera-frame error.
+    pose_coarse_trials = [
+        result
+        for values in product(coarse_values, repeat=2)
+        if (
+            result := trial(
+                1.0,
+                1.0,
+                0.0,
+                rotation((float(values[0]), float(values[1]))),
+            )
+        )
+        is not None
+    ]
+    pose_coarse_best = max(
+        (baseline, *pose_coarse_trials),
+        key=lambda item: (item.objective, item.mean_iou, -item.penalty),
+    )
+    fine_step = config.cad_refinement_pose_fine_step_degrees
+    pose_fine_values = tuple(
+        np.unique(
+            np.clip(
+                np.arange(
+                    pose_coarse_best.rotation_degrees[index] - coarse_step,
+                    pose_coarse_best.rotation_degrees[index] + coarse_step + 0.5 * fine_step,
+                    fine_step,
+                ),
+                -maximum,
+                maximum,
+            )
+        )
+        for index in transverse_axes
+    )
+    pose_fine_trials = [
+        result
+        for values in product(*pose_fine_values)
+        if (
+            result := trial(
+                1.0,
+                1.0,
+                0.0,
+                rotation((float(values[0]), float(values[1]))),
+            )
+        )
+        is not None
+    ]
+    pose_best = max(
+        (pose_coarse_best, *pose_fine_trials),
+        key=lambda item: (item.objective, item.mean_iou, -item.penalty),
+    )
+
+    shape_trials = [
+        result
+        for axial_scale, radial_scale, offset in product(axial_scales, radial_scales, offsets)
+        if (
+            result := trial(
+                float(axial_scale),
+                float(radial_scale),
+                float(offset),
+                pose_best.rotation_degrees,
+            )
+        )
+        is not None
+    ]
+    shape_best = max(
+        (pose_best, *shape_trials),
+        key=lambda item: (item.objective, item.mean_iou, -item.penalty),
+    )
+
+    # One final local pose pass closes the two-block coordinate-descent loop.
+    final_pose_values = tuple(
+        np.unique(
+            np.clip(
+                np.arange(
+                    pose_best.rotation_degrees[index] - coarse_step,
+                    pose_best.rotation_degrees[index] + coarse_step + 0.5 * fine_step,
+                    fine_step,
+                ),
+                -maximum,
+                maximum,
+            )
+        )
+        for index in transverse_axes
+    )
+    final_pose_trials = [
+        result
+        for values in product(*final_pose_values)
+        if (
+            result := trial(
+                shape_best.axial_scale,
+                shape_best.radial_scale,
+                shape_best.axial_offset_fraction,
+                rotation((float(values[0]), float(values[1]))),
+            )
+        )
+        is not None
+    ]
+    selected = max(
+        (shape_best, *final_pose_trials),
+        key=lambda item: (item.objective, item.mean_iou, -item.penalty),
+    )
+
+    score_gain = selected.mean_iou - baseline.mean_iou
+    regularized_gain = selected.objective - baseline.objective
+    view_drop = bool(
+        np.any(
+            selected.view_iou[nonempty] + config.cad_refinement_maximum_view_iou_drop
+            < baseline.view_iou[nonempty]
+        )
+    )
+    changed = (
+        not np.isclose(selected.axial_scale, 1.0)
+        or not np.isclose(selected.radial_scale, 1.0)
+        or not np.isclose(selected.axial_offset_fraction, 0.0)
+        or not np.allclose(selected.rotation_degrees, (0.0, 0.0, 0.0))
+    )
+    boundary = (
+        (
+            not np.isclose(selected.axial_scale, 1.0)
+            and (
+                np.isclose(selected.axial_scale, axial_scales[0])
+                or np.isclose(selected.axial_scale, axial_scales[-1])
+            )
+        )
+        or (
+            not np.isclose(selected.radial_scale, 1.0)
+            and (
+                np.isclose(selected.radial_scale, radial_scales[0])
+                or np.isclose(selected.radial_scale, radial_scales[-1])
+            )
+        )
+        or (
+            not np.isclose(selected.axial_offset_fraction, 0.0)
+            and (
+                np.isclose(selected.axial_offset_fraction, offsets[0])
+                or np.isclose(selected.axial_offset_fraction, offsets[-1])
+            )
+        )
+        or any(np.isclose(abs(value), maximum) for value in selected.rotation_degrees)
+    )
+    topology_preserved = (
+        _revolve_topology(selected.candidate.profile) == topology
+        and selected.candidate.profile.shell == candidate.profile.shell
+        and len(selected.candidate.profile.inner_points) == len(candidate.profile.inner_points)
+    )
+    applied = (
+        changed
+        and not boundary
+        and not view_drop
+        and topology_preserved
+        and regularized_gain >= config.cad_refinement_minimum_score_gain
+    )
+    if not changed:
+        reason = "original CAD already maximizes the bounded all-view objective"
+    elif boundary:
+        reason = "best CAD parameters lie on the configured search boundary"
+    elif view_drop:
+        reason = "candidate improves the mean but regresses at least one input view"
+    elif not topology_preserved:
+        reason = "candidate would change the selected discrete topology"
+    elif regularized_gain < config.cad_refinement_minimum_score_gain:
+        reason = "silhouette gain does not overcome the fixed DA3 geometry prior"
+    else:
+        reason = "all-view masks support bounded continuous CAD refinement"
+
+    refinement = RevolveCadRefinement(
+        applied=applied,
+        reason=reason,
+        axial_scale=selected.axial_scale,
+        radial_scale=selected.radial_scale,
+        axial_offset_fraction=selected.axial_offset_fraction,
+        rotation_degrees=selected.rotation_degrees,
+        baseline_mean_iou=baseline.mean_iou,
+        selected_mean_iou=selected.mean_iou,
+        score_gain=score_gain,
+        regularization_penalty=selected.penalty,
+        regularized_score_gain=regularized_gain,
+        baseline_surface_p90_fraction=baseline.surface_p90_fraction,
+        selected_surface_p90_fraction=selected.surface_p90_fraction,
+        baseline_view_iou=tuple(float(value) for value in baseline.view_iou),
+        selected_view_iou=tuple(float(value) for value in selected.view_iou),
+        topology=topology,
+        topology_preserved=topology_preserved,
+    )
+    if not applied:
+        return replace(candidate, cad_refinement=refinement)
+    return replace(
+        selected.candidate,
+        surface_median=selected.surface_median,
+        surface_p90=selected.surface_p90,
+        normalized_surface_p90=selected.surface_p90_fraction,
+        cad_refinement=refinement,
+    )
 
 
 def _revolve_step_refinement(
@@ -1243,6 +2133,270 @@ def _orientation_world_rows(
     return float_matrix3_rows(world_columns)
 
 
+def _ellipse_endpoint_axis_fraction(
+    mask: BoolArray,
+    evidence: InteriorEllipseEvidence,
+) -> float | None:
+    """Locate an inner rim along a deterministic principal silhouette axis."""
+
+    binary = np.asarray(mask, dtype=np.bool_)
+    if binary.ndim != 2 or int(binary.sum()) < 64:
+        return None
+    labels, count = ndimage.label(binary)
+    if count < 1:
+        return None
+    sizes = np.bincount(labels.ravel())
+    sizes[0] = 0
+    component = labels == int(np.argmax(sizes))
+    yy, xx = np.nonzero(component)
+    points = np.column_stack((xx, yy)).astype(np.float64)
+    center = np.median(points, axis=0)
+    centered = points - center[None, :]
+    covariance = np.cov(centered, rowvar=False, bias=True)
+    eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+    direction = eigenvectors[:, int(np.argmax(eigenvalues))]
+    dominant = int(np.argmax(np.abs(direction)))
+    if direction[dominant] < 0.0:
+        direction = -direction
+    axial = centered @ direction
+    lower, upper = np.percentile(axial, (1.0, 99.0))
+    span = float(upper - lower)
+    if span <= 1e-8:
+        return None
+    offset = float((np.asarray(evidence.center_pixels, dtype=np.float64) - center) @ direction)
+    return offset / span
+
+
+def _photometric_cavity_candidate(
+    canonical: CanonicalCloud,
+    prediction: DepthPrediction | None,
+    masks: BoolArray | None,
+    candidate: RevolveAxisCandidate,
+    config: RevolveConfig,
+) -> RevolveAxisCandidate:
+    """Score solid, two blind and through topologies from RGB/depth end rims."""
+
+    if candidate.profile.shell:
+        return candidate
+    evidence = detect_concentric_interior(
+        prediction,
+        masks,
+        config.interior_ellipse,
+    )
+    orientation, normalization = canonical.orientation, canonical.normalization
+    if (
+        evidence is None
+        or prediction is None
+        or masks is None
+        or orientation is None
+        or normalization is None
+    ):
+        return candidate
+    world_center = np.asarray(orientation.center_world, dtype=np.float64)
+    axes = np.asarray(orientation.axes_world, dtype=np.float64).T
+    midpoint = np.asarray(normalization.midpoint, dtype=np.float64)
+    extent = normalization.largest_extent
+    frame = np.asarray(candidate.frame_canonical_columns, dtype=np.float64)
+    votes: list[str] = []
+    aligned_views: list[int] = []
+    endpoint_fractions: dict[int, float] = {}
+    camera_directions: dict[int, FloatArray] = {}
+    ellipses = {item.view_index: item for item in evidence.inner_ellipses}
+    transverse = tuple(index for index in range(3) if index != candidate.axis)
+    object_center = np.zeros(3, dtype=np.float64)
+    object_center[candidate.axis] = 0.5 * (candidate.lower + candidate.upper)
+    object_center[transverse[0]] = candidate.center_transverse[0]
+    object_center[transverse[1]] = candidate.center_transverse[1]
+    for view_index in evidence.supporting_views:
+        camera_to_world = camera_to_world_matrix(prediction.extrinsics[view_index])
+        origin_world = camera_to_world[:3, 3]
+        oriented = (origin_world - world_center) @ axes
+        canonical_origin = 2.0 * (oriented - midpoint) / extent
+        candidate_origin = canonical_origin @ frame
+        view_direction = object_center - candidate_origin
+        view_norm = float(np.linalg.norm(view_direction))
+        alignment = (
+            abs(float(view_direction[candidate.axis])) / view_norm if view_norm > 1e-8 else 0.0
+        )
+        if alignment < config.interior_ellipse.concentric_minimum_axis_alignment:
+            continue
+        aligned_views.append(view_index)
+        camera_directions[view_index] = np.asarray(view_direction / view_norm, dtype=np.float64)
+        midpoint_axis = 0.5 * (candidate.lower + candidate.upper)
+        votes.append("upper" if candidate_origin[candidate.axis] >= midpoint_axis else "lower")
+        ellipse = ellipses.get(view_index)
+        if ellipse is not None:
+            endpoint = _ellipse_endpoint_axis_fraction(masks[view_index], ellipse)
+            if endpoint is not None:
+                endpoint_fractions[view_index] = endpoint
+    if len(aligned_views) < config.interior_ellipse.concentric_minimum_views:
+        return candidate
+
+    endpoint_threshold = config.interior_ellipse.concentric_endpoint_minimum_axis_fraction
+    negative_views = [
+        index
+        for index in aligned_views
+        if endpoint_fractions.get(index, 0.0) <= -endpoint_threshold
+    ]
+    positive_views = [
+        index for index in aligned_views if endpoint_fractions.get(index, 0.0) >= endpoint_threshold
+    ]
+    opposite_angles = [
+        float(
+            np.degrees(
+                np.arccos(
+                    np.clip(
+                        float(camera_directions[left] @ camera_directions[right]),
+                        -1.0,
+                        1.0,
+                    )
+                )
+            )
+        )
+        for left in negative_views
+        for right in positive_views
+        if left in camera_directions and right in camera_directions
+    ]
+    maximum_opposite_angle = max(opposite_angles, default=0.0)
+    minimum_per_endpoint = config.interior_ellipse.concentric_through_minimum_views_per_endpoint
+    through_admitted = (
+        len(negative_views) >= minimum_per_endpoint
+        and len(positive_views) >= minimum_per_endpoint
+        and maximum_opposite_angle
+        >= config.interior_ellipse.concentric_through_minimum_camera_angle_degrees
+    )
+    classified_count = len(negative_views) + len(positive_views)
+    hypotheses: tuple[PhotometricTopologyHypothesis, ...] = ()
+    selected_topology = ""
+    if classified_count:
+        solid_cost = 1.0
+        blind_negative_cost = len(positive_views) / classified_count
+        blind_positive_cost = len(negative_views) / classified_count
+        through_cost = 0.05 if through_admitted else 1.0
+        costs = {
+            "solid": solid_cost,
+            "blind-negative-endpoint": blind_negative_cost,
+            "blind-positive-endpoint": blind_positive_cost,
+            "through": through_cost,
+        }
+        selected_topology = min(costs, key=lambda name: (costs[name], name))
+        hypotheses = tuple(
+            PhotometricTopologyHypothesis(
+                topology=name,
+                evidence_cost=float(cost),
+                admitted=(name != "through" or through_admitted),
+                selected=name == selected_topology,
+                reason=(
+                    "opposite endpoint rim groups and separated camera hypotheses"
+                    if name == "through" and through_admitted
+                    else (
+                        "through gate lacks two endpoint groups or camera separation"
+                        if name == "through"
+                        else "fraction of classified rim evidence unexplained by this topology"
+                    )
+                ),
+            )
+            for name, cost in costs.items()
+        )
+
+    outer_points = tuple(sorted(candidate.profile.outer_points, key=lambda point: point[1]))
+    if len(outer_points) < 2:
+        return candidate
+    opening: str
+    if selected_topology == "through":
+        opening = "through"
+        outer_radius = min(outer_points[0][0], outer_points[-1][0])
+    else:
+        upper_votes = votes.count("upper")
+        lower_votes = votes.count("lower")
+        if upper_votes == lower_votes:
+            return replace(candidate, topology_hypotheses=hypotheses)
+        opening = "upper" if upper_votes > lower_votes else "lower"
+        outer_radius = outer_points[-1][0] if opening == "upper" else outer_points[0][0]
+    inner_radius = evidence.radius_ratio * outer_radius
+    if not np.isfinite(inner_radius) or inner_radius <= 1e-8 or inner_radius >= outer_radius:
+        return candidate
+
+    span = candidate.upper - candidate.lower
+    if opening == "through":
+        inner_points = (
+            (float(inner_radius), float(outer_points[0][1])),
+            (float(inner_radius), float(outer_points[-1][1])),
+        )
+        polygon = (*outer_points, *reversed(inner_points))
+        cavity_depth_fraction = 1.0
+    else:
+        cavity_depth = config.shell_minimum_depth_fraction * span
+        cavity_depth_fraction = config.shell_minimum_depth_fraction
+        if opening == "upper":
+            opening_axis = outer_points[-1][1]
+            floor_axis = max(outer_points[0][1], opening_axis - cavity_depth)
+            inner_points = (
+                (float(inner_radius), float(floor_axis)),
+                (float(inner_radius), float(opening_axis)),
+            )
+            polygon = (
+                (0.0, outer_points[0][1]),
+                *outer_points,
+                *reversed(inner_points),
+                (0.0, inner_points[0][1]),
+            )
+        else:
+            opening_axis = outer_points[0][1]
+            floor_axis = min(outer_points[-1][1], opening_axis + cavity_depth)
+            inner_points = (
+                (float(inner_radius), float(opening_axis)),
+                (float(inner_radius), float(floor_axis)),
+            )
+            polygon = (
+                (0.0, outer_points[-1][1]),
+                *reversed(outer_points),
+                *inner_points,
+                (0.0, inner_points[-1][1]),
+            )
+    profile = AxialProfile(
+        points=tuple(polygon),
+        outer_points=outer_points,
+        inner_points=inner_points,
+        shell=True,
+        opening=opening,
+    )
+    metrics = dict(candidate.silhouette_metrics or {})
+    metrics.update(
+        {
+            "interior_ellipse_views": float(len(aligned_views)),
+            "interior_radius_ratio": evidence.radius_ratio,
+            "interior_radius_ratio_cv": evidence.ratio_cv,
+            "interior_cavity_minimum_depth_fraction": cavity_depth_fraction,
+            "interior_depth_plane_excess_median": float(
+                np.median(
+                    [
+                        item.depth_plane_excess_fraction
+                        for item in evidence.inner_ellipses
+                        if item.view_index in aligned_views
+                    ]
+                )
+            ),
+            "interior_endpoint_negative_views": float(len(negative_views)),
+            "interior_endpoint_positive_views": float(len(positive_views)),
+            "interior_endpoint_maximum_camera_angle_degrees": maximum_opposite_angle,
+            "interior_through_hole_claimed": float(opening == "through"),
+        }
+    )
+    suffix = (
+        "+rgb-depth-concentric-interior-through"
+        if opening == "through"
+        else "+rgb-depth-concentric-interior"
+    )
+    return replace(
+        candidate,
+        profile=profile,
+        evidence_source=candidate.evidence_source + suffix,
+        silhouette_metrics=metrics,
+        topology_hypotheses=hypotheses,
+    )
+
+
 def _parameters(candidate: RevolveAxisCandidate) -> dict[str, float]:
     span = candidate.upper - candidate.lower
     transverse = tuple(index for index in range(3) if index != candidate.axis)
@@ -1476,6 +2630,27 @@ class RevolveCadBackend:
             selected,
             self.config,
         )
+        selected = _photometric_cavity_candidate(
+            canonical,
+            prediction,
+            masks,
+            selected,
+            self.config,
+        )
+        selected = _revolve_plateau_simplification(
+            canonical,
+            prediction,
+            masks,
+            selected,
+            self.config,
+        )
+        selected = _cad_conditioned_revolve_refinement(
+            canonical,
+            prediction,
+            masks,
+            selected,
+            self.config,
+        )
         candidates = [selected if item is unrefined_selected else item for item in candidates]
         normalized = _parameters(selected)
         emitted, scale = _scale_parameters(normalized, known_dimension, canonical.scale)
@@ -1488,8 +2663,25 @@ class RevolveCadBackend:
         limitations = (
             "one full 360-degree revolve per object",
             "axis is optimized from physical plane evidence near canonical hypotheses",
-            "inner profile requires directly visible 3D cavity evidence",
-            "silhouette fallback reconstructs only the outer profile and assumes unseen azimuths",
+            (
+                "inner profile requires directly visible 3D cavity evidence or repeated "
+                "concentric RGB rims with non-planar DA3 depth"
+            ),
+            (
+                "photometric topology search evaluates solid, two blind-end and through "
+                "profiles; through requires opposite silhouette endpoints and separated "
+                "camera hypotheses"
+            ),
+            (
+                "a dominant constant radial plateau may replace perspective-induced end "
+                "taper only when fixed DA3 surface and every original mask improve"
+            ),
+            (
+                "post-topology CAD refinement may adjust bounded axial/radial scale, axial "
+                "offset and tilt against every original mask while fixed DA3 surface "
+                "evidence gates rollback"
+            ),
+            "silhouette fallback reconstructs the outer profile and assumes unseen azimuths",
             "handles, side holes, threads and composed sweeps are not yet represented",
         )
         family = "revolve-shell" if selected.profile.shell else "revolve"

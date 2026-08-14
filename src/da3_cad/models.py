@@ -72,6 +72,7 @@ class DepthPrediction:
     processed_images: tuple[UInt8Array, ...]
     backend: str
     warnings: tuple[str, ...] = ()
+    feature_maps: FloatArray | None = None
 
     def __post_init__(self) -> None:
         count = len(self.processed_images)
@@ -83,6 +84,11 @@ class DepthPrediction:
             raise ValueError("intrinsics must have shape (N,3,3)")
         if self.extrinsics.shape not in {(count, 3, 4), (count, 4, 4)}:
             raise ValueError("extrinsics must have shape (N,3,4) or (N,4,4)")
+        if self.feature_maps is not None:
+            if self.feature_maps.ndim != 4 or self.feature_maps.shape[0] != count:
+                raise ValueError("feature_maps must have shape (N,Hf,Wf,C)")
+            if not np.isfinite(self.feature_maps).all():
+                raise ValueError("feature_maps must be finite")
 
     def summary(self) -> dict[str, object]:
         finite = np.isfinite(self.depth)
@@ -95,6 +101,9 @@ class DepthPrediction:
             ),
             "intrinsics_shape": list(self.intrinsics.shape),
             "extrinsics_shape": list(self.extrinsics.shape),
+            "feature_maps_shape": (
+                list(self.feature_maps.shape) if self.feature_maps is not None else None
+            ),
             "warnings": list(self.warnings),
         }
 

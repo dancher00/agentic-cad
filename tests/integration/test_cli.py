@@ -20,6 +20,7 @@ def test_cli_lists_product_commands() -> None:
     assert result.exit_code == 0
     for command in (
         "prepare-target",
+        "prepare-photos-sfm",
         "prepare-video",
         "cpu-smoke",
         "reconstruct",
@@ -56,6 +57,36 @@ def test_prepare_video_dry_run_does_not_decode_or_write(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.stdout
     assert "'views': 8" in result.stdout
     assert "'center_crop_fraction': 0.5" in result.stdout
+    assert "'writes': False" in result.stdout
+    assert not output.exists()
+
+
+def test_prepare_photos_sfm_dry_run_does_not_run_colmap_or_write(tmp_path: Path) -> None:
+    photos = tmp_path / "photos"
+    photos.mkdir()
+    output = tmp_path / "sfm"
+
+    result = runner.invoke(
+        app,
+        [
+            "prepare-photos-sfm",
+            str(photos),
+            "--output",
+            str(output),
+            "--pairing",
+            "exhaustive",
+            "--device",
+            "cpu",
+            "--min-registered-fraction",
+            "0.9",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "'pairing': 'exhaustive'" in result.stdout
+    assert "'device': 'cpu'" in result.stdout
+    assert "'minimum_registered_fraction': 0.9" in result.stdout
     assert "'writes': False" in result.stdout
     assert not output.exists()
 

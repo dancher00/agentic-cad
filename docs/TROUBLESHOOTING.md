@@ -95,14 +95,17 @@ DA3-CAD does not invent a mapping.
 
 ## A visible hole was not recovered
 
-The default sketch backend currently accepts only circular through-cuts with a
-closed background component repeated in at least two object masks. Review the
-masks and the `cad-generation.details.report.apertures` provenance field. A gap
-in the point cloud alone is deliberately not treated as a manufactured hole.
+The sketch backend accepts circular through-cuts from either a closed
+background component repeated in calibrated object masks, or a repeated RGB
+ellipse whose interior violates the local DA3 depth plane. Review the masks and
+the `cad-generation.details.report.apertures` measurement source. A gap in the
+point cloud or a painted circle on planar depth is deliberately insufficient.
 
-Inspect explicit masks, add near-axis and oblique views, and improve camera
-calibration before changing thresholds. General line/arc pockets, blind holes,
-threads and internal features are not yet supported.
+For axial bodies, a repeated concentric outer rim can create only a conservative
+observed-side cavity. A through-hole requires opposite-side evidence. Add
+near-axis and oblique views and improve camera calibration before changing
+thresholds. General line/arc pockets, threads and arbitrary internal features
+are not yet supported.
 
 ## The point cloud contains a detached duplicate or island
 
@@ -114,10 +117,16 @@ disconnect it from the main view component. A rejection also preserves
 cloud contain admitted views only. Calibrated external cameras intentionally
 bypass this gate.
 
-The gate does not repair a slightly wrong camera pose. If the views remain as
-overlapping body-wide ghost surfaces, capture more opposing views or supply
-calibrated `K/E`. Automatic per-view SE(3) refinement is not yet accepted
-without silhouette/depth reprojection and CAD-surface contradiction checks.
+For small residual errors, inspect the nested camera_bundle_refinement
+record. accepted means a bounded joint correction passed held-out feature,
+reprojection, independent-surface and full-graph audits.
+accepted-component-rig-refinement means one transform aligned a coherent
+multi-view group without changing its internal relative poses. rolled-back
+preserves the original cameras. topology-guarded-abstention means repeated
+RGB/depth interior boundaries made a surface-only correction ambiguous; keeping
+the opening evidence was safer than making the cloud denser. If ghost surfaces
+remain after an abstention, add discriminative oblique views or supply
+calibrated K/E.
 
 If only a thin off-body loop appears several times, inspect
 `loop_feature_admission.json` and `geometry_mask_*.png`. `observed_cloud`

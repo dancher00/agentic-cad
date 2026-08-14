@@ -1,0 +1,574 @@
+{
+  "schema_version": "da3-cad-brepgaussian-multiseed-ledger-v1",
+  "date": "2026-08-15",
+  "status": "hypothesis-test-not-a-quality-or-SOTA-claim",
+  "experiment": {
+    "upstream": "BrepGaussian Stage 1",
+    "iterations": 3000,
+    "da3_checkpoint": "base",
+    "prior_weight": 0.02,
+    "prior_start_iteration": 500,
+    "prior_default": "disabled",
+    "prior_activation": "explicit --enable_depth_prior only",
+    "coverage_threshold": null,
+    "optimization_seeds": [
+      0,
+      1,
+      2
+    ],
+    "paired_runs": 36,
+    "generated_fixture_runs": 30,
+    "official_example_runs": 6,
+    "evidence_policy": {
+      "primary": [
+        "ground-truth surface distance",
+        "disjoint held-out foreground PSNR",
+        "disjoint held-out silhouette IoU"
+      ],
+      "diagnostic_only": [
+        "fitted-view rendering"
+      ],
+      "inference": "95% paired t interval must exclude zero in the favorable direction"
+    }
+  },
+  "generated_fixtures": {
+    "source": "project-generated Apache-2.0 public_benchmark_v2",
+    "object_count": 5,
+    "fitted_views_per_object": 5,
+    "held_out_views_per_object": 4,
+    "common_spherical_coverage_fraction": 0.41552734375,
+    "reference": "normalized evaluator-only ground-truth STL",
+    "objects": {
+      "block": {
+        "coverage": 0.41552734375,
+        "fitted_views": 5,
+        "held_out_views": 4,
+        "optimization_seeds": [
+          0,
+          1,
+          2
+        ],
+        "metrics": {
+          "geometry.normalized_symmetric_chamfer": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.021693641029063748,
+            "da3_mean": 0.02130115389585474,
+            "paired_delta_mean": -0.0003924871332089998,
+            "paired_relative_change_mean": -0.01808637477248777,
+            "paired_delta_95ci": [
+              -0.001392303386959465,
+              0.0006073291205414655
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.018195364329965682,
+            "da3_relative_range": 0.03925249087971086,
+            "per_seed_relative_change": [
+              -0.032878555020901444,
+              -0.024010779627012577,
+              0.0026302103304507093
+            ]
+          },
+          "geometry.normalized_p95_bidirectional_distance": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.05281717568654563,
+            "da3_mean": 0.05175441554238567,
+            "paired_delta_mean": -0.00106276014415996,
+            "paired_relative_change_mean": -0.019926359933907,
+            "paired_delta_95ci": [
+              -0.004971411861914419,
+              0.002845891573594499
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.04881025786356943,
+            "da3_relative_range": 0.058121437841791246,
+            "per_seed_relative_change": [
+              -0.05070262587442756,
+              -0.016385697330216487,
+              0.007309243402923044
+            ]
+          },
+          "held_out.foreground_rgb_psnr": {
+            "direction": "higher-is-better",
+            "baseline_mean": 24.314775307973225,
+            "da3_mean": 24.246326128641766,
+            "paired_delta_mean": -0.0684491793314616,
+            "paired_relative_change_mean": -0.0025778799283023624,
+            "paired_delta_95ci": [
+              -1.0427831289213019,
+              0.9058847702583787
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.04567014556509661,
+            "da3_relative_range": 0.02245326867940749,
+            "per_seed_relative_change": [
+              0.01264918890039318,
+              -0.019434056639543527,
+              -0.0009487720457567404
+            ]
+          },
+          "held_out.silhouette_iou": {
+            "direction": "higher-is-better",
+            "baseline_mean": 0.9440247886852283,
+            "da3_mean": 0.9397431295033343,
+            "paired_delta_mean": -0.0042816591818939,
+            "paired_relative_change_mean": -0.004520995173243736,
+            "paired_delta_95ci": [
+              -0.014904897435662007,
+              0.006341579071874205
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.010731739550402975,
+            "da3_relative_range": 0.0053005585780268325,
+            "per_seed_relative_change": [
+              -0.003684737802671354,
+              -0.009375734093257142,
+              -0.000502513623802713
+            ]
+          }
+        }
+      },
+      "flange": {
+        "coverage": 0.41552734375,
+        "fitted_views": 5,
+        "held_out_views": 4,
+        "optimization_seeds": [
+          0,
+          1,
+          2
+        ],
+        "metrics": {
+          "geometry.normalized_symmetric_chamfer": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.01890333016259366,
+            "da3_mean": 0.019060607072120504,
+            "paired_delta_mean": 0.00015727690952684176,
+            "paired_relative_change_mean": 0.008334395229412981,
+            "paired_delta_95ci": [
+              -0.00009457914907941883,
+              0.0004091329681331023
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.016855280375098834,
+            "da3_relative_range": 0.014204756948165689,
+            "per_seed_relative_change": [
+              0.0028659664768647436,
+              0.01370164618611752,
+              0.008435573025256675
+            ]
+          },
+          "geometry.normalized_p95_bidirectional_distance": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.03898246607612018,
+            "da3_mean": 0.040043175640219746,
+            "paired_delta_mean": 0.0010607095640995632,
+            "paired_relative_change_mean": 0.02731275317595433,
+            "paired_delta_95ci": [
+              -0.000024122434287645678,
+              0.0021455415624867724
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.029894000410880146,
+            "da3_relative_range": 0.015410263953830985,
+            "per_seed_relative_change": [
+              0.03637088677084572,
+              0.031227224719367095,
+              0.014340148037650166
+            ]
+          },
+          "held_out.foreground_rgb_psnr": {
+            "direction": "higher-is-better",
+            "baseline_mean": 24.306091785430908,
+            "da3_mean": 24.283363501230877,
+            "paired_delta_mean": -0.02272828420003255,
+            "paired_relative_change_mean": -0.0009396271224472822,
+            "paired_delta_95ci": [
+              -0.4357341199830313,
+              0.39027755158296623
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.009123002550596369,
+            "da3_relative_range": 0.018183241164239708,
+            "per_seed_relative_change": [
+              0.0031544636018423365,
+              0.0028697944198430993,
+              -0.008843139389027282
+            ]
+          },
+          "held_out.silhouette_iou": {
+            "direction": "higher-is-better",
+            "baseline_mean": 0.947254764671766,
+            "da3_mean": 0.94709864591155,
+            "paired_delta_mean": -0.00015611876021596563,
+            "paired_relative_change_mean": -0.00016159305108679693,
+            "paired_delta_95ci": [
+              -0.010307943376383964,
+              0.009995705855952034
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.002861938291730531,
+            "da3_relative_range": 0.0059341153599725,
+            "per_seed_relative_change": [
+              0.0006642935845012164,
+              0.0036808979193933,
+              -0.004829970657154907
+            ]
+          }
+        }
+      },
+      "l_bracket": {
+        "coverage": 0.41552734375,
+        "fitted_views": 5,
+        "held_out_views": 4,
+        "optimization_seeds": [
+          0,
+          1,
+          2
+        ],
+        "metrics": {
+          "geometry.normalized_symmetric_chamfer": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.02928433160404147,
+            "da3_mean": 0.02611001669565551,
+            "paired_delta_mean": -0.003174314908385959,
+            "paired_relative_change_mean": -0.10837855497066728,
+            "paired_delta_95ci": [
+              -0.003731092396363829,
+              -0.002617537420408089
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.008227617749501173,
+            "da3_relative_range": 0.009115693624934078,
+            "per_seed_relative_change": [
+              -0.10830043910308662,
+              -0.11567822974774669,
+              -0.10115699606116856
+            ]
+          },
+          "geometry.normalized_p95_bidirectional_distance": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.0911739912090136,
+            "da3_mean": 0.08447835680169657,
+            "paired_delta_mean": -0.006695634407316996,
+            "paired_relative_change_mean": -0.07246301969346168,
+            "paired_delta_95ci": [
+              -0.01358994393246845,
+              0.0001986751178344572
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.12293547641502946,
+            "da3_relative_range": 0.06905860190429261,
+            "per_seed_relative_change": [
+              -0.1015980950577877,
+              -0.051815506549315465,
+              -0.0639754574732819
+            ]
+          },
+          "held_out.foreground_rgb_psnr": {
+            "direction": "higher-is-better",
+            "baseline_mean": 24.24054177602132,
+            "da3_mean": 24.223440647125244,
+            "paired_delta_mean": -0.017101128896077473,
+            "paired_relative_change_mean": -0.0006677847653386026,
+            "paired_delta_95ci": [
+              -0.6316819668198299,
+              0.5974797090276749
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.011792230169869704,
+            "da3_relative_range": 0.009616431513892347,
+            "per_seed_relative_change": [
+              0.007243776411838203,
+              0.0029100331865831957,
+              -0.012157163894437207
+            ]
+          },
+          "held_out.silhouette_iou": {
+            "direction": "higher-is-better",
+            "baseline_mean": 0.9202333328663107,
+            "da3_mean": 0.9402180089774559,
+            "paired_delta_mean": 0.019984676111145294,
+            "paired_relative_change_mean": 0.02171444762979914,
+            "paired_delta_95ci": [
+              0.015250782103824242,
+              0.024718570118466347
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.0037960896990852106,
+            "da3_relative_range": 0.006874881254150109,
+            "per_seed_relative_change": [
+              0.022547161216731892,
+              0.02319861641159251,
+              0.019397565261073023
+            ]
+          }
+        }
+      },
+      "stepped_shaft": {
+        "coverage": 0.41552734375,
+        "fitted_views": 5,
+        "held_out_views": 4,
+        "optimization_seeds": [
+          0,
+          1,
+          2
+        ],
+        "metrics": {
+          "geometry.normalized_symmetric_chamfer": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.018848595399954027,
+            "da3_mean": 0.018231757936059606,
+            "paired_delta_mean": -0.000616837463894418,
+            "paired_relative_change_mean": -0.03211399005146304,
+            "paired_delta_95ci": [
+              -0.0019674516244913547,
+              0.000733776696702519
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.06740300030034013,
+            "da3_relative_range": 0.0168511725513519,
+            "per_seed_relative_change": [
+              -0.014456280141509277,
+              -0.01836009412133017,
+              -0.06352559589154967
+            ]
+          },
+          "geometry.normalized_p95_bidirectional_distance": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.05159760117526744,
+            "da3_mean": 0.04605612053679505,
+            "paired_delta_mean": -0.005541480638472385,
+            "paired_relative_change_mean": -0.10737189026677658,
+            "paired_delta_95ci": [
+              -0.008186427173136033,
+              -0.0028965341038087373
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.025896951607193287,
+            "da3_relative_range": 0.04931450052931246,
+            "per_seed_relative_change": [
+              -0.09471993304580961,
+              -0.0965024552434055,
+              -0.13089328251111465
+            ]
+          },
+          "held_out.foreground_rgb_psnr": {
+            "direction": "higher-is-better",
+            "baseline_mean": 23.01971944173177,
+            "da3_mean": 22.99151039123535,
+            "paired_delta_mean": -0.02820905049641927,
+            "paired_relative_change_mean": -0.0010700767833917476,
+            "paired_delta_95ci": [
+              -0.8745229031431833,
+              0.8181048021503446
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.033423812894386284,
+            "da3_relative_range": 0.011815825108864789,
+            "per_seed_relative_change": [
+              -0.017369630482409512,
+              0.011299185045134483,
+              0.0028602150870997863
+            ]
+          },
+          "held_out.silhouette_iou": {
+            "direction": "higher-is-better",
+            "baseline_mean": 0.9305138117935247,
+            "da3_mean": 0.9323862598480965,
+            "paired_delta_mean": 0.0018724480545720217,
+            "paired_relative_change_mean": 0.0020351127714334466,
+            "paired_delta_95ci": [
+              -0.011625370195643435,
+              0.015370266304787477
+            ],
+            "effect_direction_supported_at_95_percent": false,
+            "baseline_relative_range": 0.01106654360908996,
+            "da3_relative_range": 0.0018245930977227034,
+            "per_seed_relative_change": [
+              -0.004378361261038443,
+              0.007036313831145732,
+              0.003447385744193051
+            ]
+          }
+        }
+      },
+      "u_channel": {
+        "coverage": 0.41552734375,
+        "fitted_views": 5,
+        "held_out_views": 4,
+        "optimization_seeds": [
+          0,
+          1,
+          2
+        ],
+        "metrics": {
+          "geometry.normalized_symmetric_chamfer": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.02649853361907613,
+            "da3_mean": 0.02240525049872374,
+            "paired_delta_mean": -0.004093283120352388,
+            "paired_relative_change_mean": -0.15438217022167983,
+            "paired_delta_95ci": [
+              -0.004918833929053496,
+              -0.0032677323116512805
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.033705156817516874,
+            "da3_relative_range": 0.028172545554684382,
+            "per_seed_relative_change": [
+              -0.1660884074447062,
+              -0.1505671680953183,
+              -0.14649093512501493
+            ]
+          },
+          "geometry.normalized_p95_bidirectional_distance": {
+            "direction": "lower-is-better",
+            "baseline_mean": 0.09056303711056816,
+            "da3_mean": 0.07398198957312395,
+            "paired_delta_mean": -0.0165810475374442,
+            "paired_relative_change_mean": -0.18258808034759097,
+            "paired_delta_95ci": [
+              -0.025990447998298076,
+              -0.007171647076590321
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.03905113092168641,
+            "da3_relative_range": 0.05698988191437367,
+            "per_seed_relative_change": [
+              -0.21239937071729945,
+              -0.1388292097040338,
+              -0.19653566062143965
+            ]
+          },
+          "held_out.foreground_rgb_psnr": {
+            "direction": "higher-is-better",
+            "baseline_mean": 23.46477969487508,
+            "da3_mean": 24.66809622446696,
+            "paired_delta_mean": 1.2033165295918782,
+            "paired_relative_change_mean": 0.051306239722811536,
+            "paired_delta_95ci": [
+              0.7375501425881792,
+              1.6690829165955772
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.008328278441700096,
+            "da3_relative_range": 0.00712250980265614,
+            "per_seed_relative_change": [
+              0.05869484117297569,
+              0.04247908017736431,
+              0.05274479781809461
+            ]
+          },
+          "held_out.silhouette_iou": {
+            "direction": "higher-is-better",
+            "baseline_mean": 0.9008180249539098,
+            "da3_mean": 0.9174976392217938,
+            "paired_delta_mean": 0.016679614267883964,
+            "paired_relative_change_mean": 0.018530623712445005,
+            "paired_delta_95ci": [
+              0.006246666913206092,
+              0.027112561622561836
+            ],
+            "effect_direction_supported_at_95_percent": true,
+            "baseline_relative_range": 0.009088933545472017,
+            "da3_relative_range": 0.003714159745413576,
+            "per_seed_relative_change": [
+              0.022555512568933157,
+              0.019723863453414908,
+              0.013312495114986956
+            ]
+          }
+        }
+      }
+    }
+  },
+  "official_00000699_repeat": {
+    "fitted_views": 5,
+    "held_out_views": 4,
+    "spherical_coverage_fraction": 0.45751953125,
+    "reference": "50-view Stage 1 opacity-filtered Gaussian centers",
+    "reference_is_ground_truth": false,
+    "warning": "proxy metric only; not comparable to CAD ground truth or the paper",
+    "proxy_chamfer": {
+      "baseline_per_seed": [
+        0.030877290687954733,
+        0.0513701854444624,
+        0.028216664700338352
+      ],
+      "da3_per_seed": [
+        0.031091712405283647,
+        0.03482430597873583,
+        0.02999041788722666
+      ],
+      "per_seed_relative_change": [
+        0.006944317734863977,
+        -0.3220910986123408,
+        0.06286190113982666
+      ],
+      "baseline_relative_range": 0.6288064317409264,
+      "mean_relative_change": -0.08409495991255007,
+      "paired_delta_95ci": [
+        -0.03008314490160125,
+        0.020378008527261682
+      ],
+      "effect_supported": false
+    },
+    "proxy_p95": {
+      "baseline_per_seed": [
+        0.03193993390725138,
+        0.03292052836243279,
+        0.028230309591053007
+      ],
+      "da3_per_seed": [
+        0.028241145060910994,
+        0.03258963997525162,
+        0.027540188586912682
+      ],
+      "per_seed_relative_change": [
+        -0.11580452411332778,
+        -0.010051126261957668,
+        -0.024446101163518398
+      ],
+      "baseline_relative_range": 0.1511498511924351,
+      "mean_relative_change": -0.05010058384626795,
+      "paired_delta_95ci": [
+        -0.006167676791501668,
+        0.003021144633060412
+      ],
+      "effect_supported": false
+    },
+    "held_out": {
+      "foreground_rgb_psnr": {
+        "baseline_mean": 10.333512465159098,
+        "da3_mean": 10.271021922429403,
+        "paired_delta_mean": -0.06249054272969564,
+        "paired_delta_95ci": [
+          -0.1542240144047602,
+          0.029242928945368903
+        ],
+        "effect_supported": false
+      },
+      "silhouette_iou": {
+        "baseline_mean": 0.11498798601221065,
+        "da3_mean": 0.11350168670721385,
+        "paired_delta_mean": -0.001486299304996802,
+        "paired_delta_95ci": [
+          -0.003098689916744861,
+          0.00012609130675125682
+        ],
+        "effect_supported": false
+      }
+    },
+    "conclusion": "the previous single-seed 3.35% proxy improvement is not replicated as a stable effect"
+  },
+  "limitations": [
+    "three optimization seeds, not five",
+    "five generated objects share one camera layout and one coverage value",
+    "3000-iteration Stage 1 only; no Stage 2 or final B-Rep evaluation",
+    "the official example has no CAD ground truth in the released scene"
+  ],
+  "decision": {
+    "da3_prior_remains_experimental_opt_in": true,
+    "fixed_coverage_gate_is_justified": false,
+    "default_maximum_coverage_for_da3_prior": null
+  }
+}

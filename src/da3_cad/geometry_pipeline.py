@@ -11,9 +11,12 @@ import numpy as np
 
 from da3_cad.backends.da3 import Da3Backend, da3_license_notice
 from da3_cad.config import AppConfig
+from da3_cad.geometry.camera_bundle_refinement import refine_connected_camera_bundle
 from da3_cad.geometry.cameras import load_camera_bundle
 from da3_cad.geometry.diagnostics import write_geometry_diagnostics
 from da3_cad.geometry.fusion import FusedPointCloud, ScaleChannel, fuse_prediction
+from da3_cad.geometry.global_recentering import recenter_inconsistent_view_translations
+from da3_cad.geometry.interior_ellipse import detect_concentric_interior
 from da3_cad.geometry.loop_feature_admission import admit_loop_feature_geometry
 from da3_cad.geometry.multiview_depth_alignment import select_depth_hypothesis
 from da3_cad.geometry.pose_admission import (
@@ -65,6 +68,11 @@ def _subset_prediction(
         extrinsics=prediction.extrinsics[selected].copy(),
         processed_images=tuple(prediction.processed_images[index].copy() for index in indices),
         backend=prediction.backend,
+        feature_maps=(
+            prediction.feature_maps[selected].copy()
+            if prediction.feature_maps is not None
+            else None
+        ),
         warnings=(
             *prediction.warnings,
             f"whole-view pose admission retained {len(indices)}/{len(prediction.depth)} views",
@@ -111,6 +119,9 @@ def _inference_pass_report(
             "intrinsics": list(prediction.intrinsics.shape),
             "extrinsics": list(prediction.extrinsics.shape),
             "processed_images": [list(image.shape) for image in prediction.processed_images],
+            "feature_maps": (
+                list(prediction.feature_maps.shape) if prediction.feature_maps is not None else None
+            ),
         }
     input_views = runtime_report.get("input_views")
     if not isinstance(input_views, int):
@@ -199,6 +210,8 @@ def run_geometry(
         accepted_noncommercial=accepted_noncommercial,
         use_ray_pose=config.da3.use_ray_pose,
         ref_view_strategy=config.da3.ref_view_strategy,
+        export_feature_layer=config.da3.export_feature_layer,
+        export_feature_dimensions=config.da3.export_feature_dimensions,
     )
     if camera_bundle is None:
         prediction = backend.predict(observations, device=config.device, seed=config.seed)
@@ -336,6 +349,8 @@ def run_geometry(
     pose_admission_report: dict[str, object]
     pose_admission_artifacts = False
     pre_admission_prediction_artifact = False
+    bundle_refinement_applied = False
+    bundle_refined_local: tuple[int, ...] = ()
     if config.pose_admission.enabled and camera_bundle is None:
         pose_gate_cloud = fuse_prediction(
             prediction,
@@ -356,7 +371,25 @@ def run_geometry(
             minimum_component_fraction=config.pose_admission.minimum_component_fraction,
         )
         prediction_before_pose_refinement = prediction
-        if config.pose_admission.refinement_enabled and initial_admission.rejected_view_indices:
+        initial_component_sufficient = initial_admission.report.get("sufficient", True) is not False
+        if config.pose_admission.refinement_enabled and not initial_component_sufficient:
+            refinement = recenter_inconsistent_view_translations(
+                prediction,
+                segmentation_masks,
+                initial_admission,
+                minimum_views=config.pose_admission.minimum_views,
+                samples_per_view=config.pose_admission.samples_per_view,
+                center_distance_fraction=config.pose_admission.center_distance_fraction,
+                surface_distance_fraction=config.pose_admission.surface_distance_fraction,
+                minimum_component_fraction=config.pose_admission.minimum_component_fraction,
+                maximum_translation_fraction=(
+                    config.pose_admission.global_recentering_maximum_translation_fraction
+                ),
+                maximum_extent_ratio=config.pose_admission.refinement_maximum_extent_ratio,
+            )
+            prediction = refinement.prediction
+            admission = refinement.admission
+        elif config.pose_admission.refinement_enabled and initial_admission.rejected_view_indices:
             refinement = refine_disconnected_view_poses(
                 prediction,
                 segmentation_masks,
@@ -401,21 +434,51 @@ def run_geometry(
             admission = refinement.admission
         else:
             admission = initial_admission
+        topology_guard = detect_concentric_interior(
+            prediction,
+            segmentation_masks,
+            config.revolve.interior_ellipse,
+        )
+        bundle_refinement = refine_connected_camera_bundle(
+            prediction,
+            segmentation_masks,
+            admission,
+            config.pose_admission.bundle_refinement,
+            minimum_views=config.pose_admission.minimum_views,
+            samples_per_view=config.pose_admission.samples_per_view,
+            center_distance_fraction=config.pose_admission.center_distance_fraction,
+            surface_distance_fraction=config.pose_admission.surface_distance_fraction,
+            minimum_component_fraction=config.pose_admission.minimum_component_fraction,
+            topology_guard_views=(
+                topology_guard.supporting_views if topology_guard is not None else ()
+            ),
+            topology_guard_report=(
+                topology_guard.as_dict() if topology_guard is not None else None
+            ),
+        )
+        prediction = bundle_refinement.prediction
+        admission = bundle_refinement.admission
+        bundle_refinement_applied = bundle_refinement.applied
+        bundle_refined_local = bundle_refinement.refined_view_indices
         admitted_local = admission.admitted_view_indices
         rejected_local = admission.rejected_view_indices
         initial_rejected_local = initial_admission.rejected_view_indices
         refinement_report = admission.report.get("pose_refinement")
-        refined_local = (
+        island_refined_local = (
             tuple(int(value) for value in refinement_report.get("refined_views", []))
             if isinstance(refinement_report, dict)
             else ()
         )
+        refined_local = tuple(sorted(set(island_refined_local) | set(bundle_refined_local)))
         admitted_input = tuple(selected_input_indices[index] for index in admitted_local)
         rejected_input = tuple(selected_input_indices[index] for index in rejected_local)
         initial_rejected_input = tuple(
             selected_input_indices[index] for index in initial_rejected_local
         )
         refined_input = tuple(selected_input_indices[index] for index in refined_local)
+        bundle_refined_input = tuple(
+            selected_input_indices[index] for index in bundle_refined_local
+        )
         pose_admission_report = {
             **admission.report,
             "local_to_input_view": list(selected_input_indices),
@@ -423,6 +486,7 @@ def run_geometry(
             "rejected_input_views": list(rejected_input),
             "initial_rejected_input_views": list(initial_rejected_input),
             "refined_input_views": list(refined_input),
+            "bundle_refined_input_views": list(bundle_refined_input),
             "admitted_image_names": [
                 observations.images[index].relative_path for index in admitted_input
             ],
@@ -434,6 +498,9 @@ def run_geometry(
             ],
             "refined_image_names": [
                 observations.images[index].relative_path for index in refined_input
+            ],
+            "bundle_refined_image_names": [
+                observations.images[index].relative_path for index in bundle_refined_input
             ],
         }
         np.savez_compressed(
@@ -453,9 +520,13 @@ def run_geometry(
                 dtype=np.int32,
             ),
             refined_local_view_indices=np.asarray(refined_local, dtype=np.int32),
+            bundle_refined_local_view_indices=np.asarray(
+                bundle_refined_local,
+                dtype=np.int32,
+            ),
         )
         pose_admission_artifacts = True
-        if initial_rejected_local:
+        if initial_rejected_local or bundle_refinement_applied:
             confidence_before_admission = prediction_before_pose_refinement.confidence
             if confidence_before_admission is None:
                 raise RuntimeError(
@@ -470,6 +541,11 @@ def run_geometry(
                 masks=segmentation_masks,
                 processed_images=np.stack(prediction_before_pose_refinement.processed_images),
                 local_to_input_view=np.asarray(selected_input_indices, dtype=np.int32),
+                **(
+                    {"feature_maps": prediction_before_pose_refinement.feature_maps}
+                    if prediction_before_pose_refinement.feature_maps is not None
+                    else {}
+                ),
             )
             pre_admission_prediction_artifact = True
         if rejected_local:
@@ -498,6 +574,15 @@ def run_geometry(
     _write_json(output_dir / "artefacts" / "pose_admission.json", pose_admission_report)
     view_selection.report["pose_admission"] = pose_admission_report
     _write_json(output_dir / "artefacts" / "view_selection.json", view_selection.report)
+    if pose_admission_report.get("sufficient") is False:
+        admitted_views = pose_admission_report.get("admitted_views")
+        required_views = pose_admission_report.get("required_component_views")
+        if not isinstance(admitted_views, list) or not isinstance(required_views, int):
+            raise RuntimeError("pose admission failure report is incomplete")
+        raise ValueError(
+            "pose admission has no sufficiently large consistent component: "
+            f"{len(admitted_views)} < {required_views} views"
+        )
 
     alignment_report: dict[str, object] = {"status": "disabled"}
     fusion_prediction = prediction
@@ -625,6 +710,11 @@ def run_geometry(
             masks=segmentation_masks,
             processed_images=np.stack(fusion_prediction.processed_images),
             raw_depth_before_alignment=prediction.depth,
+            **(
+                {"feature_maps": fusion_prediction.feature_maps}
+                if fusion_prediction.feature_maps is not None
+                else {}
+            ),
         )
     else:
         np.savez_compressed(
@@ -635,6 +725,11 @@ def run_geometry(
             extrinsics=fusion_prediction.extrinsics,
             masks=segmentation_masks,
             processed_images=np.stack(fusion_prediction.processed_images),
+            **(
+                {"feature_maps": fusion_prediction.feature_maps}
+                if fusion_prediction.feature_maps is not None
+                else {}
+            ),
         )
     if backend.last_runtime_report is None or backend.last_lifecycle is None:
         raise RuntimeError("DA3 backend did not produce its required runtime report")

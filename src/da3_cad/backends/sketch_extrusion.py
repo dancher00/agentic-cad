@@ -20,6 +20,7 @@ from da3_cad.cad.program import (
 )
 from da3_cad.config import SketchExtrusionConfig
 from da3_cad.geometry.canonicalizer import CanonicalCloud
+from da3_cad.geometry.interior_ellipse import detect_interior_ellipses
 from da3_cad.geometry.scale import (
     KnownDimension,
     ScaleDecision,
@@ -68,7 +69,12 @@ class ApertureEvidence:
     mask_center: tuple[float, float]
     mask_radius: float
     profile_circle_residual: float | None
-    measurement_source: Literal["raw-3d+mask", "multi-view-mask"] = "raw-3d+mask"
+    measurement_source: Literal[
+        "raw-3d+mask",
+        "multi-view-mask",
+        "raw-3d+rgb-depth-ellipse",
+        "rgb-depth-ellipse",
+    ] = "raw-3d+mask"
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -82,12 +88,23 @@ class ApertureEvidence:
             },
             "profile_circle_residual": self.profile_circle_residual,
             "measurement_source": self.measurement_source,
-            "source": (
-                "repeated enclosed input-mask regions confirm topology; "
-                "the enclosed 3D profile void supplies center and radius"
-                if self.measurement_source == "raw-3d+mask"
-                else "repeated calibrated input-mask regions supply topology and geometry"
-            ),
+            "source": {
+                "raw-3d+mask": (
+                    "repeated enclosed input-mask regions confirm topology; "
+                    "the enclosed 3D profile void supplies center and radius"
+                ),
+                "multi-view-mask": (
+                    "repeated calibrated input-mask regions supply topology and geometry"
+                ),
+                "raw-3d+rgb-depth-ellipse": (
+                    "repeated RGB/depth ellipses confirm topology; the enclosed "
+                    "3D profile void supplies center and radius"
+                ),
+                "rgb-depth-ellipse": (
+                    "repeated calibrated RGB ellipses supply geometry after their "
+                    "interiors violate the local DA3 depth plane"
+                ),
+            }[self.measurement_source],
         }
 
 
@@ -114,6 +131,7 @@ class MaskApertureEvidence:
     center: tuple[float, float]
     radius: float
     supporting_views: tuple[int, ...]
+    measurement_source: Literal["mask-void", "rgb-depth-ellipse"] = "mask-void"
 
 
 @dataclass(frozen=True, slots=True)
@@ -2117,7 +2135,10 @@ def _mask_apertures(
         points = points[np.isfinite(points).all(axis=1)]
         return points if len(points) >= 8 else None
 
-    observations: list[tuple[int, FloatArray, float]] = []
+    observations: list[
+        tuple[int, FloatArray, float, Literal["mask-void", "rgb-depth-ellipse"]]
+    ] = []
+    outer_centers: dict[int, FloatArray] = {}
     for view_index, mask in enumerate(mask_values):
         outer_pixels = external_contour(mask)
         outer = lift(view_index, outer_pixels) if outer_pixels is not None else None
@@ -2125,6 +2146,7 @@ def _mask_apertures(
             continue
         outer_xy = outer[:, list(transverse)]
         outer_center = (outer_xy.min(axis=0) + outer_xy.max(axis=0)) / 2.0
+        outer_centers[view_index] = outer_center
         labels, count = ndimage.label(~mask)
         border = set(
             np.unique(np.concatenate((labels[0], labels[-1], labels[:, 0], labels[:, -1]))).tolist()
@@ -2159,10 +2181,40 @@ def _mask_apertures(
                     view_index,
                     np.asarray(center, dtype=np.float64) - outer_center,
                     radius,
+                    "mask-void",
                 )
             )
 
-    clusters: list[list[tuple[int, FloatArray, float]]] = []
+    for ellipse in detect_interior_ellipses(
+        prediction,
+        mask_values,
+        config.interior_ellipse,
+    ):
+        outer_center = outer_centers.get(ellipse.view_index)
+        if outer_center is None:
+            continue
+        pixels = np.asarray(ellipse.contour_pixels, dtype=np.float64)
+        lifted = lift(ellipse.view_index, pixels)
+        if lifted is None:
+            continue
+        center, radius, residual = _fit_circle(lifted[:, list(transverse)])
+        if radius <= 0.0 or residual > config.circle_aperture_residual_threshold:
+            continue
+        ratio = radius / smaller
+        if not config.aperture_min_radius_fraction <= ratio <= config.aperture_max_radius_fraction:
+            continue
+        observations.append(
+            (
+                ellipse.view_index,
+                np.asarray(center, dtype=np.float64) - outer_center,
+                radius,
+                "rgb-depth-ellipse",
+            )
+        )
+
+    clusters: list[
+        list[tuple[int, FloatArray, float, Literal["mask-void", "rgb-depth-ellipse"]]]
+    ] = []
     for observation in observations:
         for cluster in clusters:
             center = np.median([item[1] for item in cluster], axis=0)
@@ -2185,11 +2237,13 @@ def _mask_apertures(
         relative_center = np.median([item[1] for item in cluster], axis=0)
         radius = float(np.median([item[2] for item in cluster]))
         center = profile_center + relative_center
+        sources = {item[3] for item in cluster}
         result.append(
             MaskApertureEvidence(
                 center=(float(center[0]), float(center[1])),
                 radius=radius,
                 supporting_views=supporting_views,
+                measurement_source=("mask-void" if "mask-void" in sources else "rgb-depth-ellipse"),
             )
         )
 
@@ -2223,6 +2277,11 @@ def _mask_apertures(
                     supporting_views=tuple(
                         sorted(set(previous.supporting_views) | set(item.supporting_views))
                     ),
+                    measurement_source=(
+                        "mask-void"
+                        if "mask-void" in {previous.measurement_source, item.measurement_source}
+                        else "rgb-depth-ellipse"
+                    ),
                 )
                 break
         else:
@@ -2235,11 +2294,11 @@ def _confirmed_apertures(
     masks: tuple[MaskApertureEvidence, ...],
     config: SketchExtrusionConfig,
 ) -> tuple[ApertureEvidence, ...]:
-    """Recover repeated calibrated mask holes, preferring a matching 3D void.
+    """Recover repeated calibrated apertures, preferring a matching 3D void.
 
-    An observed through-hole is a discrete topology constraint. A few displaced
-    depth samples may fill its rasterized 3D void, so absence of that void must
-    not erase repeated, geometrically consistent aperture evidence from masks.
+    Mask holes are direct topology evidence. When segmentation fills a visible
+    hole, repeated RGB ellipses may replace them only after the enclosed DA3
+    depth departs from a locally fitted plane.
     """
 
     lower = np.asarray(candidate.lower, dtype=np.float64)
@@ -2273,7 +2332,15 @@ def _confirmed_apertures(
                 mask_center=mask.center,
                 mask_radius=mask.radius,
                 profile_circle_residual=(profile.circle_residual if profile is not None else None),
-                measurement_source=("raw-3d+mask" if profile is not None else "multi-view-mask"),
+                measurement_source=(
+                    "raw-3d+mask"
+                    if profile is not None and mask.measurement_source == "mask-void"
+                    else "multi-view-mask"
+                    if mask.measurement_source == "mask-void"
+                    else "raw-3d+rgb-depth-ellipse"
+                    if profile is not None
+                    else "rgb-depth-ellipse"
+                ),
             )
         )
     return tuple(
@@ -2578,8 +2645,8 @@ class SketchExtrusionCadBackend:
             "one constant-section extrusion per object",
             "outer profile supports lines or one fitted circle",
             (
-                "through apertures require both repeated circular mask evidence "
-                "and a matching enclosed raw 3D-profile void"
+                "through apertures require repeated calibrated mask voids or "
+                "RGB ellipses whose interiors violate the local DA3 depth plane"
             ),
             (
                 "multiple additive/cut features, revolve, sweep, loft, fillet "

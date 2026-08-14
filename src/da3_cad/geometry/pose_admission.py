@@ -185,11 +185,7 @@ def admit_consistent_views(
     components.sort(key=lambda component: (-len(component), component))
     admitted = components[0]
     required = max(minimum_views, int(np.ceil(minimum_component_fraction * view_count)))
-    if len(admitted) < required:
-        raise ValueError(
-            "pose admission has no sufficiently large consistent component: "
-            f"{len(admitted)} < {required} views"
-        )
+    sufficient = len(admitted) >= required
     rejected = tuple(view for view in range(view_count) if view not in admitted)
 
     component_by_view = {
@@ -245,7 +241,14 @@ def admit_consistent_views(
     )
     report: dict[str, object] = {
         "schema_version": "da3-cad-pose-admission-v1",
-        "status": "rejected-outliers" if rejected else "all-consistent",
+        "status": (
+            "insufficient-consistent-component"
+            if not sufficient
+            else "rejected-outliers"
+            if rejected
+            else "all-consistent"
+        ),
+        "sufficient": sufficient,
         "method": "largest pairwise centre-and-surface-consistency component",
         "scope": "whole views before depth alignment and final fusion",
         "claim_boundary": (
@@ -313,6 +316,9 @@ def _prediction_with_world_translations(
             *prediction.warnings,
             "pose refinement translated disconnected views and passed a full re-audit",
         ),
+        feature_maps=(
+            prediction.feature_maps.copy() if prediction.feature_maps is not None else None
+        ),
     )
 
 
@@ -344,6 +350,9 @@ def _prediction_with_world_transforms(
         warnings=(
             *prediction.warnings,
             "bounded SE(3) pose refinement passed disjoint-view audit and full re-admission",
+        ),
+        feature_maps=(
+            prediction.feature_maps.copy() if prediction.feature_maps is not None else None
         ),
     )
 

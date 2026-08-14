@@ -231,7 +231,44 @@ def _array_statistics(values: FloatArray) -> dict[str, object]:
     }
 
 
-def adapt_da3_prediction(raw: Any, spec: Da3ModelSpec) -> DepthPrediction:
+def _adapt_feature_maps(
+    raw: Any,
+    *,
+    layer: int | None,
+    dimensions: int,
+) -> FloatArray | None:
+    if layer is None:
+        return None
+    auxiliary = getattr(raw, "aux", None)
+    key = f"feat_layer_{layer}"
+    values = getattr(auxiliary, key, None) if auxiliary is not None else None
+    if values is None and isinstance(auxiliary, dict):
+        values = auxiliary.get(key)
+    if values is None:
+        raise ValueError(f"DA3 prediction is missing requested auxiliary feature map {key}")
+    feature_maps = np.asarray(values, dtype=np.float32)
+    if feature_maps.ndim != 4:
+        raise ValueError(f"DA3 {key} must have shape (N,Hf,Wf,C)")
+    channels = int(feature_maps.shape[-1])
+    if channels > dimensions:
+        generator = np.random.default_rng(31_337 + layer)
+        projection = generator.choice(
+            np.asarray([-1.0, 1.0], dtype=np.float32),
+            size=(channels, dimensions),
+        ) / np.sqrt(float(dimensions))
+        feature_maps = np.asarray(feature_maps @ projection, dtype=np.float32)
+    norms = np.linalg.norm(feature_maps, axis=-1, keepdims=True)
+    feature_maps = feature_maps / np.maximum(norms, 1e-8)
+    return np.asarray(feature_maps, dtype=np.float32)
+
+
+def adapt_da3_prediction(
+    raw: Any,
+    spec: Da3ModelSpec,
+    *,
+    export_feature_layer: int | None = None,
+    export_feature_dimensions: int = 64,
+) -> DepthPrediction:
     """Validate the upstream object before admitting it to our geometry core."""
 
     missing = [
@@ -248,6 +285,11 @@ def adapt_da3_prediction(raw: Any, spec: Da3ModelSpec) -> DepthPrediction:
     extrinsics = np.asarray(raw.extrinsics, dtype=np.float32)
     processed_array = np.asarray(raw.processed_images, dtype=np.uint8)
     processed: tuple[UInt8Array, ...] = tuple(processed_array[index] for index in range(len(depth)))
+    feature_maps = _adapt_feature_maps(
+        raw,
+        layer=export_feature_layer,
+        dimensions=export_feature_dimensions,
+    )
     prediction = DepthPrediction(
         depth=depth,
         confidence=confidence,
@@ -259,6 +301,7 @@ def adapt_da3_prediction(raw: Any, spec: Da3ModelSpec) -> DepthPrediction:
             "DA3 any-view depth has unresolved global scale unless metric evidence is supplied",
             "DA3 extrinsics are interpreted as world-to-camera per pinned source/exporter",
         ),
+        feature_maps=feature_maps,
     )
 
     if not np.any(np.isfinite(depth) & (depth > 0.0)):
@@ -295,6 +338,8 @@ class Da3Backend:
             "saddle_balanced",
             "saddle_sim_range",
         ] = "saddle_balanced",
+        export_feature_layer: int | None = 11,
+        export_feature_dimensions: int = 64,
         model_class_loader: Callable[[Path], type[Any]] = _import_da3_model_class,
     ) -> None:
         self.spec = get_da3_model_spec(checkpoint)
@@ -309,6 +354,8 @@ class Da3Backend:
         self.local_files_only = local_files_only
         self.use_ray_pose = use_ray_pose
         self.ref_view_strategy = ref_view_strategy
+        self.export_feature_layer = export_feature_layer
+        self.export_feature_dimensions = export_feature_dimensions
         self._model_class_loader = model_class_loader
         self.last_lifecycle: ModelLifecycleReport | None = None
         self.last_runtime_report: dict[str, object] | None = None
@@ -384,10 +431,18 @@ class Da3Backend:
                 export_dir=None,
                 use_ray_pose=self.use_ray_pose,
                 ref_view_strategy=self.ref_view_strategy,
+                export_feat_layers=(
+                    [self.export_feature_layer] if self.export_feature_layer is not None else None
+                ),
             )
 
         raw, lifecycle = StagedModelManager(device).execute(load_model, infer)
-        prediction = adapt_da3_prediction(raw, self.spec)
+        prediction = adapt_da3_prediction(
+            raw,
+            self.spec,
+            export_feature_layer=self.export_feature_layer,
+            export_feature_dimensions=self.export_feature_dimensions,
+        )
         self.last_lifecycle = lifecycle
         confidence = prediction.confidence
         if confidence is None:
@@ -400,6 +455,8 @@ class Da3Backend:
             "process_resolution_method": self.process_resolution_method,
             "use_ray_pose": self.use_ray_pose,
             "ref_view_strategy": self.ref_view_strategy,
+            "export_feature_layer": self.export_feature_layer,
+            "export_feature_dimensions": self.export_feature_dimensions,
             "camera_conditioning": pose_extrinsics is not None,
             "align_to_input_ext_scale": (
                 align_to_input_ext_scale if pose_extrinsics is not None else None
@@ -414,6 +471,11 @@ class Da3Backend:
                 "intrinsics": list(prediction.intrinsics.shape),
                 "extrinsics": list(prediction.extrinsics.shape),
                 "processed_images": [list(image.shape) for image in prediction.processed_images],
+                "feature_maps": (
+                    list(prediction.feature_maps.shape)
+                    if prediction.feature_maps is not None
+                    else None
+                ),
             },
             "lifecycle": lifecycle.as_dict(),
         }

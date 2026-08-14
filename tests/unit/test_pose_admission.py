@@ -88,6 +88,26 @@ def test_pose_admission_retains_all_overlapping_views() -> None:
     assert result.report["status"] == "all-consistent"
 
 
+def test_pose_admission_reports_insufficient_component_before_pipeline_rejects() -> None:
+    cloud = _cloud(
+        (
+            (0.0, 0.0, 0.0),
+            (3.0, 0.0, 0.0),
+            (0.0, 3.0, 0.0),
+            (0.0, 0.0, 3.0),
+        )
+    )
+
+    result = admit_consistent_views(cloud, view_count=4, samples_per_view=128)
+
+    assert result.admitted_view_indices == (0,)
+    assert result.rejected_view_indices == (1, 2, 3)
+    assert result.report["status"] == "insufficient-consistent-component"
+    assert result.report["sufficient"] is False
+    assert result.report["required_component_views"] == 3
+    assert len(result.report["pairs"]) == 6
+
+
 def test_pose_admission_bypasses_graph_below_minimum_view_count() -> None:
     cloud = _cloud(((0.0, 0.0, 0.0), (5.0, 0.0, 0.0)))
 

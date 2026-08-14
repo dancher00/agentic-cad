@@ -85,6 +85,11 @@ def subset_prediction(prediction: DepthPrediction, indices: tuple[int, ...]) -> 
         processed_images=tuple(prediction.processed_images[int(index)] for index in selected),
         backend=prediction.backend,
         warnings=prediction.warnings,
+        feature_maps=(
+            prediction.feature_maps[selected].copy()
+            if prediction.feature_maps is not None
+            else None
+        ),
     )
 
 

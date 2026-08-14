@@ -9,6 +9,7 @@ from da3_cad.config import (
     AdaptiveViewSelectionConfig,
     AppConfig,
     AxialShellLoopConfig,
+    InteriorEllipseConfig,
     VisualHullConfig,
     load_config,
 )
@@ -69,6 +70,7 @@ def test_internet_photo_profiles_load(
     assert config.view_selection.maximum_views == 40
     assert config.view_selection.minimum_mask_fraction == 0.001
     assert config.pose_admission.refinement_enabled is True
+    assert config.pose_admission.global_recentering_maximum_translation_fraction == 2.5
     assert config.pose_admission.refinement_maximum_translation_fraction == 1.5
     assert config.pose_admission.refinement_maximum_rotation_degrees == 15.0
     assert config.pose_admission.refinement_maximum_surface_distance_fraction == 0.12
@@ -76,6 +78,14 @@ def test_internet_photo_profiles_load(
     assert config.pose_admission.refinement_minimum_reprojection_samples == 32
     assert config.pose_admission.refinement_translation_preference_ratio_tolerance == 0.01
     assert config.pose_admission.refinement_maximum_extent_ratio == 1.35
+
+
+def test_interior_ellipse_ranges_are_validated() -> None:
+    with pytest.raises(ValidationError, match="concentric_minimum_depth"):
+        InteriorEllipseConfig(
+            minimum_depth_plane_excess_fraction=0.001,
+            concentric_minimum_depth_plane_excess_fraction=0.002,
+        )
 
 
 def test_adaptive_view_range_is_validated() -> None:

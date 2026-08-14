@@ -35,6 +35,8 @@ class Da3Config(BaseModel):
         "saddle_balanced",
         "saddle_sim_range",
     ] = "saddle_balanced"
+    export_feature_layer: int | None = Field(default=11, ge=0, le=63)
+    export_feature_dimensions: int = Field(default=64, ge=16, le=256)
 
 
 class GeometryConfig(BaseModel):
@@ -64,6 +66,74 @@ class GeometryConfig(BaseModel):
     )
 
 
+class CameraBundleRefinementConfig(BaseModel):
+    """Bounded post-DA3 camera refinement from fixed image evidence."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = True
+    minimum_views: int = Field(default=3, ge=3, le=64)
+    maximum_features_per_view: int = Field(default=1024, ge=64, le=8192)
+    maximum_pair_neighbors: int = Field(default=4, ge=1, le=16)
+    minimum_pair_matches: int = Field(default=16, ge=8, le=1024)
+    held_out_fraction: float = Field(default=0.25, gt=0.0, lt=0.5)
+    descriptor_ratio: float = Field(default=0.78, gt=0.0, lt=1.0)
+    dense_descriptor_ratio: float = Field(default=0.92, gt=0.0, lt=1.0)
+    ransac_reprojection_threshold_pixels: float = Field(default=2.0, gt=0.0, le=16.0)
+    maximum_initial_match_distance_fraction: float = Field(default=0.35, gt=0.0, le=2.0)
+    maximum_translation_fraction: float = Field(default=0.12, gt=0.0, le=0.5)
+    maximum_rotation_degrees: float = Field(default=5.0, gt=0.0, le=20.0)
+    maximum_fit_residual_ratio: float = Field(default=0.85, gt=0.0, lt=1.0)
+    maximum_audit_residual_ratio: float = Field(default=0.90, gt=0.0, lt=1.0)
+    maximum_pair_audit_residual_ratio: float = Field(default=1.05, ge=1.0, le=1.5)
+    maximum_final_audit_residual_fraction: float = Field(default=0.04, gt=0.0, le=0.25)
+    maximum_surface_audit_residual_ratio: float = Field(default=1.02, ge=1.0, le=1.5)
+    minimum_audit_gain_fraction: float = Field(default=0.001, ge=0.0, le=0.1)
+    regularization_weight: float = Field(default=0.01, ge=0.0, le=1.0)
+    optimization_maximum_evaluations: int = Field(default=120, ge=10, le=2000)
+    component_rig_enabled: bool = True
+    component_rig_minimum_views: int = Field(default=2, ge=2, le=32)
+    component_rig_icp_iterations: int = Field(default=16, ge=2, le=64)
+    component_rig_trim_fraction: float = Field(default=0.55, gt=0.0, le=1.0)
+    component_rig_maximum_rotation_degrees: float = Field(default=75.0, gt=0.0, le=180.0)
+    component_rig_maximum_center_displacement_fraction: float = Field(
+        default=0.25,
+        gt=0.0,
+        le=1.0,
+    )
+    component_rig_maximum_audit_surface_fraction: float = Field(
+        default=0.10,
+        gt=0.0,
+        le=0.5,
+    )
+    component_rig_maximum_audit_surface_ratio: float = Field(
+        default=0.75,
+        gt=0.0,
+        lt=1.0,
+    )
+    component_rig_maximum_pair_surface_ratio: float = Field(
+        default=0.85,
+        gt=0.0,
+        le=1.0,
+    )
+    component_rig_maximum_reprojection_depth_ratio: float = Field(
+        default=0.75,
+        gt=0.0,
+        lt=1.0,
+    )
+    component_rig_minimum_mask_overlap: float = Field(default=0.5, ge=0.0, le=1.0)
+    component_rig_minimum_mask_overlap_ratio: float = Field(
+        default=0.98,
+        gt=0.0,
+        le=1.0,
+    )
+    component_rig_minimum_reprojection_samples: int = Field(
+        default=64,
+        ge=8,
+        le=16384,
+    )
+
+
 class PoseAdmissionConfig(BaseModel):
     """Whole-view pose repair and consistency gate before point concatenation."""
 
@@ -76,6 +146,11 @@ class PoseAdmissionConfig(BaseModel):
     surface_distance_fraction: float = Field(default=0.15, gt=0.0, le=1.0)
     minimum_component_fraction: float = Field(default=0.5, gt=0.0, le=1.0)
     refinement_enabled: bool = True
+    global_recentering_maximum_translation_fraction: float = Field(
+        default=2.5,
+        gt=0.0,
+        le=6.0,
+    )
     refinement_maximum_translation_fraction: float = Field(default=1.5, gt=0.0, le=4.0)
     refinement_maximum_rotation_degrees: float = Field(default=15.0, gt=0.0, le=45.0)
     refinement_maximum_surface_distance_fraction: float = Field(
@@ -110,6 +185,9 @@ class PoseAdmissionConfig(BaseModel):
         le=0.25,
     )
     refinement_maximum_extent_ratio: float = Field(default=1.35, gt=1.0, le=3.0)
+    bundle_refinement: CameraBundleRefinementConfig = Field(
+        default_factory=CameraBundleRefinementConfig
+    )
 
 
 class LoopFeatureAdmissionConfig(BaseModel):
@@ -152,6 +230,85 @@ class CanonicalizerConfig(BaseModel):
     sampling_enabled: bool = True
     point_count: Literal[256] = 256
     normalization_enabled: bool = True
+
+
+class InteriorEllipseConfig(BaseModel):
+    """Evidence gates for a visible internal circular boundary.
+
+    RGB edges propose an ellipse, but depth must also depart from the affine
+    plane fitted around it. This prevents a painted circle on a flat face from
+    silently changing CAD topology.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = True
+    canny_low_threshold: int = Field(default=20, ge=0, le=255)
+    canny_high_threshold: int = Field(default=65, ge=1, le=255)
+    minimum_contour_points: int = Field(default=18, ge=5, le=4096)
+    minimum_minor_axis_pixels: float = Field(default=5.0, gt=0.0, le=256.0)
+    minimum_area_fraction: float = Field(default=0.002, gt=0.0, lt=0.5)
+    maximum_area_fraction: float = Field(default=0.10, gt=0.0, lt=1.0)
+    maximum_ellipse_residual: float = Field(default=0.08, gt=0.0, le=1.0)
+    angular_bins: int = Field(default=24, ge=8, le=96)
+    minimum_angular_coverage: float = Field(default=0.75, gt=0.0, le=1.0)
+    minimum_boundary_margin_ratio: float = Field(default=0.8, ge=0.0, le=10.0)
+    inner_radius_fraction: float = Field(default=0.62, gt=0.0, lt=1.0)
+    annulus_inner_radius_fraction: float = Field(default=1.15, gt=1.0, le=3.0)
+    annulus_outer_radius_fraction: float = Field(default=1.55, gt=1.0, le=4.0)
+    minimum_depth_samples: int = Field(default=24, ge=6, le=4096)
+    minimum_depth_plane_excess_fraction: float = Field(default=0.0015, gt=0.0, le=0.25)
+    duplicate_center_fraction: float = Field(default=0.20, gt=0.0, le=1.0)
+    duplicate_axis_fraction: float = Field(default=0.20, gt=0.0, le=1.0)
+    concentric_maximum_area_fraction: float = Field(default=0.35, gt=0.0, lt=1.0)
+    concentric_minimum_angular_coverage: float = Field(default=0.35, gt=0.0, le=1.0)
+    concentric_minimum_depth_plane_excess_fraction: float = Field(default=0.0005, gt=0.0, le=0.25)
+    concentric_maximum_center_fraction: float = Field(default=0.20, gt=0.0, le=1.0)
+    concentric_minimum_axis_alignment: float = Field(default=0.45, gt=0.0, le=1.0)
+    concentric_minimum_radius_ratio: float = Field(default=0.15, gt=0.0, lt=1.0)
+    concentric_maximum_radius_ratio: float = Field(default=0.80, gt=0.0, lt=1.0)
+    concentric_maximum_ratio_cv: float = Field(default=0.20, gt=0.0, le=1.0)
+    concentric_minimum_views: int = Field(default=2, ge=2, le=64)
+    concentric_endpoint_minimum_axis_fraction: float = Field(
+        default=0.22,
+        gt=0.0,
+        lt=0.5,
+    )
+    concentric_through_minimum_views_per_endpoint: int = Field(default=1, ge=1, le=32)
+    concentric_through_minimum_camera_angle_degrees: float = Field(
+        default=45.0,
+        gt=0.0,
+        le=180.0,
+    )
+
+    @model_validator(mode="after")
+    def validate_ranges(self) -> InteriorEllipseConfig:
+        if self.canny_low_threshold >= self.canny_high_threshold:
+            raise ValueError("canny_low_threshold must be smaller than canny_high_threshold")
+        if self.minimum_area_fraction >= self.maximum_area_fraction:
+            raise ValueError("minimum_area_fraction must be smaller than maximum_area_fraction")
+        if self.annulus_inner_radius_fraction >= self.annulus_outer_radius_fraction:
+            raise ValueError(
+                "annulus_inner_radius_fraction must be smaller than annulus_outer_radius_fraction"
+            )
+        if self.maximum_area_fraction >= self.concentric_maximum_area_fraction:
+            raise ValueError(
+                "maximum_area_fraction must be smaller than concentric_maximum_area_fraction"
+            )
+        if (
+            self.concentric_minimum_depth_plane_excess_fraction
+            > self.minimum_depth_plane_excess_fraction
+        ):
+            raise ValueError(
+                "concentric_minimum_depth_plane_excess_fraction must not exceed "
+                "minimum_depth_plane_excess_fraction"
+            )
+        if self.concentric_minimum_radius_ratio >= self.concentric_maximum_radius_ratio:
+            raise ValueError(
+                "concentric_minimum_radius_ratio must be smaller than "
+                "concentric_maximum_radius_ratio"
+            )
+        return self
 
 
 class SketchExtrusionConfig(BaseModel):
@@ -226,6 +383,7 @@ class SketchExtrusionConfig(BaseModel):
     aperture_center_tolerance_fraction: float = Field(default=0.08, gt=0.0, le=0.5)
     aperture_radius_tolerance_fraction: float = Field(default=0.35, gt=0.0, le=1.0)
     circle_aperture_residual_threshold: float = Field(default=0.4, gt=0.0, le=1.0)
+    interior_ellipse: InteriorEllipseConfig = Field(default_factory=InteriorEllipseConfig)
 
     @model_validator(mode="after")
     def validate_silhouette_length_range(self) -> SketchExtrusionConfig:
@@ -283,6 +441,46 @@ class RevolveConfig(BaseModel):
     step_profile_minimum_side_views: int = Field(default=3, ge=2, le=64)
     step_profile_maximum_side_alignment: float = Field(default=0.80, gt=0.0, lt=1.0)
     step_profile_minimum_score_gain: float = Field(default=0.002, ge=0.0, le=0.1)
+    plateau_simplification_enabled: bool = True
+    plateau_simplification_central_fraction: float = Field(default=0.60, gt=0.2, le=0.9)
+    plateau_simplification_maximum_central_cv: float = Field(default=0.04, gt=0.0, le=0.25)
+    plateau_simplification_minimum_endpoint_ratio: float = Field(default=0.75, gt=0.0, lt=1.0)
+    plateau_simplification_maximum_endpoint_ratio: float = Field(default=0.95, gt=0.0, lt=1.0)
+    plateau_simplification_minimum_mask_gain: float = Field(default=0.01, ge=0.0, le=0.25)
+    plateau_simplification_minimum_surface_p90_gain: float = Field(
+        default=0.005,
+        ge=0.0,
+        le=0.25,
+    )
+    plateau_simplification_maximum_view_iou_drop: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=0.25,
+    )
+    cad_refinement_enabled: bool = True
+    cad_refinement_minimum_views: int = Field(default=3, ge=2, le=64)
+    cad_refinement_minimum_baseline_iou: float = Field(default=0.55, ge=0.0, le=1.0)
+    cad_refinement_axial_scale_minimum: float = Field(default=0.88, gt=0.0, lt=1.0)
+    cad_refinement_axial_scale_maximum: float = Field(default=1.12, gt=1.0, le=1.5)
+    cad_refinement_axial_scale_steps: int = Field(default=7, ge=3, le=31)
+    cad_refinement_radial_scale_minimum: float = Field(default=0.88, gt=0.0, lt=1.0)
+    cad_refinement_radial_scale_maximum: float = Field(default=1.12, gt=1.0, le=1.5)
+    cad_refinement_radial_scale_steps: int = Field(default=7, ge=3, le=31)
+    cad_refinement_axial_offset_fraction: float = Field(default=0.05, ge=0.0, le=0.25)
+    cad_refinement_axial_offset_steps: int = Field(default=5, ge=1, le=21)
+    cad_refinement_pose_maximum_degrees: float = Field(default=4.0, gt=0.0, le=15.0)
+    cad_refinement_pose_coarse_step_degrees: float = Field(default=2.0, gt=0.0, le=10.0)
+    cad_refinement_pose_fine_step_degrees: float = Field(default=0.5, gt=0.0, le=5.0)
+    cad_refinement_minimum_score_gain: float = Field(default=0.001, ge=0.0, le=0.1)
+    cad_refinement_regularization_weight: float = Field(default=0.002, ge=0.0, le=0.1)
+    cad_refinement_maximum_view_iou_drop: float = Field(default=0.03, ge=0.0, le=0.5)
+    cad_refinement_maximum_surface_residual_ratio: float = Field(
+        default=1.05,
+        ge=1.0,
+        le=2.0,
+    )
+    cad_refinement_surface_tolerance_fraction: float = Field(default=0.003, ge=0.0, le=0.1)
+    cad_refinement_surface_samples: int = Field(default=4096, ge=256, le=65536)
     silhouette_fallback_enabled: bool = True
     silhouette_minimum_views: int = Field(default=5, ge=3, le=64)
     silhouette_maximum_width_ratio_cv: float = Field(default=0.08, gt=0.0, le=0.5)
@@ -299,6 +497,7 @@ class RevolveConfig(BaseModel):
     shell_minimum_depth_fraction: float = Field(default=0.18, gt=0.0, le=0.9)
     shell_minimum_wall_fraction: float = Field(default=0.025, gt=0.0, le=0.4)
     shell_maximum_wall_fraction: float = Field(default=0.35, gt=0.0, le=0.49)
+    interior_ellipse: InteriorEllipseConfig = Field(default_factory=InteriorEllipseConfig)
 
     @model_validator(mode="after")
     def validate_shell_wall_range(self) -> RevolveConfig:
@@ -320,6 +519,32 @@ class RevolveConfig(BaseModel):
             raise ValueError(
                 "step_profile_width_minimum_fraction must be smaller than "
                 "step_profile_width_maximum_fraction"
+            )
+        if (
+            self.plateau_simplification_minimum_endpoint_ratio
+            >= self.plateau_simplification_maximum_endpoint_ratio
+        ):
+            raise ValueError(
+                "plateau_simplification_minimum_endpoint_ratio must be smaller than "
+                "plateau_simplification_maximum_endpoint_ratio"
+            )
+        if self.cad_refinement_axial_scale_minimum >= self.cad_refinement_axial_scale_maximum:
+            raise ValueError(
+                "cad_refinement_axial_scale_minimum must be smaller than "
+                "cad_refinement_axial_scale_maximum"
+            )
+        if self.cad_refinement_radial_scale_minimum >= self.cad_refinement_radial_scale_maximum:
+            raise ValueError(
+                "cad_refinement_radial_scale_minimum must be smaller than "
+                "cad_refinement_radial_scale_maximum"
+            )
+        if (
+            self.cad_refinement_pose_fine_step_degrees
+            > self.cad_refinement_pose_coarse_step_degrees
+        ):
+            raise ValueError(
+                "cad_refinement_pose_fine_step_degrees must not exceed "
+                "cad_refinement_pose_coarse_step_degrees"
             )
         return self
 

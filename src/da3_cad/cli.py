@@ -7,7 +7,7 @@ import shutil
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 import typer
 from rich.console import Console
@@ -271,6 +271,99 @@ def prepare_target_command(
     console.print(f"[green]Target manifest:[/green] {result.manifest_path}")
 
 
+@app.command("prepare-photos-sfm")
+def prepare_photos_sfm_command(
+    photos_dir: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Overlapping full-frame photos from one camera in one stationary scene.",
+        ),
+    ],
+    output_dir: Annotated[
+        Path, typer.Option("--output", "-o", help="New COLMAP camera-recovery directory.")
+    ],
+    pairing: Annotated[
+        Literal["exhaustive", "sequential"],
+        typer.Option(
+            "--pairing",
+            help="Exhaustive for unordered photos; sequential only for ordered captures.",
+        ),
+    ] = "exhaustive",
+    device: Annotated[
+        Literal["auto", "cpu", "cuda"],
+        typer.Option(
+            "--device",
+            help="COLMAP SIFT device; cuda requires a CUDA-enabled pycolmap build.",
+        ),
+    ] = "auto",
+    camera_model: Annotated[
+        str,
+        typer.Option(
+            "--camera-model",
+            help="COLMAP camera model shared by this single-camera capture.",
+        ),
+    ] = "SIMPLE_RADIAL",
+    minimum_registered_fraction: Annotated[
+        float,
+        typer.Option(
+            "--min-registered-fraction",
+            min=0.1,
+            max=1.0,
+            help="Abstain when COLMAP registers a smaller fraction of input photos.",
+        ),
+    ] = 0.8,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Recover trusted cameras for photos before segmentation and DA3 depth."""
+
+    if dry_run:
+        console.print(
+            Pretty(
+                {
+                    "command": "prepare-photos-sfm",
+                    "photos": str(photos_dir.resolve()),
+                    "output": str(output_dir.resolve()),
+                    "pairing": pairing,
+                    "device": device,
+                    "camera_model": camera_model,
+                    "minimum_registered_fraction": minimum_registered_fraction,
+                    "writes": False,
+                }
+            )
+        )
+        return
+    try:
+        with console.status(
+            f"Recovering cameras with {pairing} COLMAP matching (device={device})..."
+        ):
+            cameras = recover_colmap_cameras(
+                photos_dir,
+                output_dir,
+                camera_model=camera_model,
+                pairing=pairing,
+                device=device,
+                minimum_registered_fraction=minimum_registered_fraction,
+            )
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Photo SfM failed:[/red] {error}")
+        if output_dir.exists():
+            console.print(
+                f"[yellow]Partial COLMAP evidence was kept at {output_dir}; "
+                "inspect camera_recovery.json before changing the capture.[/yellow]"
+            )
+        raise typer.Exit(1) from error
+    console.print(f"[green]Registered frames:[/green] {cameras.registered_frames_dir}")
+    console.print(f"[green]Camera bundle:[/green] {cameras.camera_bundle_path}")
+    console.print(f"[green]SfM report:[/green] {cameras.report_path}")
+    console.print(
+        "[cyan]Next:[/cyan] segment the registered frames with prepare-target and pass "
+        "the adjusted cameras.npz to reconstruct."
+    )
+
+
 @app.command("prepare-video")
 def prepare_video_command(
     video_path: Annotated[
@@ -314,6 +407,13 @@ def prepare_video_command(
             help="Run sequential COLMAP and undistort registered frames.",
         ),
     ] = True,
+    sfm_device: Annotated[
+        Literal["auto", "cpu", "cuda"],
+        typer.Option(
+            "--sfm-device",
+            help="COLMAP SIFT device; cuda requires a CUDA-enabled pycolmap build.",
+        ),
+    ] = "auto",
     dry_run: DryRunOption = False,
 ) -> None:
     """Extract diverse video frames and optionally recover cameras with COLMAP."""
@@ -327,6 +427,7 @@ def prepare_video_command(
                     "output": str(output_dir.resolve()),
                     "views": views,
                     "candidate_multiplier": candidate_multiplier,
+                    "sfm_device": sfm_device,
                     "center_crop_fraction": center_crop_fraction,
                     "trim_seconds": [start_seconds, end_seconds],
                     "recover_cameras": recover_cameras,
@@ -354,8 +455,13 @@ def prepare_video_command(
                 "[yellow]Camera recovery skipped; DA3 will have to infer poses and scale.[/yellow]"
             )
             return
-        with console.status("Recovering cameras with sequential COLMAP on CPU..."):
-            cameras = recover_colmap_cameras(capture.frames_dir, output_dir / "colmap")
+        with console.status(f"Recovering cameras with sequential COLMAP (device={sfm_device})..."):
+            cameras = recover_colmap_cameras(
+                capture.frames_dir,
+                output_dir / "colmap",
+                pairing="sequential",
+                device=sfm_device,
+            )
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print(f"[red]Video preparation failed:[/red] {error}")
         if output_dir.exists():

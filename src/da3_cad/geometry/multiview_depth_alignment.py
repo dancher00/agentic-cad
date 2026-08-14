@@ -1238,6 +1238,9 @@ def align_multiview_depths(
             *prediction.warnings,
             f"GT-blind per-view depth alignment applied with {criterion}",
         ),
+        feature_maps=(
+            prediction.feature_maps.copy() if prediction.feature_maps is not None else None
+        ),
     )
     scale_hits = sum(parameter.scale_boundary_hit for parameter in parameters)
     center_hits = sum(parameter.center_ratio_boundary_hit for parameter in parameters)

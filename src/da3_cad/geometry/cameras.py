@@ -1,4 +1,4 @@
-"""External camera bundles and deterministic COLMAP recovery for video capture."""
+"""External camera bundles and deterministic COLMAP recovery for image captures."""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from da3_cad.geometry.fusion import ScaleChannel
 from da3_cad.geometry.unprojection import as_homogeneous_extrinsic
 from da3_cad.models import FloatArray, ObservationSet
 
+ColmapPairing = Literal["sequential", "exhaustive"]
+ColmapDevice = Literal["auto", "cpu", "cuda"]
 CameraScaleStatus = Literal["unresolved", "known"]
 
 
@@ -200,13 +202,76 @@ def _registered_images(reconstruction: Any) -> list[Any]:
     return sorted(images, key=lambda image: str(image.name).casefold())
 
 
+def _resolve_colmap_device(
+    pycolmap: Any,
+    requested: ColmapDevice,
+) -> tuple[Any, Literal["cpu", "cuda"], bool]:
+    """Resolve auto without silently accepting an unavailable CUDA build."""
+
+    if requested not in {"auto", "cpu", "cuda"}:
+        raise ValueError(f"unsupported COLMAP device: {requested!r}")
+    raw_has_cuda = getattr(pycolmap, "has_cuda", False)
+    has_cuda = bool(raw_has_cuda() if callable(raw_has_cuda) else raw_has_cuda)
+    selected: Literal["cpu", "cuda"] = (
+        ("cuda" if has_cuda else "cpu") if requested == "auto" else requested
+    )
+    if selected == "cuda" and not has_cuda:
+        raise RuntimeError(
+            "COLMAP CUDA was requested, but this pycolmap build has no CUDA support; "
+            "install a CUDA-enabled COLMAP/pycolmap build or use --device cpu"
+        )
+    return getattr(pycolmap.Device, selected), selected, has_cuda
+
+
+def _match_colmap_features(
+    pycolmap: Any,
+    *,
+    database: Path,
+    matching_options: Any,
+    pairing: ColmapPairing,
+    image_count: int,
+    device: Any,
+) -> str:
+    """Run the requested pairing policy and return an auditable description."""
+
+    if pairing == "sequential":
+        pairing_options = pycolmap.SequentialPairingOptions()
+        pairing_options.overlap = min(10, image_count - 1)
+        pairing_options.quadratic_overlap = True
+        pairing_options.loop_detection = False
+        pycolmap.match_sequential(
+            database_path=str(database),
+            matching_options=matching_options,
+            pairing_options=pairing_options,
+            device=device,
+        )
+        return f"sequential-overlap-{pairing_options.overlap}-quadratic-no-loop-detection"
+    if pairing == "exhaustive":
+        pairing_options = pycolmap.ExhaustivePairingOptions()
+        pycolmap.match_exhaustive(
+            database_path=str(database),
+            matching_options=matching_options,
+            pairing_options=pairing_options,
+            device=device,
+        )
+        return f"exhaustive-all-pairs-block-{pairing_options.block_size}"
+    raise ValueError(f"unsupported COLMAP pairing: {pairing!r}")
+
+
+def _write_camera_recovery_report(path: Path, report: dict[str, object]) -> None:
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def recover_colmap_cameras(
     frames_dir: Path,
     output_dir: Path,
     *,
     camera_model: str = "SIMPLE_RADIAL",
+    pairing: ColmapPairing = "sequential",
+    device: ColmapDevice = "auto",
+    minimum_registered_fraction: float = 0.8,
 ) -> ColmapCameraResult:
-    """Recover arbitrary-scale cameras and undistort registered video frames."""
+    """Recover cameras and undistort registered images from one static scene."""
 
     frames_dir = frames_dir.resolve()
     if not frames_dir.is_dir():
@@ -218,6 +283,10 @@ def recover_colmap_cameras(
     )
     if len(image_names) < 3:
         raise ValueError("COLMAP recovery requires at least three frames")
+    if pairing not in {"sequential", "exhaustive"}:
+        raise ValueError(f"unsupported COLMAP pairing: {pairing!r}")
+    if not 0.0 < minimum_registered_fraction <= 1.0:
+        raise ValueError("minimum_registered_fraction must be in (0, 1]")
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError(f"COLMAP output directory is not empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -225,11 +294,23 @@ def recover_colmap_cameras(
     database = output_dir / "database.db"
     sparse_root = output_dir / "sparse"
     sparse_root.mkdir()
+    report_path = output_dir / "camera_recovery.json"
 
     cpu_threads = min(8, os.cpu_count() or 1)
+    colmap_device, selected_device, has_cuda = _resolve_colmap_device(pycolmap, device)
+    run_configuration: dict[str, object] = {
+        "camera_model_requested": camera_model,
+        "camera_mode": "single-shared-intrinsics",
+        "input_frames": len(image_names),
+        "pairing": pairing,
+        "device_requested": device,
+        "device_selected": selected_device,
+        "pycolmap_has_cuda": has_cuda,
+        "minimum_registered_fraction": minimum_registered_fraction,
+    }
     extraction = pycolmap.FeatureExtractionOptions()
     extraction.num_threads = cpu_threads
-    extraction.use_gpu = False
+    extraction.use_gpu = selected_device == "cuda"
     pycolmap.extract_features(
         database_path=str(database),
         image_path=str(frames_dir),
@@ -237,20 +318,18 @@ def recover_colmap_cameras(
         camera_mode=pycolmap.CameraMode.SINGLE,
         camera_model=camera_model,
         extraction_options=extraction,
-        device=pycolmap.Device.cpu,
+        device=colmap_device,
     )
     matching = pycolmap.FeatureMatchingOptions()
     matching.num_threads = cpu_threads
-    matching.use_gpu = False
-    pairing = pycolmap.SequentialPairingOptions()
-    pairing.overlap = min(10, len(image_names) - 1)
-    pairing.quadratic_overlap = True
-    pairing.loop_detection = False
-    pycolmap.match_sequential(
-        database_path=str(database),
+    matching.use_gpu = selected_device == "cuda"
+    matching_description = _match_colmap_features(
+        pycolmap,
+        database=database,
         matching_options=matching,
-        pairing_options=pairing,
-        device=pycolmap.Device.cpu,
+        pairing=pairing,
+        image_count=len(image_names),
+        device=colmap_device,
     )
     reconstructions = pycolmap.incremental_mapping(
         database_path=str(database),
@@ -258,9 +337,19 @@ def recover_colmap_cameras(
         output_path=str(sparse_root),
     )
     if not reconstructions:
+        _write_camera_recovery_report(
+            report_path,
+            {
+                "schema_version": "1.1",
+                "status": "abstained",
+                "reason": "COLMAP recovered no sparse model",
+                "input_frames_dir": str(frames_dir),
+                "configuration": run_configuration,
+            },
+        )
         raise RuntimeError(
             "COLMAP did not recover a model; add texture/background detail and "
-            "slower overlapping views"
+            f"slower overlapping views; diagnostics: {report_path}"
         )
     reconstruction = max(
         reconstructions.values(),
@@ -268,8 +357,40 @@ def recover_colmap_cameras(
     )
     registered = _registered_images(reconstruction)
     if len(registered) < 3:
+        _write_camera_recovery_report(
+            report_path,
+            {
+                "schema_version": "1.1",
+                "status": "abstained",
+                "reason": "fewer than three images registered",
+                "input_frames_dir": str(frames_dir),
+                "configuration": run_configuration,
+                "registered_frames": len(registered),
+            },
+        )
         raise RuntimeError(
             f"COLMAP registered only {len(registered)} frame(s); at least 3 are required"
+        )
+    registered_fraction = len(registered) / len(image_names)
+    if registered_fraction < minimum_registered_fraction:
+        registered_names = {str(image.name) for image in registered}
+        _write_camera_recovery_report(
+            report_path,
+            {
+                "schema_version": "1.1",
+                "status": "abstained",
+                "reason": "registered-image fraction is below the acceptance threshold",
+                "input_frames_dir": str(frames_dir),
+                "configuration": run_configuration,
+                "registered_frames": len(registered),
+                "registered_fraction": registered_fraction,
+                "missing_frames": sorted(set(image_names).difference(registered_names)),
+            },
+        )
+        raise RuntimeError(
+            "COLMAP registered only "
+            f"{len(registered)}/{len(image_names)} images ({registered_fraction:.1%}); "
+            f"required {minimum_registered_fraction:.1%}; diagnostics: {report_path}"
         )
 
     model_dir = output_dir / "selected_model"
@@ -307,6 +428,19 @@ def recover_colmap_cameras(
     centers = -np.einsum("nij,nj->ni", np.transpose(rotations, (0, 2, 1)), translations)
     camera_rank = int(np.linalg.matrix_rank(centers - centers.mean(axis=0), tol=1e-8))
     if camera_rank < 2:
+        _write_camera_recovery_report(
+            report_path,
+            {
+                "schema_version": "1.1",
+                "status": "abstained",
+                "reason": "camera centres are collinear or collapsed",
+                "input_frames_dir": str(frames_dir),
+                "configuration": run_configuration,
+                "registered_frames": len(names),
+                "registered_fraction": registered_fraction,
+                "camera_center_rank": camera_rank,
+            },
+        )
         raise RuntimeError(
             "COLMAP camera centres are collinear/collapsed; pose-conditioned DA3 scale alignment "
             "requires at least three non-collinear camera positions"
@@ -317,6 +451,7 @@ def recover_colmap_cameras(
         "camera_model_requested": camera_model,
         "input_frames": len(image_names),
         "registered_frames": len(names),
+        "registered_fraction": registered_fraction,
         "missing_frames": missing_names,
         "points3d": int(reconstruction.num_points3D()),
         "mean_reprojection_error_pixels": float(reconstruction.compute_mean_reprojection_error()),
@@ -324,15 +459,25 @@ def recover_colmap_cameras(
             reconstruction.compute_mean_observations_per_reg_image()
         ),
         "camera_center_rank": camera_rank,
-        "matching": "sequential-overlap-10-quadratic-no-loop-detection",
-        "features": f"SIFT CPU ({cpu_threads} threads maximum)",
+        "matching": matching_description,
+        "pairing": pairing,
+        "device_requested": device,
+        "device_selected": selected_device,
+        "pycolmap_has_cuda": has_cuda,
+        "features": f"SIFT {selected_device.upper()} ({cpu_threads} CPU threads maximum)",
+        "acceptance": {
+            "minimum_registered_fraction": minimum_registered_fraction,
+            "registered_fraction_passed": True,
+            "minimum_camera_center_rank": 2,
+            "camera_center_rank_passed": True,
+        },
         "undistorted_for_da3": True,
     }
     bundle = CameraBundle(
         image_names=tuple(names),
         intrinsics=np.stack(intrinsics).astype(np.float32),
         extrinsics=np.stack(extrinsics).astype(np.float32),
-        source="pycolmap-video-sfm",
+        source=("pycolmap-video-sfm" if pairing == "sequential" else "pycolmap-photo-sfm"),
         scale_status="unresolved",
         world_units="arbitrary-colmap-unit",
         details=details,
@@ -340,7 +485,7 @@ def recover_colmap_cameras(
     bundle_path = output_dir / "cameras.npz"
     bundle.save(bundle_path)
     report: dict[str, object] = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": "usable",
         "camera_bundle": bundle.as_dict(),
         "input_frames_dir": str(frames_dir),
@@ -352,8 +497,7 @@ def recover_colmap_cameras(
             "violates this model",
         ],
     }
-    report_path = output_dir / "camera_recovery.json"
-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_camera_recovery_report(report_path, report)
     # Database and sparse files remain as provenance; remove no evidence on success.
     if not model_dir.is_dir():  # pragma: no cover - defensive postcondition
         shutil.rmtree(output_dir, ignore_errors=True)

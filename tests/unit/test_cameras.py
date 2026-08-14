@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
 import pytest
 
-from da3_cad.geometry.cameras import CameraBundle, load_camera_bundle
+from da3_cad.geometry.cameras import (
+    CameraBundle,
+    _match_colmap_features,
+    _resolve_colmap_device,
+    _write_camera_recovery_report,
+    load_camera_bundle,
+)
 from da3_cad.observations import load_observations
 
 
@@ -92,3 +99,95 @@ def test_camera_bundle_rejects_name_and_scale_ambiguity() -> None:
             extrinsics=invalid,
             source="unit-test",
         )
+
+
+class _FakeDevice:
+    cpu = "cpu"
+    cuda = "cuda"
+
+
+class _FakeSequentialPairingOptions:
+    overlap = 0
+    quadratic_overlap = False
+    loop_detection = True
+
+
+class _FakeExhaustivePairingOptions:
+    block_size = 50
+
+
+class _FakePycolmap:
+    Device = _FakeDevice
+    SequentialPairingOptions = _FakeSequentialPairingOptions
+    ExhaustivePairingOptions = _FakeExhaustivePairingOptions
+
+    def __init__(self, *, has_cuda: bool) -> None:
+        self.has_cuda = has_cuda
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def match_sequential(self, **kwargs: object) -> None:
+        self.calls.append(("sequential", kwargs))
+
+    def match_exhaustive(self, **kwargs: object) -> None:
+        self.calls.append(("exhaustive", kwargs))
+
+
+def test_colmap_device_auto_selects_available_backend_and_rejects_missing_cuda() -> None:
+    cpu_pycolmap = _FakePycolmap(has_cuda=False)
+    resolved, selected, has_cuda = _resolve_colmap_device(cpu_pycolmap, "auto")
+
+    assert resolved == "cpu"
+    assert selected == "cpu"
+    assert has_cuda is False
+    with pytest.raises(RuntimeError, match="no CUDA support"):
+        _resolve_colmap_device(cpu_pycolmap, "cuda")
+
+    cuda_pycolmap = _FakePycolmap(has_cuda=True)
+    resolved, selected, has_cuda = _resolve_colmap_device(cuda_pycolmap, "auto")
+    assert resolved == "cuda"
+    assert selected == "cuda"
+    assert has_cuda is True
+
+
+def test_colmap_pairing_dispatches_sequential_and_exhaustive(tmp_path: Path) -> None:
+    pycolmap = _FakePycolmap(has_cuda=False)
+    matching_options = object()
+    database = tmp_path / "database.db"
+
+    sequential = _match_colmap_features(
+        pycolmap,
+        database=database,
+        matching_options=matching_options,
+        pairing="sequential",
+        image_count=8,
+        device="cpu",
+    )
+    exhaustive = _match_colmap_features(
+        pycolmap,
+        database=database,
+        matching_options=matching_options,
+        pairing="exhaustive",
+        image_count=8,
+        device="cpu",
+    )
+
+    assert sequential == "sequential-overlap-7-quadratic-no-loop-detection"
+    assert exhaustive == "exhaustive-all-pairs-block-50"
+    assert [name for name, _ in pycolmap.calls] == ["sequential", "exhaustive"]
+    sequential_options = pycolmap.calls[0][1]["pairing_options"]
+    assert isinstance(sequential_options, _FakeSequentialPairingOptions)
+    assert sequential_options.overlap == 7
+    assert sequential_options.quadratic_overlap is True
+    assert sequential_options.loop_detection is False
+
+
+def test_camera_recovery_report_is_strict_json_with_real_newline(tmp_path: Path) -> None:
+    path = tmp_path / "camera_recovery.json"
+    report: dict[str, object] = {"schema_version": "1.1", "status": "abstained"}
+
+    _write_camera_recovery_report(path, report)
+
+    raw = path.read_text(encoding="utf-8")
+    assert json.loads(raw) == report
+    assert raw.endswith("\n")
+    assert not raw.endswith("\\n")

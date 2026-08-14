@@ -50,6 +50,33 @@ def test_adapter_rejects_missing_confidence() -> None:
         adapt_da3_prediction(raw, get_da3_model_spec("base"))
 
 
+def test_adapter_exports_compact_normalized_dense_features() -> None:
+    generator = np.random.default_rng(31)
+    raw = SimpleNamespace(
+        depth=np.ones((2, 4, 5), dtype=np.float32),
+        conf=np.ones((2, 4, 5), dtype=np.float32),
+        intrinsics=np.repeat(np.eye(3, dtype=np.float32)[None], 2, axis=0),
+        extrinsics=np.repeat(np.eye(4, dtype=np.float32)[None], 2, axis=0),
+        processed_images=np.zeros((2, 4, 5, 3), dtype=np.uint8),
+        aux={"feat_layer_11": generator.normal(size=(2, 3, 4, 96)).astype(np.float32)},
+    )
+
+    prediction = adapt_da3_prediction(
+        raw,
+        get_da3_model_spec("base"),
+        export_feature_layer=11,
+        export_feature_dimensions=32,
+    )
+
+    assert prediction.feature_maps is not None
+    assert prediction.feature_maps.shape == (2, 3, 4, 32)
+    np.testing.assert_allclose(
+        np.linalg.norm(prediction.feature_maps, axis=-1),
+        1.0,
+        atol=1e-5,
+    )
+
+
 def test_latest_large_weights_require_explicit_noncommercial_acceptance() -> None:
     large = get_da3_model_spec("large-1.1")
 

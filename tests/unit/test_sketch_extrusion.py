@@ -158,6 +158,35 @@ def _prediction_and_masks(*, hole: bool) -> tuple[DepthPrediction, np.ndarray]:
     return prediction, masks
 
 
+def _photometric_hole_prediction(
+    *,
+    depth_discontinuity: bool,
+) -> tuple[DepthPrediction, np.ndarray]:
+    base, masks = _prediction_and_masks(hole=False)
+    images: list[np.ndarray] = []
+    depth = np.asarray(base.depth).copy()
+    for view_index, mask in enumerate(masks):
+        image = np.zeros((*mask.shape, 3), dtype=np.uint8)
+        image[mask] = 220
+        cv2.circle(image, (64, 64), 10, (20, 20, 20), -1)
+        if depth_discontinuity:
+            inner = np.zeros(mask.shape, dtype=np.uint8)
+            cv2.circle(inner, (64, 64), 9, 1, -1)
+            depth[view_index, inner.astype(bool)] += 0.08
+        images.append(image)
+    return (
+        DepthPrediction(
+            depth=depth,
+            confidence=base.confidence,
+            intrinsics=base.intrinsics,
+            extrinsics=base.extrinsics,
+            processed_images=tuple(images),
+            backend="synthetic-photometric-aperture",
+        ),
+        masks,
+    )
+
+
 def _look_at(eye: np.ndarray) -> np.ndarray:
     forward = -np.asarray(eye, dtype=np.float64)
     forward /= np.linalg.norm(forward)
@@ -257,6 +286,31 @@ def test_aperture_uses_repeated_masks_and_prefers_3d_profile_measurement() -> No
         if candidate.axis == backend.last_report.selected_axis
     )
     assert len(selected.profile_aperture_candidates) == 1
+
+
+def test_filled_segmentation_recovers_cut_only_with_rgb_and_depth_evidence() -> None:
+    canonical = _canonical(_plate_surface(with_hole=False))
+    backend = SketchExtrusionCadBackend(SketchExtrusionConfig())
+
+    painted_prediction, masks = _photometric_hole_prediction(depth_discontinuity=False)
+    painted = backend.generate(
+        canonical,
+        seed=3,
+        prediction=painted_prediction,
+        masks=masks,
+    )
+    assert not any(name.startswith("aperture_") for name in painted.parameters)
+
+    hole_prediction, masks = _photometric_hole_prediction(depth_discontinuity=True)
+    perforated = backend.generate(
+        canonical,
+        seed=3,
+        prediction=hole_prediction,
+        masks=masks,
+    )
+    assert perforated.parameters["aperture_000_radius"] == pytest.approx(0.2, abs=0.05)
+    assert backend.last_report is not None
+    assert backend.last_report.apertures[0].measurement_source == "rgb-depth-ellipse"
 
 
 def test_metric_scale_and_known_dimension_apply_to_the_whole_sketch() -> None:

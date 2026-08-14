@@ -111,6 +111,26 @@ available. Pass, for example, `--known-dimension extrusion_length=120mm` when
 one physical dimension is known. Otherwise units remain
 `canonical-model-unit`; millimetres are never invented.
 
+For unordered photos from one camera in one static scene, recover cameras on
+the original full frames before segmentation or cropping:
+
+```bash
+da3-cad prepare-photos-sfm photos/ \
+  --output captures/my-object-sfm \
+  --pairing exhaustive \
+  --device auto
+
+da3-cad prepare-target captures/my-object-sfm/registered_frames \
+  --boxes boxes.json \
+  --cameras captures/my-object-sfm/cameras.npz \
+  --output captures/my-object
+```
+
+The command writes `camera_recovery.json` and abstains by default when fewer
+than 80% of the photos register or the recovered camera trajectory is
+degenerate. Use the undistorted `registered_frames/` together with the emitted
+bundle; image names and intrinsics are a single contract.
+
 For moving-camera video, first run `da3-cad prepare-video`; the object itself
 must remain stationary. See the [video guide](docs/VIDEO_TO_CAD.md).
 
@@ -143,6 +163,29 @@ outputs/my-object/
    succeeds only for one finite, positive-volume solid. Surface provenance is
    checked independently from kernel validity.
 
+A filled foreground mask does not automatically erase a visible circular
+opening: repeated RGB ellipses may supply topology only when their interiors
+violate the local DA3 depth plane and calibrated views agree. For axial bodies, each supported rim is
+assigned to a silhouette endpoint. The grammar evaluates solid, both
+blind-cavity orientations and a through-hole, but admits the through-hole only
+when opposite endpoint groups are supported by sufficiently separated camera
+directions; otherwise it keeps the conservative blind or ambiguous result.
+
+For DA3-estimated cameras, the same inference pass also exports a compact dense
+feature map. A post-DA3 bundle stage proposes bounded camera corrections from
+fixed feature/depth correspondences and audits them on held-out matches,
+reprojection and independent surface samples. If strong matches form coherent
+multi-view groups, one rigid transform may align a whole group while preserving
+its internal camera relations. Repeated RGB/depth interior boundaries activate
+a topology guard: symmetric surface alignment is then ambiguous and the camera
+proposal is rolled back.
+
+A post-topology revolve optimizer can refine bounded pose, scale and axial
+offset against every original mask while keeping fixed DA3 surface evidence as
+a prior. It activates only when the baseline CAD-to-camera projection is
+credible, rejects boundary optima and per-view regressions, and never reruns DA3
+on its own CAD render.
+
 The [architecture](docs/ARCHITECTURE.md) specifies coordinates, camera
 conventions, scale, filtering and validation contracts. The
 [illustrated algorithm walkthrough](docs/ALGORITHM_RU.md) shows the diagnostic
@@ -174,6 +217,7 @@ STEP is not presented as an accurate reconstruction.
 - [Machine-readable ledger](docs/results/public-benchmark-v2.json)
 - [Grammar refinement: before/after and negative controls](docs/results/grammar-refinement-v1.json)
 - [Redistributable fixtures](sample_data/public_benchmark_v2/README.md)
+- [External CADBench protocol and current non-SOTA boundary](docs/CADBENCH.md)
 
 Reproduce the fixtures, GPU runs and figures with:
 
@@ -208,6 +252,7 @@ and wheel/sdist builds. Sources, checkpoints and datasets use pinned revisions
 and hashes; every reconstruction records its inputs and software provenance.
 
 - [Reproducibility](docs/REPRODUCIBILITY.md)
+- [Experimental BrepGaussian + confidence-aware DA3 prior](docs/BREPGAUSSIAN_DA3.md)
 - [Third-party licenses](docs/LICENSES.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Draft paper](paper/README.md)

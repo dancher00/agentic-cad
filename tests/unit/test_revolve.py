@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import cadquery as cq
+import cv2
 import numpy as np
 import pytest
 
 from da3_cad.backends.construction_grammar import ConstructionGrammarCadBackend
 from da3_cad.backends.revolve import (
+    AxialProfile,
     RevolveCadBackend,
+    _cad_conditioned_revolve_refinement,
+    _candidate_with_cad_refinement,
     _capture_revolve_rings,
     _interior_step_hypothesis,
     _render_revolve_silhouette,
+    _revolve_plateau_simplification,
     _revolve_step_refinement,
     _step_axial_profile,
 )
@@ -218,6 +224,69 @@ def _look_at(eye: np.ndarray) -> np.ndarray:
     return result.astype(np.float32)
 
 
+def _concentric_rim_prediction(
+    masks: np.ndarray,
+    *,
+    depth_discontinuity: bool,
+    endpoint_signs: tuple[int, ...] | None = None,
+    opposite_camera_groups: bool = False,
+) -> DepthPrediction:
+    view_count, height, width = masks.shape
+    if endpoint_signs is not None and len(endpoint_signs) != view_count:
+        raise ValueError("endpoint_signs must match the mask view count")
+    images: list[np.ndarray] = []
+    depths: list[np.ndarray] = []
+    if opposite_camera_groups:
+        if endpoint_signs is None:
+            raise ValueError("opposite camera groups require endpoint signs")
+        eyes = [
+            np.asarray(
+                [
+                    4.0 if sign < 0 else -4.0,
+                    0.20 * np.cos(angle),
+                    0.20 * np.sin(angle),
+                ]
+            )
+            for sign, angle in zip(
+                endpoint_signs,
+                np.linspace(0.0, 2.0 * np.pi, view_count, endpoint=False),
+                strict=True,
+            )
+        ]
+    else:
+        eyes = [
+            np.asarray([4.0, 0.35 * np.cos(angle), 0.35 * np.sin(angle)])
+            for angle in np.linspace(0.0, 2.0 * np.pi, view_count, endpoint=False)
+        ]
+    for view_index, mask in enumerate(masks):
+        image = np.zeros((height, width, 3), dtype=np.uint8)
+        image[mask] = 220
+        sign = 0 if endpoint_signs is None else endpoint_signs[view_index]
+        center = (width // 2, height // 2 + sign * 40)
+        cv2.ellipse(image, center, (20, 14), 0.0, 0.0, 360.0, (35, 35, 35), 2)
+        cv2.ellipse(image, center, (8, 5), 0.0, 0.0, 360.0, (20, 20, 20), -1)
+        depth = np.full((height, width), 2.0, dtype=np.float32)
+        if depth_discontinuity:
+            inner = np.zeros((height, width), dtype=np.uint8)
+            cv2.ellipse(inner, center, (7, 4), 0.0, 0.0, 360.0, 1, -1)
+            depth[inner.astype(bool)] += 0.08
+        images.append(image)
+        depths.append(depth)
+    intrinsics = np.repeat(
+        np.asarray([[[100.0, 0.0, width / 2.0], [0.0, 100.0, height / 2.0], [0.0, 0.0, 1.0]]]),
+        view_count,
+        axis=0,
+    ).astype(np.float32)
+    return DepthPrediction(
+        depth=np.stack(depths),
+        confidence=np.ones((view_count, height, width), dtype=np.float32),
+        intrinsics=intrinsics,
+        extrinsics=np.stack([_look_at(eye) for eye in eyes]),
+        processed_images=tuple(images),
+        backend="synthetic-concentric-rim",
+    )
+
+
 def test_recovers_axis_and_valid_outer_profile(tmp_path: Path) -> None:
     points = _revolved_surface(lambda axial: 0.52 + 0.08 * (axial + 1.0) / 2.0)
     backend = RevolveCadBackend(_config())
@@ -337,6 +406,264 @@ def test_interior_step_grammar_recovers_sharp_shoulders_from_masks() -> None:
     assert refined.step_refinement.as_dict()["ground_truth_access"] is False
 
 
+def _synthetic_revolve_prediction(
+    canonical,
+    candidate,
+    profile: AxialProfile,
+) -> tuple[DepthPrediction, np.ndarray]:
+    assert canonical.orientation is not None
+    base = np.asarray(canonical.orientation.axes_world, dtype=np.float64).T
+    local = np.asarray(candidate.frame_canonical_columns, dtype=np.float64)
+    axis_world = (base @ local)[:, candidate.axis]
+    axis_world /= np.linalg.norm(axis_world)
+    transverse = np.eye(3)[int(np.argmin(np.abs(axis_world)))]
+    first_side = np.cross(axis_world, transverse)
+    first_side /= np.linalg.norm(first_side)
+    second_side = np.cross(axis_world, first_side)
+    second_side /= np.linalg.norm(second_side)
+    directions = (
+        first_side,
+        -first_side,
+        second_side,
+        -second_side,
+        (first_side + second_side) / np.sqrt(2.0),
+        (first_side - second_side) / np.sqrt(2.0),
+    )
+    extrinsics = np.stack([_look_at(4.0 * direction) for direction in directions])
+    intrinsics = np.repeat(
+        np.asarray([[[90.0, 0.0, 64.0], [0.0, 90.0, 64.0], [0.0, 0.0, 1.0]]]),
+        len(directions),
+        axis=0,
+    ).astype(np.float32)
+    rings = _capture_revolve_rings(canonical, candidate, profile)
+    masks = np.stack(
+        [
+            _render_revolve_silhouette(
+                rings,
+                intrinsics[index],
+                extrinsics[index],
+                (128, 128),
+            )
+            for index in range(len(directions))
+        ]
+    )
+    depth = np.ones(masks.shape, dtype=np.float32)
+    return (
+        DepthPrediction(
+            depth=depth,
+            confidence=np.ones_like(depth),
+            intrinsics=intrinsics,
+            extrinsics=extrinsics,
+            processed_images=tuple(np.zeros((128, 128, 3), dtype=np.uint8) for _ in directions),
+            backend="synthetic-cad-conditioned-revolve",
+        ),
+        masks,
+    )
+
+
+def test_cad_conditioned_refinement_improves_all_views_and_preserves_through() -> None:
+    canonical = _canonical(_revolved_surface(lambda axial: np.full_like(axial, 0.65)))
+    config = _config().model_copy(update={"cad_refinement_enabled": False})
+    backend = RevolveCadBackend(config)
+    backend.generate(canonical, seed=7)
+    assert backend.last_report is not None
+    candidate = next(
+        item
+        for item in backend.last_report.axis_candidates
+        if item.axis == backend.last_report.selected_axis
+        and item.profile == backend.last_report.profile
+    )
+    inner = (
+        (0.08, candidate.profile.outer_points[0][1]),
+        (0.08, candidate.profile.outer_points[-1][1]),
+    )
+    through_profile = AxialProfile(
+        points=(*candidate.profile.outer_points, *reversed(inner)),
+        outer_points=candidate.profile.outer_points,
+        inner_points=inner,
+        shell=True,
+        opening="through",
+    )
+    target = replace(candidate, profile=through_profile)
+    prediction, masks = _synthetic_revolve_prediction(canonical, target, through_profile)
+    rotation = [0.0, 0.0, 0.0]
+    rotation[next(index for index in range(3) if index != target.axis)] = 3.0
+    perturbed = _candidate_with_cad_refinement(
+        target,
+        axial_scale=0.90,
+        radial_scale=0.90,
+        axial_offset_fraction=0.02,
+        rotation_degrees=(float(rotation[0]), float(rotation[1]), float(rotation[2])),
+    )
+    refine_config = config.model_copy(
+        update={
+            "cad_refinement_enabled": True,
+            "cad_refinement_axial_scale_minimum": 0.80,
+            "cad_refinement_axial_scale_maximum": 1.30,
+            "cad_refinement_axial_scale_steps": 11,
+            "cad_refinement_radial_scale_minimum": 0.80,
+            "cad_refinement_radial_scale_maximum": 1.30,
+            "cad_refinement_radial_scale_steps": 11,
+            "cad_refinement_axial_offset_fraction": 0.08,
+            "cad_refinement_axial_offset_steps": 9,
+            "cad_refinement_pose_maximum_degrees": 5.0,
+            "cad_refinement_pose_coarse_step_degrees": 2.5,
+            "cad_refinement_pose_fine_step_degrees": 0.5,
+            "cad_refinement_minimum_score_gain": 0.0,
+            "cad_refinement_regularization_weight": 0.0,
+            "cad_refinement_maximum_view_iou_drop": 0.0,
+            "cad_refinement_maximum_surface_residual_ratio": 1.5,
+            "cad_refinement_surface_tolerance_fraction": 0.10,
+            "cad_refinement_surface_samples": 1024,
+        }
+    )
+    refined = _cad_conditioned_revolve_refinement(
+        canonical,
+        prediction,
+        masks,
+        perturbed,
+        refine_config,
+    )
+
+    assert refined.cad_refinement is not None
+    report = refined.cad_refinement
+    assert report.applied, report.as_dict()
+    assert report.topology == "through"
+    assert report.topology_preserved
+    assert refined.profile.opening == "through"
+    assert len(refined.profile.inner_points) == len(perturbed.profile.inner_points)
+    assert report.selected_mean_iou is not None
+    assert report.baseline_mean_iou is not None
+    assert report.selected_mean_iou > report.baseline_mean_iou
+    assert all(
+        selected >= baseline
+        for selected, baseline in zip(
+            report.selected_view_iou,
+            report.baseline_view_iou,
+            strict=True,
+        )
+    )
+    assert report.as_dict()["ground_truth_access"] is False
+
+
+def test_plateau_simplification_removes_projection_taper_and_preserves_bore_ratio() -> None:
+    canonical = _canonical(_revolved_surface(lambda axial: np.full_like(axial, 0.65)))
+    config = _config().model_copy(
+        update={
+            "cad_refinement_enabled": False,
+            "plateau_simplification_enabled": False,
+        }
+    )
+    backend = RevolveCadBackend(config)
+    backend.generate(canonical, seed=7)
+    assert backend.last_report is not None
+    candidate = next(
+        item
+        for item in backend.last_report.axis_candidates
+        if item.axis == backend.last_report.selected_axis
+        and item.profile == backend.last_report.profile
+    )
+    first = candidate.profile.outer_points[0][1]
+    last = candidate.profile.outer_points[-1][1]
+    span = last - first
+    radius = float(np.median([point[0] for point in candidate.profile.outer_points]))
+    ratio = 0.30
+    inner = ((ratio * radius, first), (ratio * radius, last))
+    target_profile = AxialProfile(
+        points=((radius, first), (radius, last), *reversed(inner)),
+        outer_points=((radius, first), (radius, last)),
+        inner_points=inner,
+        shell=True,
+        opening="through",
+    )
+    target = replace(candidate, profile=target_profile)
+    prediction, masks = _synthetic_revolve_prediction(canonical, target, target_profile)
+    tapered_outer = (
+        (0.85 * radius, first),
+        (radius, first + 0.15 * span),
+        (radius, last - 0.15 * span),
+        (0.85 * radius, last),
+    )
+    tapered_profile = AxialProfile(
+        points=(*tapered_outer, *reversed(inner)),
+        outer_points=tapered_outer,
+        inner_points=inner,
+        shell=True,
+        opening="through",
+    )
+    tapered = replace(
+        candidate,
+        profile=tapered_profile,
+        evidence_source="multi-view-silhouette-invariance+rgb-depth-concentric-interior-through",
+        silhouette_metrics={"interior_radius_ratio": ratio},
+    )
+    refined = _revolve_plateau_simplification(
+        canonical,
+        prediction,
+        masks,
+        tapered,
+        config.model_copy(
+            update={
+                "plateau_simplification_enabled": True,
+                "plateau_simplification_minimum_mask_gain": 0.0,
+                "plateau_simplification_minimum_surface_p90_gain": 0.0,
+                "cad_refinement_surface_samples": 1024,
+            }
+        ),
+    )
+
+    assert refined.plateau_simplification is not None
+    report = refined.plateau_simplification
+    assert report.applied, report.as_dict()
+    assert report.topology == "through"
+    assert report.topology_preserved
+    assert refined.profile.opening == "through"
+    assert len(refined.profile.outer_points) == 2
+    assert refined.profile.inner_points[0][0] / refined.profile.outer_points[0][0] == pytest.approx(
+        ratio
+    )
+    assert all(
+        selected >= baseline
+        for selected, baseline in zip(
+            report.selected_view_iou,
+            report.baseline_view_iou,
+            strict=True,
+        )
+    )
+
+
+def test_cad_conditioned_refinement_rolls_back_when_input_masks_match() -> None:
+    canonical = _canonical(_revolved_surface(lambda axial: np.full_like(axial, 0.65)))
+    config = _config().model_copy(update={"cad_refinement_enabled": False})
+    backend = RevolveCadBackend(config)
+    backend.generate(canonical, seed=7)
+    assert backend.last_report is not None
+    candidate = next(
+        item
+        for item in backend.last_report.axis_candidates
+        if item.axis == backend.last_report.selected_axis
+        and item.profile == backend.last_report.profile
+    )
+    prediction, masks = _synthetic_revolve_prediction(canonical, candidate, candidate.profile)
+    refined = _cad_conditioned_revolve_refinement(
+        canonical,
+        prediction,
+        masks,
+        candidate,
+        config.model_copy(
+            update={
+                "cad_refinement_enabled": True,
+                "cad_refinement_surface_samples": 1024,
+            }
+        ),
+    )
+
+    assert refined.cad_refinement is not None
+    assert not refined.cad_refinement.applied
+    assert refined.profile == candidate.profile
+    assert refined.frame_canonical_columns == candidate.frame_canonical_columns
+
+
 def test_visible_inner_wall_emits_valid_shell(tmp_path: Path) -> None:
     points = _revolved_surface(
         lambda axial: np.full_like(axial, 0.65),
@@ -409,6 +736,106 @@ def test_consistent_silhouettes_enable_revolve_when_partial_3d_is_not_radial(
     assert selected.silhouette_metrics["width_over_height_cv"] < 1e-6
     validation = validate_and_export(program.source, tmp_path, SandboxConfig())
     assert validation.valid, validation.error
+
+
+def test_concentric_rgb_depth_rims_add_only_an_observed_side_cavity(
+    tmp_path: Path,
+) -> None:
+    masks = _bottle_silhouettes()
+    canonical = _canonical(_box_surface())
+    backend = RevolveCadBackend(_config())
+
+    flat = _concentric_rim_prediction(masks, depth_discontinuity=False)
+    flat_program = backend.generate(canonical, seed=7, prediction=flat, masks=masks)
+    assert flat_program.program_family == "revolve"
+    assert backend.last_report is not None
+    assert not backend.last_report.profile.shell
+
+    cavity = _concentric_rim_prediction(masks, depth_discontinuity=True)
+    cavity_program = backend.generate(canonical, seed=7, prediction=cavity, masks=masks)
+    assert cavity_program.program_family == "revolve-shell"
+    assert backend.last_report is not None
+    assert backend.last_report.profile.shell
+    assert backend.last_report.profile.opening in {"lower", "upper"}
+    selected = backend.last_report.axis_candidates[0]
+    assert selected.silhouette_metrics is not None
+    assert selected.silhouette_metrics["interior_through_hole_claimed"] == 0.0
+    validation = validate_and_export(cavity_program.source, tmp_path, SandboxConfig())
+    assert validation.valid, validation.error
+
+
+def _constant_cylinder_silhouettes(view_count: int = 4) -> np.ndarray:
+    height, width = 160, 120
+    yy, xx = np.mgrid[:height, :width]
+    mask = (yy >= 15) & (yy <= 145) & (np.abs(xx - width / 2.0) <= 24)
+    return np.repeat(mask[None, ...], view_count, axis=0)
+
+
+def test_opposite_endpoint_rims_select_through_hole_without_gt(
+    tmp_path: Path,
+) -> None:
+    masks = _constant_cylinder_silhouettes()
+    endpoint_signs = (-1, -1, 1, 1)
+    prediction = _concentric_rim_prediction(
+        masks,
+        depth_discontinuity=True,
+        endpoint_signs=endpoint_signs,
+        opposite_camera_groups=True,
+    )
+    config = _config().model_copy(update={"silhouette_minimum_views": 4})
+    backend = RevolveCadBackend(config)
+    program = backend.generate(
+        _canonical(_box_surface()),
+        seed=7,
+        prediction=prediction,
+        masks=masks,
+    )
+
+    assert program.program_family == "revolve-shell"
+    assert backend.last_report is not None
+    assert backend.last_report.profile.opening == "through"
+    selected = backend.last_report.axis_candidates[0]
+    assert selected.silhouette_metrics is not None
+    assert selected.silhouette_metrics["interior_endpoint_negative_views"] >= 1.0
+    assert selected.silhouette_metrics["interior_endpoint_positive_views"] >= 1.0
+    assert (
+        selected.silhouette_metrics["interior_endpoint_maximum_camera_angle_degrees"]
+        >= config.interior_ellipse.concentric_through_minimum_camera_angle_degrees
+    )
+    assert selected.silhouette_metrics["interior_through_hole_claimed"] == 1.0
+    hypotheses = {item.topology: item for item in selected.topology_hypotheses}
+    assert hypotheses["through"].admitted
+    assert hypotheses["through"].selected
+    assert hypotheses["through"].as_dict()["ground_truth_access"] is False
+    validation = validate_and_export(program.source, tmp_path, SandboxConfig())
+    assert validation.valid, validation.error
+    shape = cq.importers.importStep(str(tmp_path / "model.step")).val()
+    assert sum(face.geomType() == "CYLINDER" for face in shape.Faces()) >= 2
+
+
+def test_opposite_image_endpoints_without_camera_separation_do_not_claim_through() -> None:
+    masks = _constant_cylinder_silhouettes()
+    prediction = _concentric_rim_prediction(
+        masks,
+        depth_discontinuity=True,
+        endpoint_signs=(-1, -1, 1, 1),
+        opposite_camera_groups=False,
+    )
+    config = _config().model_copy(update={"silhouette_minimum_views": 4})
+    backend = RevolveCadBackend(config)
+    backend.generate(
+        _canonical(_box_surface()),
+        seed=7,
+        prediction=prediction,
+        masks=masks,
+    )
+
+    assert backend.last_report is not None
+    assert backend.last_report.profile.opening != "through"
+    selected = backend.last_report.axis_candidates[0]
+    hypotheses = {item.topology: item for item in selected.topology_hypotheses}
+    assert not hypotheses["through"].admitted
+    assert not hypotheses["through"].selected
 
 
 def test_varying_silhouette_widths_do_not_invent_revolve() -> None:
