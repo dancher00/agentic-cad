@@ -38,11 +38,13 @@ without looking at DA3-prior results.
 
 ## Coverage intervention
 
-Each object uses the same five fitted images at three predeclared angular
-coverage bands: low `0.20-0.30`, medium `0.38-0.48`, and high `0.58-0.70`.
-Four disjoint held-out views remain fixed across the three conditions. The
-measured coverage and selected view IDs are written before optimization. A
-condition outside its band is invalid rather than silently reassigned.
+Each object uses the same count of five fitted images at three predeclared
+angular coverage bands: low `0.24-0.27`, medium `0.33-0.35`, and high
+`0.41-0.43`. These bands are attainable with five 35-degree spherical caps;
+the earlier exploratory subset had coverage `0.4155`. Four separately rendered,
+disjoint held-out views remain fixed across the three conditions. The measured
+coverage and selected view IDs are written before optimization. A condition
+outside its band is invalid rather than silently reassigned.
 
 This produces `10 objects x 3 coverage bands x 3 seeds x 2 methods = 180`
 Stage 1 runs.
