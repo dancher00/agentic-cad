@@ -5,6 +5,10 @@ benchmark is a regression and product audit; it is not comparable to published
 image-to-CAD leaderboards. CADBench is the external protocol used to determine
 whether a narrower claim is supportable.
 
+The numbers below belong to the archived deterministic DA3 grammar path. The
+new calibrated MVS + CADENA path has not been run on a complete official split,
+so it has no CADBench leaderboard result.
+
 The adapter is pinned to CADBench commit
 `99e41a2eeb351f04611e83980f9f23cb0ca216c7`. CADBench code is MIT-licensed;
 its constituent datasets retain their original licenses. In particular,

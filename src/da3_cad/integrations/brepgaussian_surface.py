@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 
@@ -13,6 +14,7 @@ from da3_cad.geometry.fusion import (
     ScaleChannel,
     ViewFusionStats,
 )
+from da3_cad.models import BoolArray, FloatArray, IntArray
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,8 +22,8 @@ class BrepGaussianSurface:
     """Stage 2 surface evidence plus a cloud consumable by the CAD grammar."""
 
     cloud: FusedPointCloud
-    labels: np.ndarray
-    edge_scores: np.ndarray
+    labels: IntArray
+    edge_scores: FloatArray
 
     def as_dict(self) -> dict[str, object]:
         labels, counts = np.unique(self.labels, return_counts=True)
@@ -107,8 +109,8 @@ def rectify_labelled_axis_planes(
     accepted: list[int] = []
     accepted_patches: list[dict[str, object]] = []
     skipped: list[dict[str, object]] = []
-    point_parts: list[np.ndarray] = []
-    index_parts: list[np.ndarray] = []
+    point_parts: list[FloatArray] = []
+    index_parts: list[IntArray] = []
     for label in np.unique(surface.labels):
         indices = np.flatnonzero(surface.labels == label)
         if len(indices) < minimum_label_points:
@@ -118,7 +120,7 @@ def rectify_labelled_axis_planes(
             continue
         patch = points[indices]
         rng = np.random.default_rng(20260810 + int(label))
-        best_inliers: np.ndarray | None = None
+        best_inliers: BoolArray | None = None
         best_key: tuple[int, float] | None = None
         for _ in range(ransac_iterations):
             first, second, third = patch[rng.choice(len(patch), size=3, replace=False)]
@@ -216,14 +218,16 @@ def rectify_labelled_axis_planes(
             index for index, patch in enumerate(accepted_patches) if patch["axis"] == extrusion_axis
         ]
         if len(cap_indices) >= 2:
-            offsets = [float(accepted_patches[index]["plane_offset"]) for index in cap_indices]
+            offsets = [
+                cast(float, accepted_patches[index]["plane_offset"]) for index in cap_indices
+            ]
             lower, upper = min(offsets), max(offsets)
             cap_tolerance = 0.05 * largest_extent
             keep_caps = {
                 index
                 for index in cap_indices
-                if float(accepted_patches[index]["plane_offset"]) <= lower + cap_tolerance
-                or float(accepted_patches[index]["plane_offset"]) >= upper - cap_tolerance
+                if cast(float, accepted_patches[index]["plane_offset"]) <= lower + cap_tolerance
+                or cast(float, accepted_patches[index]["plane_offset"]) >= upper - cap_tolerance
             }
             keep = [
                 index

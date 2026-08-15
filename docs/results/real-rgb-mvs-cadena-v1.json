@@ -1,0 +1,85 @@
+{
+  "schema_version": "da3-cad-real-rgb-mvs-cadena-v1",
+  "date": "2026-08-15",
+  "claim": "controlled end-to-end real-RGB acceptance case; not SOTA or category-level generalization",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "memory_mib": 16303,
+    "torch": "2.13.0+cu130",
+    "pycolmap": "4.1.1-cuda12"
+  },
+  "input": {
+    "dataset": "T-LESS",
+    "scene": 20,
+    "object": 4,
+    "rgb_views": 32,
+    "minimum_visibility": 0.97,
+    "masks": "dataset-derived target masks",
+    "cameras": "dataset calibrated world-to-camera transforms",
+    "reference_geometry_access_during_reconstruction": false
+  },
+  "dense_surface": {
+    "patchmatch_seconds": 137.17023473698646,
+    "total_seconds": 150.2897968159523,
+    "geometric_depth_maps": 32,
+    "fused_voxels": 96818,
+    "mean_independent_confirmations": 4.877890110015869,
+    "relative_depth_tolerance": 0.015,
+    "surface_vertices": 190000,
+    "surface_faces": 370217,
+    "surface_watertight": false
+  },
+  "cad": {
+    "decision": "ACCEPT",
+    "operations": ["revolve"],
+    "accepted_steps": 1,
+    "profile_points_before": 22,
+    "profile_points_after": 9,
+    "source_view_score": 0.9105455622174661,
+    "source_view_silhouette_iou": 0.8857871943989293,
+    "source_view_depth_inlier_fraction_at_3_percent": 0.956525388166177,
+    "source_view_depth_observed_coverage": 0.9612253462022661,
+    "median_relative_depth_error": 0.0019692666828632355,
+    "renderer_channel_quantization_step": 16,
+    "kernel": {
+      "valid": true,
+      "solids": 1,
+      "faces": 8,
+      "edges": 14,
+      "positive_volume": true
+    }
+  },
+  "reproducibility": {
+    "independent_process_runs": 2,
+    "same_seed": 20260815,
+    "byte_identical_artifacts": {
+      "model.py": "59f58b72e94c0fe19492df49b2604e0472be8bf1182c4ce5e7d2fe284fb44fa4",
+      "model.step": "9cd35a3b07ea5f7f3836be26ee318d5b01cd8db2dc9fefd5ccd953369c54ccdb",
+      "cadena_report.json": "d8aef1a095da3e1475df5d59a76d5ce136930c2e2af7a670c1e6ad3ce469576d",
+      "target.png": "2c571d2cb75f421692ac4e82df2a90fd4d4a0d10cddbf63f7a57f969c46bfdc8",
+      "step_01_input.png": "94583eb41c931eecd25b91796969b21683d0d93057d0b12ba8a90e38f24cea18"
+    },
+    "step_metadata": "timestamp and process-local OpenCascade product counter normalized"
+  },
+  "posthoc_reference_evaluation": {
+    "access": "after model.step and decision report were frozen",
+    "alignment": "registered object coordinates; no ICP",
+    "samples_per_surface": 100000,
+    "seed": 20260815,
+    "symmetric_mean_over_object_diagonal": 0.011682142168394631,
+    "symmetric_p95_over_object_diagonal": 0.0241262811910913,
+    "f_score_at_1_percent": 0.5491759846479859,
+    "f_score_at_2_percent": 0.9046273063092873,
+    "f_score_at_5_percent": 0.9827525698213205
+  },
+  "negative_control": {
+    "dataset": "T-LESS",
+    "scene": 20,
+    "object": 2,
+    "failure": "CAD candidate misses a visible opening",
+    "source_view_silhouette_iou": 0.8596590642533798,
+    "minimum_required": 0.87,
+    "decision_under_release_gate": "ABSTAIN"
+  },
+  "da3_role": "optional experimental confidence-aware prior; unused in this dense acceptance run"
+}

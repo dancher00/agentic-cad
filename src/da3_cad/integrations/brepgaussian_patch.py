@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 PATCH_MARKER = "# DA3-CAD depth-prior integration v1"
+MASK_PATCH_MARKER = "# DA3-CAD calibrated silhouette supervision v1"
 
 
 def _replace_once(source: str, anchor: str, replacement: str) -> str:
@@ -10,6 +11,50 @@ def _replace_once(source: str, anchor: str, replacement: str) -> str:
     if count != 1:
         raise ValueError(f"expected exactly one upstream anchor, found {count}: {anchor!r}")
     return source.replace(anchor, replacement, 1)
+
+
+def patch_mask_supervision(source: str) -> str:
+    """Supervise rendered alpha with the calibrated target mask.
+
+    Public BrepGaussian Stage 1 loads ``mask_img`` but comments out its mask
+    loss.  For isolated-object reconstruction that permits opaque background
+    Gaussians and makes the exported depth surface unusable.
+    """
+
+    if MASK_PATCH_MARKER in source:
+        raise ValueError("BrepGaussian Stage 1 mask supervision is already patched")
+    source = _replace_once(
+        source,
+        "        # gt_mask = viewpoint_cam.original_mask.cuda()",
+        f"        {MASK_PATCH_MARKER}\n        gt_mask = viewpoint_cam.original_mask.cuda()",
+    )
+    source = _replace_once(
+        source,
+        "        # mask_loss = surface_loss(mask_image, gt_mask,gt_edge)",
+        '        mask_loss = l1_loss(render_pkg["rend_alpha"], gt_mask)',
+    )
+    source = _replace_once(
+        source,
+        "        normal_loss = lambda_normal * (normal_error).mean()",
+        (
+            "        normal_foreground = gt_mask > 0.5\n"
+            "        normal_loss = lambda_normal * "
+            "normal_error[normal_foreground].mean()"
+        ),
+    )
+    source = _replace_once(
+        source,
+        (
+            "        loss = (1.0 - opt.lambda_dssim) * Ll1 + "
+            "opt.lambda_dssim * (1.0 - ssim(image, gt_image)) + 0.1 * edge_loss"
+        ),
+        (
+            "        loss = (1.0 - opt.lambda_dssim) * Ll1 + "
+            "opt.lambda_dssim * (1.0 - ssim(image, gt_image)) + "
+            "0.1 * edge_loss + 0.1 * mask_loss"
+        ),
+    )
+    return source
 
 
 def patch_stage1_source(source: str) -> str:
@@ -150,4 +195,4 @@ def patch_stage1_source(source: str) -> str:
             "    )"
         ),
     )
-    return source
+    return patch_mask_supervision(source)

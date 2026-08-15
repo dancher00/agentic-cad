@@ -1,8 +1,36 @@
 # Results and claim boundaries
 
-## Public photo-to-CAD benchmark v2
+## Primary real-RGB result
 
-The current controlled release set contains 10 project-generated objects,
+The current primary path is calibrated RGB → masked PatchMatch → explicit
+cross-view fusion → measured surface → CADENA program → source-view and kernel
+gates. It was run from scratch on 32 real T-LESS views of object 4 on an RTX
+5080. No reference mesh was read until the CAD and decision report were frozen.
+
+| Check | Result |
+|---|---:|
+| Dense stage | 150.29 s |
+| Cross-view-confirmed points | 96,818 |
+| CAD | one revolve, simplified 22 → 9 profile points |
+| Source-view silhouette IoU | 0.88579 |
+| Source-view depth inliers at 3% | 0.95653 |
+| Kernel | one valid solid, 8 faces, 14 edges |
+| Post-hoc F-score at 2%, no ICP | 0.90463 |
+| Repeatability | two processes; byte-identical program, report and STEP |
+| Product decision | ACCEPT |
+
+The harder object 2 candidate misses an opening. Its silhouette IoU is 0.85966,
+below the fixed 0.87 gate, so it becomes `ABSTAIN` rather than a valid-but-wrong
+product result. Exact portable evidence is in
+[`real-rgb-mvs-cadena-v1.json`](results/real-rgb-mvs-cadena-v1.json).
+
+This controlled pair proves one positive path and one relevant negative gate.
+It does not establish category-level generalization, dimensional metrology or
+SOTA performance.
+
+## Archived deterministic DA3 grammar benchmark v2
+
+The earlier controlled release set contains 10 project-generated objects,
 12 RGB views per object, exact masks, calibrated cameras and evaluator-only
 reference STEP/STL. DA3-CAD never receives reference geometry during target
 preparation, depth inference, fusion, pose logic or CAD construction.

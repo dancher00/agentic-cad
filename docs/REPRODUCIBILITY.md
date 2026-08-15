@@ -1,209 +1,117 @@
 # Reproducibility
 
-## Frozen software and model inputs
+## Verified stack
 
-| Artifact | Immutable identifier |
+| Component | Verified identifier |
 |---|---|
-| DA3 source | `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` |
-| DA3-LARGE-1.1 | `0e109ae307c5982f319a67cf6f9f99ccdc0ec97c` |
-| DA3-LARGE-1.1 `model.safetensors` SHA-256 | `739905c423cf0d6ccaf9e61a8401d82ba1ac32d7f4d3ee6dca8f92b377633f64` |
-| SAM2 source | `2b90b9f5ceec907a1c18123530e92e794ad901a4` |
-| SAM2.1 Hiera Small checkpoint SHA-256 | `6d1aa6f30de5c92224f8172114de081d104bbd23dd9dc5c58996f0cad5dc4d38` |
-| DA3-BASE | `f4a6c9b3c95e41c82048423d3493a81ec3fa810e` |
 | Python | 3.12 |
-| WeasyPrint (local PDF report) | 69.0 |
-| Evaluator | `da3-cad-evaluator-v2-centered` |
-| Global release seed | `20260810` |
+| Torch | 2.13.0+cu130 |
+| GPU | RTX 5080, 16 GB |
+| PyCOLMAP CUDA worker | 4.1.1 (`pycolmap-cuda12`) |
+| CADENA source | `b636649d1c59e4a4b52f5b683af18d6b136b082b` |
+| CADENA checkpoint | `kulibinai/cadena`, subfolder `rl` |
+| Transformers | 4.56.0 |
+| Open3D | 0.19.0 |
+| Global real-path seed | 20260815 |
 
-The adapter refuses a different DA3 source checkout or a checkpoint with a
-different complete-file digest.
+DA3 experimental artifacts remain pinned separately by the fetch scripts:
+source `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4`, DA3-LARGE-1.1 revision
+`0e109ae307c5982f319a67cf6f9f99ccdc0ec97c`, full weight SHA-256
+`739905c423cf0d6ccaf9e61a8401d82ba1ac32d7f4d3ee6dca8f92b377633f64`.
 
-## Environment
+## Environments
 
 ```bash
 conda create --prefix ./.venv python=3.12 pip -y
-python -m pip install -r constraints/target-py312.txt
 conda activate "$PWD/.venv"
 python -m pip install -r constraints/cpu-py312.txt
 python -m pip install -r constraints/cu130-py312.txt
-python -m pip install -r constraints/da3-py312.txt
+python -m pip install -r constraints/cadena-py312.txt
 python -m pip install --no-deps -e .
-python -m pip install "weasyprint==69.0"  # optional, only for PDF reports
+python -m pip install "virtualenv>=20,<21"
+scripts/setup_mvs_env.sh .venv/bin/python
 python -m pip check
+.venv-mvs/bin/pip check
 ```
 
-The GPU overlay was verified on Linux x86-64 with torch 2.13.0+cu130 and an RTX
-5080 (`sm_120`). H100 can use a compatible PyTorch/CUDA build, but its complete
-runtime must be recorded instead of being called bit-identical to the reference
-host.
+The two Python environments are intentional. Resolving the
+`.venv-mvs/bin/python` symlink to the base interpreter is a tested regression:
+it loses the CUDA PyCOLMAP build. The pipeline preserves the invoked virtualenv
+path and runs a self-contained worker script.
 
-## Acquire external artifacts
+## External artifacts
+
+```bash
+git clone https://github.com/zhemdi/cadena.git data/upstream/cadena
+git -C data/upstream/cadena checkout b636649d1c59e4a4b52f5b683af18d6b136b082b
+hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/cadena
+```
+
+All external source, weights and datasets live under ignored directories. They
+are never included in source distributions or wheels.
+
+Optional DA3/SAM2 acquisition remains:
 
 ```bash
 python scripts/fetch_da3_source.py
+python scripts/fetch_da3_weights.py --profile large-1.1 --accept-noncommercial-weights
 python scripts/fetch_sam2_source.py
 python scripts/fetch_sam2_weights.py
-python scripts/fetch_da3_weights.py \
-  --profile large-1.1 \
-  --accept-noncommercial-weights
 ```
 
-Both targets are below ignored `data/`. The weight fetcher writes a local receipt
-containing the accepted terms, timestamp, revision, bytes, and verified hash.
-No source checkout or checkpoint is packaged in the repository.
+## Real-path reproduction
 
-The real example is separately licensed:
+Starting with calibrated/prepared `images/`, `masks/` and `cameras.npz`:
 
 ```bash
-python scripts/fetch_real_object_benchmark.py --dry-run
-python scripts/fetch_real_object_benchmark.py \
-  --accept-license c-uda-1.0
-```
-
-The downloader pins five HTTPS URLs (`book`, `bottle`, `camera`, `cup`, and
-`laptop`), byte counts, and SHA-256 values, refuses divergent existing files,
-and writes only beneath ignored `captures/real_objects/`.
-
-Prepare 40-frame pools, target masks, and adaptive reconstructions before rebuilding.
-The tracked `real-photo-v3.json` records the selected view names and the
-`view_selection.json` trajectory records every coverage gain. DA3 is rerun on a
-selected subset instead of reusing full-pool depth.
-
-After target preparation and reconstruction, rebuild the licensed local ledger
-and visual grid without downloading anything:
-
-```bash
-python scripts/build_real_photo_ledger.py
-python scripts/render_real_object_benchmark.py
-```
-
-The grid remains under ignored `outputs/` because it embeds Objectron-derived
-frames. The public benchmark PDF uses only Apache-2.0 project-generated assets.
-
-After the five current real-photo reruns, the mug activation run, and the three
-calibrated regression runs exist locally, rebuild the separate pose-refinement
-ledger and four-page visual audit with:
-
-```bash
-python scripts/render_real_object_benchmark.py \
-  --runs outputs/real-photo-pose-refinement-v1 \
-  --output outputs/real-photo-pose-refinement-v1/benchmark_grid.png
-python scripts/build_pose_refinement_regression_report.py
-pdfinfo outputs/pose-refinement-regression-v1/report.pdf
-```
-
-The script writes the numerical ledger to
-`docs/results/pose-refinement-regression-v1.json`; licensed imagery remains only
-inside ignored local outputs.
-
-The bounded SE(3) positive/negative controls require no weights or third-party
-data:
-
-```bash
-python scripts/build_pose_error_benchmark.py
-pdfinfo outputs/pose-error-controls-v1/report.pdf
-pytest -q tests/unit/test_pose_error_controls.py
-```
-
-Expected: 7/7 controls pass and the visual report has three pages. The tracked
-ledger is `docs/results/pose-error-controls-v1.json`.
-
-## Public 10-case benchmark
-
-Run all 120 RGB views end to end, evaluate only after each reconstruction has
-finished, and rebuild the checked-in ledger/figures with:
-
-```bash
-python scripts/build_public_benchmark_cases.py
-python scripts/run_public_benchmark.py \
-  --outputs outputs/public-benchmark-v2-release
-python scripts/build_public_release_assets.py \
-  --runs outputs/public-benchmark-v2-release
-```
-
-To iterate on CAD grammar without rerunning DA3, refit the immutable saved depth,
-camera, mask and point evidence into a new directory:
-
-```bash
-python scripts/refit_saved_benchmark.py \
-  --source outputs/public-benchmark-v2-release \
-  --output outputs/public-benchmark-v2-refit
-```
-
-That shortcut is an ablation tool, not the final product gate: release claims
-come from the full run because surface provenance must be recomputed after CAD
-changes. `scripts/analyze_profile_evidence.py` may additionally compare raw,
-filtered and silhouette profile channels to reference CAD, but it is explicitly
-evaluator-only and never participates in reconstruction or candidate selection.
-
-## Dry-run before GPU work
-
-```bash
-da3-cad prepare-target photos/ \
-  --boxes boxes.json \
-  --output captures/check-target \
-  --dry-run
-
-da3-cad prepare-target photos/ \
+da3-cad dense-surface images/ \
   --masks masks/ \
-  --output captures/check-target
+  --cameras cameras.npz \
+  --output outputs/dense \
+  --mvs-python .venv-mvs/bin/python \
+  --source-views 6 \
+  --max-image-size 800 \
+  --iterations 3
 
-da3-cad doctor captures/check-target/images
-da3-cad reconstruct captures/check-target/images \
-  --output outputs/check \
-  --config configs/internet_photo_masked.yaml \
-  --masks captures/check-target/masks \
-  --dry-run
+da3-cad fit-cad outputs/dense/surface.ply \
+  --output outputs/cad \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace outputs/dense/mvs \
+  --cameras cameras.npz \
+  --max-steps 8 \
+  --seed 20260815
 ```
 
-Dry-run validates input and configuration, displays checkpoint terms and exact
-paths, and writes nothing.
+The controlled 32-view run records:
 
-## Run record
+- PatchMatch 137.17 s; full dense stage 150.29 s;
+- 96,818 fused voxels and 4.8779 mean confirmations;
+- source score 0.91055, silhouette IoU 0.88579, depth inliers 0.95653;
+- one valid solid, 8 faces, 14 edges;
+- post-hoc no-ICP F-score 0.90463 at 2% and 0.98275 at 5%;
+- two independent processes produced byte-identical `model.py`, `model.step`
+  and `cadena_report.json` after renderer and STEP-metadata canonicalization.
 
-Every real reconstruction records:
+Reference T-LESS geometry was opened only after `model.step` and
+`cadena_report.json` existed. Its alignment is the dataset's registered object
+coordinate system; no ICP or evaluator alignment optimization was used.
 
-- ordered image names, byte sizes, SHA-256 values, and aggregate input digest;
-- complete validated configuration and seed;
-- camera bundle path, hash, convention, shapes, rank, and scale status;
-- DA3 source/model revision, weight hash and runtime tensor statistics;
-- per-view mask and confidence counts;
-- fusion, canonicalization, sketch/axis/aperture, and validation reports;
-- repository commit and clean/dirty status;
-- Python, platform, executable, and package version;
-- stage timings, warnings, scale evidence, and fallback status.
-
-Absolute local paths appear in raw run provenance so that a local audit can find
-its inputs. The compact checked-in result ledger replaces them with portable
-reproduction commands.
-
-## Reference evaluation
+## CPU and release checks
 
 ```bash
-da3-cad evaluate prediction.step reference.step \
-  --item-id stable-object-id \
-  --output metrics.json
-```
-
-The stable item id participates in SHA-derived surface-sampling seeds. Changing
-it changes the finite Monte-Carlo Chamfer sample but not mesh IoU. The evaluator
-requires valid complete meshes, normalizes each by centre/largest extent, and
-performs no alignment optimization.
-
-## Release checks
-
-```bash
+da3-cad cpu-smoke --output outputs/cpu-smoke
 ruff format --check src tests scripts
 ruff check src tests scripts
 mypy
 pytest -m 'not gpu and not weights and not benchmark'
 python -m build
-python -m pip install --no-deps --target /tmp/da3-cad-wheel dist/*.whl
+python -m pip check
 ```
 
-CI runs the CPU/no-network subset. The explicit GPU test is opt-in because it
-requires downloaded third-party weights and a CUDA host.
+The CPU smoke is a contract test, not a reconstruction-accuracy result. GPU
+tests are opt-in because they require third-party weights and a CUDA host.
 
-A result intended for publication should be generated from a clean tree. If a
-result was generated from a dirty tree, the provenance says so and the result
-must be rerun after committing the tested implementation.
+Publication results must come from a clean commit. Raw reports intentionally
+contain absolute input paths so a local audit can locate exact evidence;
+portable ledgers must replace those paths with commands and immutable IDs.

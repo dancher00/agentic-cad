@@ -3,263 +3,213 @@
 [![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
-[![Status: research alpha](https://img.shields.io/badge/status-research%20alpha-orange.svg)](#status)
+[![Status: research alpha](https://img.shields.io/badge/status-research%20alpha-orange.svg)](#current-boundary)
 
-![DA3-CAD: multi-view RGB to auditable geometry to editable B-Rep](docs/assets/release/teaser.png)
+![DA3-CAD: calibrated RGB views to measured geometry to verified B-Rep](docs/assets/release/teaser.png)
 
 ![Offline CPU smoke: four bundled PNG views to a validated STEP solid](docs/assets/release/cpu_smoke.gif)
 
-**DA3-CAD turns multiple photographs of one selected object into an editable
-CadQuery program, a validated STEP solid, STL, dimensions and an audit trail.**
-[Depth Anything 3](https://github.com/ByteDance-Seed/Depth-Anything-3) provides
-depth, confidence and camera hypotheses; a deterministic CAD grammar recovers
-sketches and operations. Unsupported evidence returns `ABSTAIN` instead of a
-hidden nearest-template fallback.
+DA3-CAD reconstructs one stationary object from overlapping RGB photographs and
+returns either:
 
-> Research alpha: this is coarse reverse engineering, not automatic recovery of
-> the original feature tree, tolerances or manufacturing intent.
+- `model.py`: an editable CadQuery program;
+- `model.step`: one kernel-valid B-Rep solid;
+- `cadena_report.json`: source-view evidence and an explicit `ACCEPT`; or
+- `ABSTAIN` with the best candidate and the failed evidence gates.
 
-## Quick start
+It is a research alpha, not a system for recovering the original feature tree,
+tolerances or manufacturing intent.
 
-### CPU smoke: bundled PNGs to STEP
+## The working path
 
-From a source checkout on Ubuntu with CPython 3.12:
+```text
+overlapping RGB + target masks
+        ↓
+calibrated cameras (COLMAP or supplied)
+        ↓
+CUDA PatchMatch stereo
+        ↓
+cross-view-confirmed dense points → measured surface
+        ↓
+CADENA operation proposals (extrude/revolve/cut/...)
+        ↓
+simplest program that still explains the photographs
+        ↓
+source-view silhouette + depth gates
+        ↓
+OpenCascade validation → STEP or ABSTAIN
+```
+
+Depth Anything 3 remains available as an optional confidence-aware depth prior
+for sparse or textureless views. It is not the camera source in the verified
+dense path: calibrated geometry is measured by multi-view stereo. The DA3/2DGS
+experiment and its current claim boundary are documented in
+[BrepGaussian + DA3](docs/BREPGAUSSIAN_DA3.md).
+
+## Install
+
+Verified platform: Ubuntu, CPython 3.12, NVIDIA RTX 5080 16 GB. An H100 is
+faster but not required.
 
 ```bash
 git clone https://github.com/dancher00/DA3-CAD.git
 cd DA3-CAD
+
 conda create --prefix ./.venv python=3.12 pip -y
 conda activate "$PWD/.venv"
 python -m pip install -r constraints/cpu-py312.txt
-python -m pip install --no-deps -e .
-
-da3-cad cpu-smoke --output outputs/cpu-demo
-# -> outputs/cpu-demo/model.step
-```
-
-The final command uses exactly four tracked images from `sample_data/plate/views`,
-requires no GPU, weights or network, and has a tested 60-second end-to-end budget
-(the local reference run took under two seconds). It deliberately uses labelled,
-pixel-derived stub backends: this proves image I/O, sandboxed CadQuery execution
-and valid OpenCascade STEP export, **not DA3 reconstruction accuracy**. The
-evaluator-only `sample_data/plate/gt.stl` is not read. Rebuild the animation with
-`python scripts/build_cpu_smoke_gif.py`.
-
-### Full DA3 reconstruction
-
-Requirements: an NVIDIA CUDA GPU and preferably 8–24 ordered views of one
-stationary object. An RTX 5080 16 GB runs the default model; an H100 mainly
-reduces inference time. Starting from the CPU environment above:
-
-<details>
-<summary>Add DA3/GPU dependencies and verified weights</summary>
-
-```bash
 python -m pip install -r constraints/cu130-py312.txt
-python -m pip install -r constraints/da3-py312.txt
-python -m pip install -r constraints/target-py312.txt
-
-python scripts/fetch_da3_source.py
-python scripts/fetch_da3_weights.py \
-  --profile large-1.1 \
-  --accept-noncommercial-weights
-
-# Needed only when boxes must be converted to masks.
-python scripts/fetch_sam2_source.py
-python scripts/fetch_sam2_weights.py
+python -m pip install -r constraints/cadena-py312.txt
+python -m pip install --no-deps -e .
 ```
 
-The default DA3-LARGE-1.1 checkpoint is CC BY-NC 4.0. The fetcher shows the
-terms, requires explicit acceptance, verifies the full SHA-256 and stores the
-weights only under ignored `data/`. No weights are redistributed here.
-
-</details>
-
-#### 1. Select the object
-
-Put the views in `photos/`. Supply one loose `xyxy` box per image in
-`boxes.json`; the user-selected object is the target, not a predicted class.
+PatchMatch uses a small isolated CUDA 12 environment. This prevents its CUDA
+runtime from replacing the CUDA 13 runtime used by Torch:
 
 ```bash
-da3-cad prepare-target photos/ \
-  --boxes boxes.json \
-  --output captures/my-object \
-  --segment-device cuda
+python -m pip install "virtualenv>=20,<21"
+scripts/setup_mvs_env.sh .venv/bin/python
 ```
 
-If source-resolution PNG masks already exist, use `--masks source_masks/`
-instead. The exact JSON schema and capture advice are in the
-[photo guide](docs/INTERNET_PHOTO_TO_CAD.md).
-
-#### 2. Reconstruct and inspect
+The CAD proposer is the external CADENA-RL checkpoint:
 
 ```bash
-da3-cad doctor captures/my-object/images
-
-da3-cad reconstruct captures/my-object/images \
-  --output outputs/my-object \
-  --config configs/internet_photo_masked.yaml \
-  --masks captures/my-object/masks \
-  --accept-noncommercial-weights
-
-da3-cad inspect outputs/my-object
-da3-cad viewer outputs/my-object --images captures/my-object/images
+git clone https://github.com/zhemdi/cadena.git data/upstream/cadena
+git -C data/upstream/cadena checkout b636649d1c59e4a4b52f5b683af18d6b136b082b
+hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/cadena
 ```
 
-Pass `--cameras cameras.npz` when calibrated intrinsics/extrinsics are
-available. Pass, for example, `--known-dimension extrusion_length=120mm` when
-one physical dimension is known. Otherwise units remain
-`canonical-model-unit`; millimetres are never invented.
+Review the upstream source and model terms before downloading. Neither CADENA
+weights nor DA3 weights are redistributed by this repository.
 
-For unordered photos from one camera in one static scene, recover cameras on
-the original full frames before segmentation or cropping:
+## Capture
+
+Use 30–60 sharp photographs when possible. Keep the object and background
+stationary, move the camera, preserve 60–80% overlap, and include upper and
+lower rings of views—not only an equatorial orbit. Matte, textured surfaces and
+diffuse lighting work best. Lock focus/exposure if the camera allows it.
+
+The user selects the target. A binary mask for every registered image is part
+of the input contract; it is not inferred from the object class.
+
+## Photos to CAD
+
+First recover cameras from the original full frames. Exhaustive matching is the
+correct default for unordered photographs:
 
 ```bash
 da3-cad prepare-photos-sfm photos/ \
-  --output captures/my-object-sfm \
-  --pairing exhaustive \
-  --device auto
-
-da3-cad prepare-target captures/my-object-sfm/registered_frames \
-  --boxes boxes.json \
-  --cameras captures/my-object-sfm/cameras.npz \
-  --output captures/my-object
+  --output work/sfm \
+  --pairing exhaustive
 ```
 
-The command writes `camera_recovery.json` and abstains by default when fewer
-than 80% of the photos register or the recovered camera trajectory is
-degenerate. Use the undistorted `registered_frames/` together with the emitted
-bundle; image names and intrinsics are a single contract.
-
-For moving-camera video, first run `da3-cad prepare-video`; the object itself
-must remain stationary. See the [video guide](docs/VIDEO_TO_CAD.md).
-
-An accepted reconstruction contains:
-
-```text
-outputs/my-object/
-├── model.py              editable CadQuery source
-├── model.step            primary validated B-Rep solid
-├── model.stl             tessellated preview/mesh export
-├── parameters.json       editable dimensions and scale evidence
-├── quality.json          validity, decision and warnings
-├── provenance.json       inputs, versions, cameras and timings
-├── report.md
-└── artefacts/            depth, masks, geometry and CAD audits
-```
-
-## How it works
-
-1. **Target preparation** — a user box becomes a SAM2 mask, or an exact mask is
-   accepted directly; every view receives the same context-preserving crop.
-2. **DA3 geometry** — DA3 predicts depth, confidence, intrinsics and extrinsics,
-   or consumes a verified external camera bundle.
-3. **Audited 3D** — pose admission, bounded pose repair and feature-wise view
-   admission keep observed depth separate from trusted fitting geometry.
-4. **CAD grammar** — line/circle sketches plus `extrude`, `cut`, `revolve`,
-   `shell`, `sweep` and `union` hypotheses compete under evidence gates. There
-   is no dictionary of named parts.
-5. **B-Rep contract** — restricted CadQuery executes in a subprocess; export
-   succeeds only for one finite, positive-volume solid. Surface provenance is
-   checked independently from kernel validity.
-
-A filled foreground mask does not automatically erase a visible circular
-opening: repeated RGB ellipses may supply topology only when their interiors
-violate the local DA3 depth plane and calibrated views agree. For axial bodies, each supported rim is
-assigned to a silhouette endpoint. The grammar evaluates solid, both
-blind-cavity orientations and a through-hole, but admits the through-hole only
-when opposite endpoint groups are supported by sufficiently separated camera
-directions; otherwise it keeps the conservative blind or ambiguous result.
-
-For DA3-estimated cameras, the same inference pass also exports a compact dense
-feature map. A post-DA3 bundle stage proposes bounded camera corrections from
-fixed feature/depth correspondences and audits them on held-out matches,
-reprojection and independent surface samples. If strong matches form coherent
-multi-view groups, one rigid transform may align a whole group while preserving
-its internal camera relations. Repeated RGB/depth interior boundaries activate
-a topology guard: symmetric surface alignment is then ambiguous and the camera
-proposal is rolled back.
-
-A post-topology revolve optimizer can refine bounded pose, scale and axial
-offset against every original mask while keeping fixed DA3 surface evidence as
-a prior. It activates only when the baseline CAD-to-camera projection is
-credible, rejects boundary optima and per-view regressions, and never reruns DA3
-on its own CAD render.
-
-The [architecture](docs/ARCHITECTURE.md) specifies coordinates, camera
-conventions, scale, filtering and validation contracts. The
-[illustrated algorithm walkthrough](docs/ALGORITHM_RU.md) shows the diagnostic
-channels in detail.
-
-## Public benchmark
-
-![Ten-case public photo-to-CAD benchmark](docs/assets/release/public_benchmark_v2.png)
-
-The release benchmark contains **10 project-generated objects and 120 RGB
-views** under Apache-2.0. Every case has exact masks and cameras; reference CAD
-is evaluator-only and is never passed to reconstruction.
-
-| Outcome | Count | Meaning |
-|---|---:|---|
-| Kernel-valid STEP | 10/10 | OpenCascade accepts the emitted solid |
-| Product acceptance | 10/10 | the CAD also passes visible surface-provenance gates |
-| Provenance rejection | 0/10 | no emitted STEP contradicts the configured visible-evidence gates |
-| Safe abstention | 0/10 | every controlled case is explained by the current grammar |
-| ≥80% IoU + exact hole topology | 7/10 | evaluator-only surface and topology check |
-
-All four reference through-holes are retained. Mean IoU is 86.61% with every
-case kept in the denominator. T/U concave profiles remain the largest fidelity
-gaps and L is just below the 80% evaluator gate. A valid, evidence-consistent
-STEP is not presented as an accurate reconstruction.
-
-- [Full benchmark report](docs/PUBLIC_BENCHMARK.md)
-- [Three-page PDF](docs/DA3-CAD_public_benchmark_v2.pdf)
-- [Machine-readable ledger](docs/results/public-benchmark-v2.json)
-- [Grammar refinement: before/after and negative controls](docs/results/grammar-refinement-v1.json)
-- [Redistributable fixtures](sample_data/public_benchmark_v2/README.md)
-- [External CADBench protocol and current non-SOTA boundary](docs/CADBENCH.md)
-
-Reproduce the fixtures, GPU runs and figures with:
+Then prepare matched RGB, masks and adjusted cameras. Existing source-resolution
+masks can be passed with `--masks`; alternatively use user boxes with the SAM2
+options described in the [photo guide](docs/INTERNET_PHOTO_TO_CAD.md).
 
 ```bash
-python scripts/build_public_benchmark_cases.py
-python scripts/run_public_benchmark.py
-python scripts/build_public_release_assets.py
+da3-cad prepare-target work/sfm/registered_frames \
+  --masks source_masks/ \
+  --cameras work/sfm/cameras.npz \
+  --output work/target
 ```
 
-Five pinned Google Objectron Internet-video sequences additionally exercise the
-real-photo integration path without reference CAD. Their licensed media are not
-redistributed; one current result passes the product gate. See
-[results and claim boundaries](docs/RESULTS.md).
+Build measured geometry. No reference CAD is read by this command:
 
-## Status
+```bash
+da3-cad dense-surface work/target/images \
+  --masks work/target/masks \
+  --cameras work/target/cameras.npz \
+  --output work/dense \
+  --mvs-python .venv-mvs/bin/python
+```
 
-DA3-CAD currently works best for isolated, rigid, matte objects described by a
-single extrusion or a simple axial program, with broad viewpoint coverage and a
-known target mask. The principal open problems are high-fidelity concave-sketch
-recovery, thin/glossy surfaces,
-freeform geometry, multi-body assemblies and original design-history recovery.
+The command refuses camera coverage below `0.25` before starting PatchMatch.
+Add upper/lower and opposite-side views instead of weakening this gate.
 
-The next engineering milestone is a constrained line/arc sketch solver followed
-by multi-operation and multi-body program composition. Learned program proposal
-and ranking can help after those contracts exist; geometric validation remains
-deterministic.
+Fit and verify the editable CAD:
 
-## Reproducibility, paper and license
+```bash
+da3-cad fit-cad work/dense/surface.ply \
+  --output work/cad \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace work/dense/mvs \
+  --cameras work/target/cameras.npz
+```
 
-CPU CI runs formatting, lint, strict typing, no-network tests, release hygiene
-and wheel/sdist builds. Sources, checkpoints and datasets use pinned revisions
-and hashes; every reconstruction records its inputs and software provenance.
+Exit code `0` means `model.step` exists and passed both the B-Rep kernel and
+source-view gates. Exit code `3` means honest `ABSTAIN`; the rejected
+`candidate.py`, `candidate.step`, preview and full evidence remain for inspection.
 
-- [Reproducibility](docs/REPRODUCIBILITY.md)
-- [Experimental BrepGaussian + confidence-aware DA3 prior](docs/BREPGAUSSIAN_DA3.md)
-- [Third-party licenses](docs/LICENSES.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Draft paper](paper/README.md)
-- [Proposed Awesome DA3 entry](docs/AWESOME_PR.md)
+## Verified real-RGB result
 
-DA3-CAD source and project-generated fixtures are Apache-2.0. Third-party
-models and datasets keep their own terms. Cite the software with
-[`CITATION.cff`](CITATION.cff) and cite Depth Anything 3 separately.
+The release path was run end to end on 32 real T-LESS RGB views of object 4.
+Reference geometry was inaccessible during reconstruction and used only after
+the output was frozen.
 
-Contributions are welcome through [CONTRIBUTING.md](CONTRIBUTING.md).
+| Check | Result |
+|---|---:|
+| CUDA PatchMatch (RTX 5080) | 137 s |
+| RGB → measured surface total | 150 s |
+| Cross-view-confirmed points | 96,818 |
+| Mean independent confirmations | 4.88 |
+| Selected CAD program | 1 revolve |
+| Profile simplification | 22 → 9 points |
+| Source-view silhouette IoU | 0.886 |
+| Source-view depth inliers (3%) | 0.957 |
+| OpenCascade result | 1 valid solid, 8 faces |
+| Post-hoc F-score @ 2% diagonal, no ICP | 0.905 |
+| Post-hoc F-score @ 5% diagonal, no ICP | 0.983 |
+| Repeated-process determinism | identical program, report and STEP SHA-256 |
+
+The more complex T-LESS object 2 loses a visible opening and is correctly
+rejected by the silhouette gate (`0.860 < 0.870`). This distinction matters: a
+syntactically valid but geometrically wrong STEP is more dangerous than an
+invalid file.
+
+`model.stl` is only a tessellated preview and may show triangle seams. CAD
+validity and topology are defined by `model.step`; the verified real result has
+9 B-Rep faces, not thousands of CAD faces.
+
+## CPU smoke and benchmark
+
+```bash
+da3-cad cpu-smoke --output outputs/cpu-demo
+# outputs/cpu-demo/model.step, normally under two seconds
+```
+
+This offline smoke uses four tracked PNG fixtures and no learned weights. It
+tests I/O, restricted CadQuery execution and STEP export—not reconstruction
+accuracy.
+
+The repository also contains a 10-case, 120-view synthetic regression suite:
+
+- [public benchmark](docs/PUBLIC_BENCHMARK.md)
+- [illustrated benchmark PDF](docs/DA3-CAD_public_benchmark_v2.pdf)
+- [machine-readable ledger](docs/results/public-benchmark-v2.json)
+- [CADBench protocol and non-SOTA boundary](docs/CADBENCH.md)
+
+## Current boundary
+
+This is not SOTA on CADBench. Today the accepted path is useful for isolated,
+rigid, mostly matte, single-solid objects that can be described by a short CAD
+program—especially axial parts and simple extrusions. Scale remains canonical
+unless the user supplies a physical dimension.
+
+Known limitations: glossy or transparent surfaces, very thin walls, tiny
+features below stereo resolution, freeform surfaces, assemblies, joints and
+recovery of original design history. More photographs improve measured
+geometry only when they add baseline and sphere coverage; duplicates do not.
+
+## Reproducibility and licenses
+
+- [architecture and coordinate contracts](docs/ARCHITECTURE.md)
+- [reproducibility](docs/REPRODUCIBILITY.md)
+- [third-party licenses](docs/LICENSES.md)
+- [troubleshooting](docs/TROUBLESHOOTING.md)
+- [draft paper](paper/README.md)
+- [proposed Awesome DA3 entry](docs/AWESOME_PR.md)
+
+Repository code is Apache-2.0. Datasets, external source trees and model weights
+retain their own licenses and are not covered by the repository license.

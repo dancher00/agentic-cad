@@ -1,0 +1,9 @@
+# Exact optional CAD fitting overlay verified on Linux x86_64 / CPython 3.12
+# with an RTX 5080 on 2026-08-15. Install cpu-py312.txt and cu130-py312.txt first.
+open3d==0.19.0
+point-cloud-utils==0.34.0
+pykdtree==1.4.3
+pyvista==0.46.3
+qwen-vl-utils==0.0.10
+transformers==4.56.0
+vtk==9.5.2

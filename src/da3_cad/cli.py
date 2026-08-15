@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Annotated, Literal, cast
@@ -21,6 +25,8 @@ from da3_cad.config import AppConfig, load_config
 from da3_cad.evaluation.evaluator import EvaluationConfig, EvaluationError, Evaluator
 from da3_cad.geometry.cameras import recover_colmap_cameras
 from da3_cad.geometry_pipeline import run_geometry
+from da3_cad.integrations.dense_surface_pipeline import run_dense_surface_pipeline
+from da3_cad.integrations.gaussian_scene import prepare_gaussian_scene
 from da3_cad.observations import doctor_report, load_observations
 from da3_cad.pipeline import edit_run, inspect_run, reconstruct
 from da3_cad.reconstruction_pipeline import reconstruct_full
@@ -90,14 +96,21 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
-def _cpu_smoke_fixture() -> Path:
-    """Resolve the checked-in smoke fixture from a source checkout."""
+@contextmanager
+def _cpu_smoke_fixture() -> Iterator[Path]:
+    """Yield the checked-in fixture or reproduce it for an installed wheel."""
 
     candidates = (CPU_SMOKE_FIXTURE, Path(__file__).resolve().parents[2] / CPU_SMOKE_FIXTURE)
     for candidate in candidates:
         if candidate.is_dir():
-            return candidate
-    raise ValueError("CPU smoke fixture not found; run this command from a DA3-CAD source checkout")
+            yield candidate
+            return
+    from da3_cad.sample import build_sample_case
+
+    with TemporaryDirectory(prefix="da3-cad-cpu-smoke-") as temporary:
+        root = Path(temporary) / "plate"
+        build_sample_case(root)
+        yield root / "views"
 
 
 @app.command("prepare-target")
@@ -269,6 +282,328 @@ def prepare_target_command(
     if result.camera_bundle_path is not None:
         console.print(f"[green]Adjusted cameras:[/green] {result.camera_bundle_path}")
     console.print(f"[green]Target manifest:[/green] {result.manifest_path}")
+
+
+@app.command("prepare-gaussian-scene")
+def prepare_gaussian_scene_command(
+    images_dir: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Prepared target-masked RGB images.",
+        ),
+    ],
+    masks_dir: Annotated[
+        Path,
+        typer.Option(
+            "--masks",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Prepared binary target masks matched by relative path.",
+        ),
+    ],
+    cameras: Annotated[
+        Path,
+        typer.Option(
+            "--cameras",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Adjusted calibrated cameras.npz from prepare-target.",
+        ),
+    ],
+    output_dir: Annotated[
+        Path, typer.Option("--output", "-o", help="New calibrated Gaussian-scene directory.")
+    ],
+    held_out_views: Annotated[
+        int,
+        typer.Option(
+            "--held-out-views",
+            min=0,
+            help="Angularly diverse views reserved for verification, never optimization.",
+        ),
+    ] = 6,
+    initial_points: Annotated[
+        int,
+        typer.Option(
+            "--initial-points",
+            min=1_000,
+            help="Visual-hull samples used only to initialize Gaussian optimization.",
+        ),
+    ] = 100_000,
+    seed: SeedOption = 0,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Prepare calibrated masked RGB for the optional 2DGS/BrepGaussian backend."""
+
+    effective_seed = 0 if seed is None else seed
+    if dry_run:
+        observations = load_observations(images_dir)
+        console.print(
+            Pretty(
+                {
+                    "command": "prepare-gaussian-scene",
+                    "images": str(images_dir.resolve()),
+                    "image_count": len(observations.images),
+                    "masks": str(masks_dir.resolve()),
+                    "cameras": str(cameras.resolve()),
+                    "output": str(output_dir.resolve()),
+                    "held_out_views": held_out_views,
+                    "initial_points": initial_points,
+                    "seed": effective_seed,
+                    "writes": False,
+                }
+            )
+        )
+        return
+    try:
+        result = prepare_gaussian_scene(
+            images_dir,
+            masks_dir,
+            cameras,
+            output_dir,
+            held_out_views=held_out_views,
+            initial_points=initial_points,
+            seed=effective_seed,
+        )
+    except (OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Gaussian scene preparation failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(f"[green]Gaussian scene:[/green] {result.output_dir}")
+    console.print(f"[green]Initial visual hull:[/green] {result.initial_point_cloud_path}")
+    console.print(f"[green]Scene report:[/green] {result.report_path}")
+    console.print(
+        "[cyan]Next:[/cyan] fit this scene with the optional pinned 2DGS/BrepGaussian "
+        "backend, then verify on transforms_heldout.json."
+    )
+
+
+@app.command("dense-surface")
+def dense_surface_command(
+    images_dir: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Calibrated RGB views of one segmented object.",
+        ),
+    ],
+    masks_dir: Annotated[
+        Path,
+        typer.Option(
+            "--masks",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Binary object masks matched to RGB views by relative path.",
+        ),
+    ],
+    cameras: Annotated[
+        Path,
+        typer.Option(
+            "--cameras",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Calibrated cameras.npz matched to the RGB views.",
+        ),
+    ],
+    output_dir: Annotated[
+        Path, typer.Option("--output", "-o", help="New dense-surface output directory.")
+    ],
+    mvs_python: Annotated[
+        Path,
+        typer.Option(
+            "--mvs-python",
+            exists=True,
+            dir_okay=False,
+            help="Python from the isolated CUDA MVS environment.",
+        ),
+    ] = Path(".venv-mvs/bin/python"),
+    source_views: Annotated[
+        int,
+        typer.Option(
+            "--source-views",
+            min=2,
+            help="Neighbouring calibrated views checked for every reference view.",
+        ),
+    ] = 6,
+    maximum_image_size: Annotated[
+        int,
+        typer.Option("--max-image-size", min=64, help="PatchMatch working resolution."),
+    ] = 800,
+    patchmatch_iterations: Annotated[
+        int, typer.Option("--iterations", min=1, help="PatchMatch optimization iterations.")
+    ] = 3,
+    minimum_spherical_coverage: Annotated[
+        float,
+        typer.Option(
+            "--min-spherical-coverage",
+            min=0.0,
+            max=1.0,
+            help="Abstain before GPU stereo when camera directions cover less of the sphere.",
+        ),
+    ] = 0.25,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Build a cross-view-confirmed measured surface without using reference CAD."""
+
+    if dry_run:
+        observations = load_observations(images_dir)
+        console.print(
+            Pretty(
+                {
+                    "command": "dense-surface",
+                    "images": str(images_dir.resolve()),
+                    "image_count": len(observations.images),
+                    "masks": str(masks_dir.resolve()),
+                    "cameras": str(cameras.resolve()),
+                    "output": str(output_dir.resolve()),
+                    "mvs_python": str(mvs_python),
+                    "source_views": source_views,
+                    "maximum_image_size": maximum_image_size,
+                    "patchmatch_iterations": patchmatch_iterations,
+                    "minimum_spherical_coverage": minimum_spherical_coverage,
+                    "writes": False,
+                }
+            )
+        )
+        return
+    try:
+        with console.status("Running calibrated CUDA stereo and verified depth fusion..."):
+            result = run_dense_surface_pipeline(
+                images_dir,
+                masks_dir,
+                cameras,
+                output_dir,
+                mvs_python=mvs_python,
+                source_views=source_views,
+                maximum_image_size=maximum_image_size,
+                patchmatch_iterations=patchmatch_iterations,
+                minimum_spherical_coverage=minimum_spherical_coverage,
+            )
+    except (OSError, RuntimeError, ValueError) as error:
+        console.print(f"[red]Dense surface reconstruction failed:[/red] {error}")
+        if output_dir.exists():
+            console.print(f"[yellow]Partial evidence was kept at {output_dir}.[/yellow]")
+        raise typer.Exit(1) from error
+    console.print(f"[green]Verified point cloud:[/green] {result.cloud_path}")
+    console.print(f"[green]Measured surface:[/green] {result.surface_path}")
+    console.print(f"[green]Pipeline report:[/green] {result.report_path}")
+
+
+@app.command("fit-cad")
+def fit_cad_command(
+    surface: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Measured surface.ply emitted by dense-surface.",
+        ),
+    ],
+    output_dir: Annotated[Path, typer.Option("--output", "-o", help="New CAD output directory.")],
+    cadena_checkout: Annotated[
+        Path,
+        typer.Option(
+            "--cadena-checkout",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Pinned local CADENA source checkout.",
+        ),
+    ],
+    cadena_checkpoint: Annotated[
+        Path,
+        typer.Option(
+            "--cadena-checkpoint",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Local CADENA Qwen2-VL checkpoint directory.",
+        ),
+    ],
+    verification_workspace: Annotated[
+        Path,
+        typer.Option(
+            "--verification-workspace",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="MVS workspace whose original depths and masks verify the CAD.",
+        ),
+    ],
+    cameras: Annotated[
+        Path,
+        typer.Option(
+            "--cameras",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Exact calibrated cameras used by dense-surface.",
+        ),
+    ],
+    max_steps: Annotated[int, typer.Option("--max-steps", min=1, max=40)] = 8,
+    seed: SeedOption = 20260815,
+    dry_run: DryRunOption = False,
+) -> None:
+    """Fit, simplify and source-view-verify an editable CAD program."""
+
+    effective_seed = 20260815 if seed is None else seed
+    command = [
+        sys.executable,
+        "-m",
+        "da3_cad.integrations.cadena_direct",
+        str(cadena_checkout),
+        str(cadena_checkpoint),
+        str(surface),
+        str(output_dir),
+        "--verification-workspace",
+        str(verification_workspace),
+        "--cameras",
+        str(cameras),
+        "--max-steps",
+        str(max_steps),
+        "--seed",
+        str(effective_seed),
+    ]
+    if dry_run:
+        console.print(
+            Pretty(
+                {
+                    "command": "fit-cad",
+                    "surface": str(surface.resolve()),
+                    "output": str(output_dir.resolve()),
+                    "cadena_checkout": str(cadena_checkout.resolve()),
+                    "cadena_checkpoint": str(cadena_checkpoint.resolve()),
+                    "verification_workspace": str(verification_workspace.resolve()),
+                    "cameras": str(cameras.resolve()),
+                    "max_steps": max_steps,
+                    "seed": effective_seed,
+                    "writes": False,
+                }
+            )
+        )
+        return
+    completed = subprocess.run(command, check=False)
+    report_path = output_dir / "cadena_report.json"
+    if completed.returncode == 3:
+        console.print(f"[yellow]ABSTAIN:[/yellow] candidate and evidence kept at {output_dir}")
+        raise typer.Exit(3)
+    if completed.returncode != 0:
+        console.print(f"[red]CAD fitting failed:[/red] evidence kept at {output_dir}")
+        raise typer.Exit(1)
+    if not (output_dir / "model.step").is_file() or not report_path.is_file():
+        console.print("[red]CAD fitting violated its output contract.[/red]")
+        raise typer.Exit(1)
+    console.print(f"[green]Validated STEP:[/green] {output_dir / 'model.step'}")
+    console.print(f"[green]Editable program:[/green] {output_dir / 'model.py'}")
+    console.print(f"[green]Decision report:[/green] {report_path}")
 
 
 @app.command("prepare-photos-sfm")
@@ -493,23 +828,23 @@ def cpu_smoke_command(
 
     started = time.monotonic()
     try:
-        input_dir = _cpu_smoke_fixture()
-        view_count = sum(1 for _ in input_dir.glob("*.png"))
-        if view_count != 4:
-            raise ValueError(
-                f"CPU smoke fixture must contain exactly 4 PNG views; found {view_count}"
+        with _cpu_smoke_fixture() as input_dir:
+            view_count = sum(1 for _ in input_dir.glob("*.png"))
+            if view_count != 4:
+                raise ValueError(
+                    f"CPU smoke fixture must contain exactly 4 PNG views; found {view_count}"
+                )
+            settings = AppConfig(
+                profile="stub",
+                device="cpu",
+                seed=20260810,
+                depth_backend="stub",
+                cad_backend="stub",
             )
-        settings = AppConfig(
-            profile="stub",
-            device="cpu",
-            seed=20260810,
-            depth_backend="stub",
-            cad_backend="stub",
-        )
-        console.print(f"[bold]Fixture:[/bold] {input_dir} ({view_count} PNG views)")
-        console.print("[bold]Backends:[/bold] pixel-derived CPU stubs; DA3 is not run")
-        with console.status("Running the offline CPU export smoke test..."):
-            result = reconstruct(input_dir, output_dir, settings)
+            console.print(f"[bold]Fixture:[/bold] {input_dir} ({view_count} PNG views)")
+            console.print("[bold]Backends:[/bold] pixel-derived CPU stubs; DA3 is not run")
+            with console.status("Running the offline CPU export smoke test..."):
+                result = reconstruct(input_dir, output_dir, settings)
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print(f"[red]CPU smoke failed:[/red] {error}")
         raise typer.Exit(1) from error
@@ -522,7 +857,7 @@ def cpu_smoke_command(
     console.print(
         f"[green]Elapsed:[/green] {elapsed:.2f}s ({CPU_SMOKE_BUDGET_SECONDS:.0f}s smoke budget)"
     )
-    console.print("[green]Reference CAD:[/green] not read")
+    console.print("[green]Reference CAD:[/green] not read by reconstruction")
     console.print(
         "[yellow]SMOKE ONLY: this is not DA3 or a reconstruction-accuracy claim.[/yellow]"
     )

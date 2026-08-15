@@ -311,12 +311,14 @@ def recover_colmap_cameras(
     extraction = pycolmap.FeatureExtractionOptions()
     extraction.num_threads = cpu_threads
     extraction.use_gpu = selected_device == "cuda"
+    reader = pycolmap.ImageReaderOptions()
+    reader.camera_model = camera_model
     pycolmap.extract_features(
         database_path=str(database),
         image_path=str(frames_dir),
         image_names=list(image_names),
         camera_mode=pycolmap.CameraMode.SINGLE,
-        camera_model=camera_model,
+        reader_options=reader,
         extraction_options=extraction,
         device=colmap_device,
     )

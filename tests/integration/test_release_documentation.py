@@ -9,7 +9,7 @@ from pathlib import Path
 def test_current_public_evidence_and_documents_are_consistent() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     assert (
-        "![DA3-CAD: multi-view RGB to auditable geometry to editable B-Rep]"
+        "![DA3-CAD: calibrated RGB views to measured geometry to verified B-Rep]"
         "(docs/assets/release/teaser.png)\n\n"
         "![Offline CPU smoke: four bundled PNG views to a validated STEP solid]"
         "(docs/assets/release/cpu_smoke.gif)"
@@ -33,6 +33,9 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     ledger = json.loads(Path("docs/results/typical-parts-v1.json").read_text(encoding="utf-8"))
     public_ledger = json.loads(
         Path("docs/results/public-benchmark-v2.json").read_text(encoding="utf-8")
+    )
+    primary_ledger = json.loads(
+        Path("docs/results/real-rgb-mvs-cadena-v1.json").read_text(encoding="utf-8")
     )
     report_metadata = json.loads(
         Path("docs/assets/benchmark_pipeline/metadata.json").read_text(encoding="utf-8")
@@ -100,6 +103,21 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     assert public_ledger["summary"]["product_accepts"] == 10
     assert public_ledger["summary"]["abstentions"] == 0
     assert public_ledger["summary"]["valid_step_topology_correct"] == 10
+    assert primary_ledger["schema_version"] == "da3-cad-real-rgb-mvs-cadena-v1"
+    assert primary_ledger["input"]["rgb_views"] == 32
+    assert primary_ledger["input"]["reference_geometry_access_during_reconstruction"] is False
+    assert primary_ledger["dense_surface"]["fused_voxels"] == 96_818
+    assert primary_ledger["cad"]["decision"] == "ACCEPT"
+    assert primary_ledger["cad"]["kernel"] == {
+        "valid": True,
+        "solids": 1,
+        "faces": 8,
+        "edges": 14,
+        "positive_volume": True,
+    }
+    assert primary_ledger["reproducibility"]["independent_process_runs"] == 2
+    assert len(primary_ledger["reproducibility"]["byte_identical_artifacts"]) == 5
+    assert primary_ledger["negative_control"]["decision_under_release_gate"] == "ABSTAIN"
 
     assert pose_regression["schema_version"] == "da3-cad-pose-refinement-regression-v1"
     assert pose_regression["summary"] == {
@@ -226,7 +244,7 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     combined = "\n".join((readme, benchmark_doc, public_benchmark_doc, architecture, paper))
     for claim in ("87.99", "91.82", "89.24", "0.3303"):
         assert claim in combined
-    assert "class-free" in combined
+    assert "object class" in combined
     assert "CAD construction grammar" in paper
     assert "dictionary of named parts" in paper
 
@@ -237,8 +255,8 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     assert "separate evidence" in paper
     assert "200 target-prepared images" in paper
     bullet = (
-        "* [DA3-CAD](https://github.com/dancher00/DA3-CAD) : Converts multi-view "
-        "object photos or moving-camera video"
+        "* [DA3-CAD](https://github.com/dancher00/DA3-CAD) — Auditable multi-view "
+        "RGB-to-CAD research pipeline"
     )
     assert bullet in awesome
     assert "REPOSITORY_URL" not in awesome

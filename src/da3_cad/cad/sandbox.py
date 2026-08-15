@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from da3_cad.cad.ast_policy import AstPolicyError, validate_source
+from da3_cad.cad_validation import normalize_step_metadata
 from da3_cad.config import SandboxConfig
 from da3_cad.models import ValidationResult
 
@@ -109,6 +110,7 @@ def validate_and_export(
         step_path = output_dir / "model.step"
         stl_path = output_dir / "model.stl"
         shutil.copy2(temp_dir / "model.step", step_path)
+        normalize_step_metadata(step_path)
         shutil.copy2(temp_dir / "model.stl", stl_path)
         bbox_values = tuple(float(item) for item in payload["bbox"])
         if len(bbox_values) != 6:

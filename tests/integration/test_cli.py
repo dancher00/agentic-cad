@@ -7,8 +7,10 @@ import time
 from pathlib import Path
 
 import cadquery as cq
+from PIL import Image
 from typer.testing import CliRunner
 
+import da3_cad.cli as cli_module
 from da3_cad.cli import CPU_SMOKE_BUDGET_SECONDS, app
 
 runner = CliRunner()
@@ -21,6 +23,9 @@ def test_cli_lists_product_commands() -> None:
     for command in (
         "prepare-target",
         "prepare-photos-sfm",
+        "prepare-gaussian-scene",
+        "dense-surface",
+        "fit-cad",
         "prepare-video",
         "cpu-smoke",
         "reconstruct",
@@ -91,6 +96,123 @@ def test_prepare_photos_sfm_dry_run_does_not_run_colmap_or_write(tmp_path: Path)
     assert not output.exists()
 
 
+def test_prepare_gaussian_scene_dry_run_does_not_write(tmp_path: Path) -> None:
+    images = tmp_path / "images"
+    masks = tmp_path / "masks"
+    images.mkdir()
+    masks.mkdir()
+    for index in range(4):
+        Image.new("RGB", (8, 8), color=(20 * index, 40, 80)).save(images / f"view_{index:03d}.png")
+    cameras = tmp_path / "cameras.npz"
+    cameras.write_bytes(b"not-loaded-in-dry-run")
+    output = tmp_path / "gaussian-scene"
+
+    result = runner.invoke(
+        app,
+        [
+            "prepare-gaussian-scene",
+            str(images),
+            "--masks",
+            str(masks),
+            "--cameras",
+            str(cameras),
+            "--output",
+            str(output),
+            "--held-out-views",
+            "1",
+            "--initial-points",
+            "2000",
+            "--seed",
+            "17",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "'image_count': 4" in result.stdout
+    assert "'held_out_views': 1" in result.stdout
+    assert "'writes': False" in result.stdout
+    assert not output.exists()
+
+
+def test_dense_surface_dry_run_does_not_run_mvs_or_write(tmp_path: Path) -> None:
+    images = tmp_path / "images"
+    masks = tmp_path / "masks"
+    images.mkdir()
+    masks.mkdir()
+    for index in range(4):
+        Image.new("RGB", (8, 8), color=(20 * index, 40, 80)).save(images / f"v{index}.png")
+    cameras = tmp_path / "cameras.npz"
+    cameras.write_bytes(b"not-loaded-in-dry-run")
+    mvs_python = tmp_path / "python"
+    mvs_python.write_text("#!/bin/sh\n", encoding="utf-8")
+    mvs_python.chmod(0o755)
+    output = tmp_path / "dense"
+
+    result = runner.invoke(
+        app,
+        [
+            "dense-surface",
+            str(images),
+            "--masks",
+            str(masks),
+            "--cameras",
+            str(cameras),
+            "--output",
+            str(output),
+            "--mvs-python",
+            str(mvs_python),
+            "--source-views",
+            "3",
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "'command': 'dense-surface'" in result.stdout
+    assert "'source_views': 3" in result.stdout
+    assert "'writes': False" in result.stdout
+    assert not output.exists()
+
+
+def test_fit_cad_dry_run_does_not_load_model_or_write(tmp_path: Path) -> None:
+    surface = tmp_path / "surface.ply"
+    surface.write_bytes(b"not-loaded-in-dry-run")
+    checkout = tmp_path / "cadena"
+    checkpoint = tmp_path / "checkpoint"
+    workspace = tmp_path / "mvs"
+    checkout.mkdir()
+    checkpoint.mkdir()
+    workspace.mkdir()
+    cameras = tmp_path / "cameras.npz"
+    cameras.write_bytes(b"not-loaded-in-dry-run")
+    output = tmp_path / "cad"
+
+    result = runner.invoke(
+        app,
+        [
+            "fit-cad",
+            str(surface),
+            "--output",
+            str(output),
+            "--cadena-checkout",
+            str(checkout),
+            "--cadena-checkpoint",
+            str(checkpoint),
+            "--verification-workspace",
+            str(workspace),
+            "--cameras",
+            str(cameras),
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "'command': 'fit-cad'" in result.stdout
+    assert "'writes': False" in result.stdout
+    assert not output.exists()
+
+
 def test_reconstruct_dry_run_does_not_create_output(sample_case: Path, tmp_path: Path) -> None:
     output_dir = tmp_path / "dry-run"
     result = runner.invoke(
@@ -113,6 +235,24 @@ def test_reconstruct_dry_run_does_not_create_output(sample_case: Path, tmp_path:
     assert result.exit_code == 0, result.stdout
     assert "'writes': False" in result.stdout
     assert not output_dir.exists()
+
+
+def test_cpu_smoke_reproduces_fixture_without_source_checkout(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    missing = tmp_path / "not-a-checkout" / "sample_data" / "plate" / "views"
+    monkeypatch.setattr(cli_module, "CPU_SMOKE_FIXTURE", missing)
+
+    with cli_module._cpu_smoke_fixture() as views:
+        generated_root = views.parent
+        assert [path.name for path in sorted(views.glob("*.png"))] == [
+            "view_000.png",
+            "view_001.png",
+            "view_002.png",
+            "view_003.png",
+        ]
+    assert not generated_root.exists()
 
 
 def test_bundled_cpu_smoke_writes_valid_step_under_one_minute(tmp_path: Path) -> None:
