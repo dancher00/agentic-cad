@@ -175,12 +175,14 @@ Aggregate one or more sweep directories with
 held-out metrics in separate JSON fields and can never silently substitute one
 for the other.
 
-## End-to-end U-channel pilot
+## End-to-end topology pilots
 
 Before launching the 180-run confirmatory sweep, one paired seed was continued
 through Stage 2 and the DA3-CAD grammar on an RTX 5080. Stage 2 fit comfortably
-in 16 GB and took about eight minutes per configuration. This was an upper-bound
-test: the five fitted views used oracle CAD face masks.
+in 16 GB and took about seven to eight minutes per configuration. These were
+upper-bound tests: the five fitted views used oracle CAD face masks.
+
+### U channel
 
 | Evidence | Baseline | DA3 prior |
 |---|---:|---:|
@@ -204,15 +206,48 @@ correspondences. Therefore a count of ten fitted planes was not evidence of a
 correct B-Rep. The full ledger is
 [brepgaussian-da3-u-channel-end-to-end-v1.json](results/brepgaussian-da3-u-channel-end-to-end-v1.json).
 
+### L bracket
+
+The same Stage 2 test was then repeated on the L bracket. This time both variants
+selected the correct longitudinal axis and passed the 8% raw surface-residual
+gate, but both emitted valid, wrong STEP solids.
+
+| Evidence | Baseline | DA3 prior | Reference |
+|---|---:|---:|---:|
+| Stage 2 merged points | 10,419 | 10,536 | — |
+| Oracle face identities / Stage 2 labels | 8 / 12 | 8 / 12 | 8 faces |
+| Deduplicated fitted planes | 9 | 9 | 8 faces |
+| Correct-axis extrusion P90 | 5.20% | 5.71% | ≤8% gate |
+| STEP IoU | 57.92% | 57.57% | 100% |
+| STEP Chamfer squared ×1000 | 3.657 | 3.242 | 0 |
+| STEP faces / edges | 48 / 138 | 40 / 114 | 8 / 18 |
+
+DA3 reduced Chamfer by 11.34% and made the profile somewhat simpler, but worsened
+P90 by 9.86% and IoU by 0.35 percentage points. More importantly, the input
+oracle masks contained exactly eight global CAD face identities while Stage 2
+produced twelve labels in both configurations. The correspondence/merger is
+therefore fragmenting physical faces before the CAD grammar sees them.
+
+![L-bracket reference beside the two valid-but-wrong Stage 2 STEP results](assets/research/l-bracket-brepgaussian-stage2-audit.png)
+
+The full ledger is
+[brepgaussian-da3-l-bracket-end-to-end-v1.json](results/brepgaussian-da3-l-bracket-end-to-end-v1.json).
+
 ## What remains before a paper claim
 
 The Stage 1 test supports “DA3 can help some sparse CAD geometries”; it does not
-support a universal prior or a coverage gate. The end-to-end pilot also shows
-that the 180-run prior sweep should not start yet: the immediate bottleneck is
-Stage 2 patch correspondence and topology. The next implementation milestone is
-to preserve face adjacency and closed profile loops before CAD fitting, then
-repeat this paired U-channel smoke. Only after it produces the correct
-longitudinal STEP should the experiment vary coverage, objects and seeds.
+support a universal prior or a coverage gate. The U-channel and L-bracket pilots
+show the same upstream defect on two concave prismatic objects: Stage 2 does not
+preserve global face identity, adjacency and closed profile loops. The larger
+180-run prior sweep should therefore not start yet.
+
+The next milestone is a topology-aware Stage 2 contract: merge patches using
+multi-view face identity and adjacency, construct closed profile loops, and add
+a provenance gate for unexplained patch fragmentation or excessive B-Rep
+complexity. Kernel validity and the current raw surface-residual gate are not
+sufficient: the L bracket passed both while containing five to six times too
+many faces. Only after both paired pilots produce the correct longitudinal STEP
+should the experiment vary coverage, objects and seeds.
 
 The next confirmatory experiment was frozen before execution in
 [DA3_PRIOR_SHAPE_HYPOTHESIS.md](experiments/DA3_PRIOR_SHAPE_HYPOTHESIS.md).

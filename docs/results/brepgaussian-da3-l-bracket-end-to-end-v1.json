@@ -1,0 +1,136 @@
+{
+  "schema_version": "da3-cad-brepgaussian-l-bracket-end-to-end-v1",
+  "date": "2026-08-15",
+  "status": "negative-pilot",
+  "hardware": "NVIDIA GeForce RTX 5080 16GB",
+  "scope": {
+    "object": "l_bracket",
+    "optimization_seed": 0,
+    "fitted_views": 5,
+    "held_out_views": 4,
+    "spherical_coverage_fraction": 0.41552734375,
+    "stage2_masks": "oracle CAD face masks",
+    "oracle_face_labels": 8,
+    "source_world_units_to_mm": 25.0,
+    "warning": "This is a synthetic Stage 2 upper bound, not a real-photo result."
+  },
+  "ground_truth": {
+    "dimensions_mm": [
+      50.0,
+      32.0,
+      28.0
+    ],
+    "volume_mm3": 16200.0,
+    "topology": {
+      "solids": 1,
+      "faces": 8,
+      "edges": 18,
+      "vertices": 12
+    }
+  },
+  "baseline": {
+    "stage2": {
+      "merged_points": 10419,
+      "global_labels": 12,
+      "deduplicated_planes": 9,
+      "retained_intersection_segments": 26
+    },
+    "correct_longitudinal_axis": {
+      "selected_axis": 0,
+      "extrusion_surface_p90_fraction": 0.05197379259688217,
+      "gate": 0.08,
+      "residual_gate_decision": "pass",
+      "profile_vertices": 46
+    },
+    "cad_result": {
+      "decision": "valid-but-wrong-step",
+      "iou_percent": 57.91705805026106,
+      "chamfer_squared_x1000": 3.65671793520071,
+      "volume_mm3": 24284.08760686557,
+      "topology": {
+        "solids": 1,
+        "faces": 48,
+        "edges": 138,
+        "vertices": 92
+      }
+    }
+  },
+  "da3_prior": {
+    "stage2": {
+      "merged_points": 10536,
+      "global_labels": 12,
+      "deduplicated_planes": 9,
+      "retained_intersection_segments": 25
+    },
+    "correct_longitudinal_axis": {
+      "selected_axis": 0,
+      "extrusion_surface_p90_fraction": 0.057096155220861866,
+      "relative_change_vs_baseline_percent": 9.855664495584593,
+      "gate": 0.08,
+      "residual_gate_decision": "pass",
+      "profile_vertices": 38
+    },
+    "cad_result": {
+      "decision": "valid-but-wrong-step",
+      "iou_percent": 57.566898943837806,
+      "iou_change_vs_baseline_percentage_points": -0.35015910642325565,
+      "chamfer_squared_x1000": 3.242096902525772,
+      "chamfer_relative_change_vs_baseline_percent": -11.338611290842715,
+      "volume_mm3": 24425.299743215463,
+      "topology": {
+        "solids": 1,
+        "faces": 40,
+        "edges": 114,
+        "vertices": 76
+      }
+    }
+  },
+  "label_aware_plane_ablation": {
+    "method": "deterministic per-label plane RANSAC and Manhattan projection",
+    "baseline": {
+      "input_points": 10419,
+      "retained_points": 6068,
+      "rectified_labels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "skipped_labels": [
+        6,
+        7
+      ],
+      "decision": "abstain",
+      "reason": "surface residual above gate"
+    },
+    "da3_prior": {
+      "input_points": 10536,
+      "retained_points": 5192,
+      "rectified_labels": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        10,
+        12
+      ],
+      "skipped_labels": [
+        7,
+        8,
+        9,
+        11
+      ],
+      "decision": "abstain",
+      "reason": "multiple disconnected profile components"
+    }
+  },
+  "conclusion": "The failure repeats on a second concave prismatic object. Eight oracle CAD face identities become twelve Stage 2 global labels and nine fitted planes. Both configurations pass the residual gate and emit kernel-valid but topologically wrong STEP solids. DA3 improves Chamfer and reduces output complexity, but slightly worsens P90 and IoU. Stage 2 global patch correspondence, adjacency and closed-loop topology must be fixed before a larger prior sweep; kernel validity and raw surface residual are insufficient admission gates."
+}
