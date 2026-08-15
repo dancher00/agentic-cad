@@ -134,6 +134,8 @@ class ConstructionGrammarCadBackend:
         sketch_config: SketchExtrusionConfig,
         revolve_config: RevolveConfig,
         axial_shell_loop_config: AxialShellLoopConfig | None = None,
+        *,
+        extrusion_axes: tuple[int, ...] = (0, 1, 2),
     ) -> None:
         self.grammar_config = grammar_config
         self.sketch_config = sketch_config
@@ -143,6 +145,11 @@ class ConstructionGrammarCadBackend:
             if axial_shell_loop_config is not None
             else AxialShellLoopConfig()
         )
+        if not extrusion_axes or any(axis not in (0, 1, 2) for axis in extrusion_axes):
+            raise ValueError("extrusion_axes must contain one or more axes from {0,1,2}")
+        if len(set(extrusion_axes)) != len(extrusion_axes):
+            raise ValueError("extrusion_axes must be unique")
+        self.extrusion_axes = extrusion_axes
         self.last_report: ConstructionGrammarReport | None = None
 
     def _extrude(
@@ -161,6 +168,7 @@ class ConstructionGrammarCadBackend:
             known_dimension=known_dimension,
             prediction=prediction,
             masks=masks,
+            candidate_axes=self.extrusion_axes,
         )
         report = backend.last_report
         if report is None:

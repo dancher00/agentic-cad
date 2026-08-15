@@ -175,13 +175,44 @@ Aggregate one or more sweep directories with
 held-out metrics in separate JSON fields and can never silently substitute one
 for the other.
 
+## End-to-end U-channel pilot
+
+Before launching the 180-run confirmatory sweep, one paired seed was continued
+through Stage 2 and the DA3-CAD grammar on an RTX 5080. Stage 2 fit comfortably
+in 16 GB and took about eight minutes per configuration. This was an upper-bound
+test: the five fitted views used oracle CAD face masks.
+
+| Evidence | Baseline | DA3 prior |
+|---|---:|---:|
+| Stage 2 merged points | 6,962 | 8,982 |
+| Stage 2 labels | 12 | 13 |
+| Deduplicated fitted planes | 10 | 10 |
+| Correct-axis extrusion P90 | 15.16% | 12.74% |
+| Correct-axis product decision | ABSTAIN | ABSTAIN |
+
+DA3 reduced the correct longitudinal-axis residual by 15.95%, but both results
+remain above the frozen 8% CAD gate. When all axes were left unconstrained, the
+DA3 case emitted a mathematically valid solid on the wrong axis: 45.80% IoU,
+88 faces and 258 edges, versus 10 faces and 24 edges in the reference. The
+baseline's wrong-axis profile self-intersected and failed solid validation.
+
+![Ground truth beside the valid-but-wrong DA3 Stage 2 STEP](assets/research/u-channel-brepgaussian-stage2-audit.png)
+
+A label-aware plane-RANSAC ablation did not rescue the U topology. Stage 2 had
+fragmented the end cap and failed to preserve all required side-patch
+correspondences. Therefore a count of ten fitted planes was not evidence of a
+correct B-Rep. The full ledger is
+[brepgaussian-da3-u-channel-end-to-end-v1.json](results/brepgaussian-da3-u-channel-end-to-end-v1.json).
+
 ## What remains before a paper claim
 
-This test supports “DA3 can help some sparse CAD geometries”; it does not support
-a universal prior or a coverage gate. The next experiment must vary coverage,
-increase objects and seeds, freeze any admission rule on validation data, and
-run the complete Stage 1 → Stage 2 → B-Rep path. Final evidence must include
-face/edge/loop topology and valid STEP rate, not only Gaussian centers.
+The Stage 1 test supports “DA3 can help some sparse CAD geometries”; it does not
+support a universal prior or a coverage gate. The end-to-end pilot also shows
+that the 180-run prior sweep should not start yet: the immediate bottleneck is
+Stage 2 patch correspondence and topology. The next implementation milestone is
+to preserve face adjacency and closed profile loops before CAD fitting, then
+repeat this paired U-channel smoke. Only after it produces the correct
+longitudinal STEP should the experiment vary coverage, objects and seeds.
 
 The next confirmatory experiment was frozen before execution in
 [DA3_PRIOR_SHAPE_HYPOTHESIS.md](experiments/DA3_PRIOR_SHAPE_HYPOTHESIS.md).

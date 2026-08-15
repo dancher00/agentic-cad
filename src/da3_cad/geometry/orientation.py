@@ -22,7 +22,11 @@ class OrientationResult:
         tuple[float, float, float],
         tuple[float, float, float],
     ]
-    method: Literal["pca-symmetry", "planar-dominance-symmetry"]
+    method: Literal[
+        "pca-symmetry",
+        "planar-dominance-symmetry",
+        "external-calibrated-frame",
+    ]
     planar_extent_ratio: float
     planar_threshold: float
     determinant: float

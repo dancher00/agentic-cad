@@ -2493,7 +2493,12 @@ class SketchExtrusionCadBackend:
         known_dimension: KnownDimension | None = None,
         prediction: DepthPrediction | None = None,
         masks: BoolArray | None = None,
+        candidate_axes: tuple[int, ...] = (0, 1, 2),
     ) -> CadProgram:
+        if not candidate_axes or any(axis not in (0, 1, 2) for axis in candidate_axes):
+            raise ValueError("candidate_axes must contain one or more axes from {0,1,2}")
+        if len(set(candidate_axes)) != len(candidate_axes):
+            raise ValueError("candidate_axes must be unique")
         points = _full_oriented_pool(canonical)
         profile_evidence = _raw_profile_evidence_pool(canonical)
         direction_hypotheses = (
@@ -2503,7 +2508,7 @@ class SketchExtrusionCadBackend:
         )
         candidate_list: list[AxisCandidate] = []
         rejection_reasons: list[str] = []
-        for axis in range(3):
+        for axis in candidate_axes:
             try:
                 candidate_list.append(
                     _refined_axis_candidate(

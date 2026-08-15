@@ -241,6 +241,18 @@ def test_one_grammar_recovers_an_l_profile(tmp_path) -> None:
     assert validation.valid, validation.error
 
 
+def test_candidate_axis_gate_is_explicit_and_auditable() -> None:
+    backend = SketchExtrusionCadBackend(SketchExtrusionConfig())
+
+    backend.generate(_canonical(_l_profile_surface()), seed=3, candidate_axes=(0,))
+
+    assert backend.last_report is not None
+    assert backend.last_report.selected_axis == 0
+    assert [candidate.axis for candidate in backend.last_report.axis_candidates] == [0]
+    with pytest.raises(ValueError, match="must be unique"):
+        backend.generate(_canonical(_l_profile_surface()), seed=3, candidate_axes=(0, 0))
+
+
 def test_aperture_uses_repeated_masks_and_prefers_3d_profile_measurement() -> None:
     cloud_with_hole = _canonical(_plate_surface(with_hole=True))
     solid_cloud = _canonical(_plate_surface(with_hole=False))
