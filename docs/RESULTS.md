@@ -1,32 +1,56 @@
 # Results and claim boundaries
 
-## Primary real-RGB result
+## Controlled real-RGB iterative measured grammar v5
 
-The current primary path is calibrated RGB → masked PatchMatch → explicit
-cross-view fusion → measured surface → CADENA program → source-view and kernel
-gates. It was run from scratch on 32 real T-LESS views of object 4 on an RTX
-5080. No reference mesh was read until the CAD and decision report were frozen.
+The current path is calibrated RGB → masked PatchMatch → cross-view fusion →
+measured surface → restricted CADENA root → iterative trusted add/cut →
+source-view and kernel gates. It was run on 32 real T-LESS views each of
+objects 2 and 4 on an RTX 5080. Reference geometry remained inaccessible until
+the CAD programs and product decisions were frozen.
 
-| Check | Result |
-|---|---:|
-| Dense stage | 150.29 s |
-| Cross-view-confirmed points | 96,818 |
-| CAD | one revolve, simplified 22 → 9 profile points |
-| Source-view silhouette IoU | 0.88579 |
-| Source-view depth inliers at 3% | 0.95653 |
-| Kernel | one valid solid, 8 faces, 14 edges |
-| Post-hoc F-score at 2%, no ICP | 0.90463 |
-| Repeatability | two processes; byte-identical program, report and STEP |
-| Product decision | ACCEPT |
+| Check | Object 2 | Object 4 |
+|---|---:|---:|
+| Selected construction | proxy root + axial cut | measured root + axial add |
+| Source-view silhouette IoU | 0.90789 | 0.90821 |
+| Source-view depth inliers at 3% | 0.98326 | 0.96290 |
+| Smooth B-Rep edge precision | 0.54747 | 0.33292 |
+| Smooth B-Rep edge recall | 0.88503 | 0.71515 |
+| Kernel-valid single solid | yes | yes |
+| Product decision v5 | **ACCEPT** | **ABSTAIN** |
+| Post-hoc v4 → v5 IoU | 0.49390 → 0.49232 | 0.55849 → 0.74001 |
+| Post-hoc v4 → v5 CD²×1000 | 3.37427 → 3.36054 | 6.50123 → 2.16176 |
 
-The harder object 2 candidate misses an opening. Its silhouette IoU is 0.85966,
-below the fixed 0.87 gate, so it becomes `ABSTAIN` rather than a valid-but-wrong
-product result. Exact portable evidence is in
-[`real-rgb-mvs-cadena-v1.json`](results/real-rgb-mvs-cadena-v1.json).
+V5 generalizes the trusted measured operation to both signed residual sides.
+Target points inside the current solid may support a subtraction; points
+outside may support an addition. Axial location and span, at least 75% angular
+coverage and normalized profile residual must pass before a full and a
+conservative variant enter the beam. After every accepted operation the
+residual is refitted, for at most two rounds. The learned policy cannot call
+these operations.
 
-This controlled pair proves one positive path and one relevant negative gate.
-It does not establish category-level generalization, dimensional metrology or
-SOTA performance.
+Every candidate is executed by CadQuery/OpenCascade and must remain exactly one
+valid solid. The accepted construction graph records the learned root, the
+exact selected profile rewrite and every measured boolean with full per-prefix
+kernel counts. Source-view score and smooth-face topology may not regress.
+
+Object 2 retains its observed cavity and provisional `ACCEPT`; its small IoU
+change (-0.00158) accompanies slightly better Chamfer and one fewer analytic
+face. Object 4 gains the missing lower axial extension without reference access:
+post-hoc IoU rises by 0.18152. It still returns `ABSTAIN`, correctly, because
+the top pin, lower terminal flange and associated source-image edges are not
+explained.
+
+The source-view verifier groups adjacent tessellation triangles into smooth
+faces, so STL tessellation and analytic seams do not masquerade as CAD
+features. Independent reruns produced byte-identical programs and STEP files
+for both cases.
+
+This is one controlled real-object acceptance and one substantially improved
+but rejected candidate—not exact reverse engineering, category-level
+generalization or SOTA. Exact evidence, deltas and SHA-256 values are in
+[`real-rgb-mvs-cadena-v5.json`](results/real-rgb-mvs-cadena-v5.json). The
+ignored local three-page visual report is generated with
+`python scripts/build_real_rgb_cadena_report.py`.
 
 ## Archived deterministic DA3 grammar benchmark v2
 

@@ -31,6 +31,10 @@ class TessellationConfig:
                 "digits_vertex": self.vertex_merge_digits,
                 "merge_texture_and_normals": True,
             },
+            "analytic_seam_cleanup": (
+                "remove exact zero-area triangles emitted by OCC tessellation; "
+                "no hole filling, remeshing, or geometry repair"
+            ),
         }
 
 
@@ -57,6 +61,8 @@ def tessellate_step(
         merge_norm=True,
         digits_vertex=config.vertex_merge_digits,
     )
+    mesh.update_faces(mesh.nondegenerate_faces())
+    mesh.remove_unreferenced_vertices()
     return mesh
 
 

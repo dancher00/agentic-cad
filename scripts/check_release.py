@@ -16,6 +16,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "sample_data" / "public_benchmark_v2"
 LEDGER = ROOT / "docs" / "results" / "public-benchmark-v2.json"
+REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v5.json"
 MAX_PUBLIC_FILE_BYTES = 8 * 1024 * 1024
 
 REQUIRED = (
@@ -30,6 +31,8 @@ REQUIRED = (
     "docs/assets/release/cpu_smoke.gif",
     "docs/assets/release/public_benchmark_v2.png",
     "docs/results/public-benchmark-v2.json",
+    "docs/results/real-rgb-mvs-cadena-v5.json",
+    "scripts/build_real_rgb_cadena_report.py",
     "sample_data/public_benchmark_v2/README.md",
     "sample_data/public_benchmark_v2/manifest.json",
     "configs/public_benchmark_v2.yaml",
@@ -163,6 +166,22 @@ def _check_fixture_and_ledger(errors: list[str]) -> tuple[int, int]:
     return len(cases), total_views
 
 
+def _check_real_rgb_ledger(errors: list[str]) -> None:
+    ledger = _read_json(REAL_RGB_LEDGER)
+    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v5":
+        errors.append("real-RGB ledger schema is not v5")
+    if ledger.get("input", {}).get("reference_geometry_access_during_reconstruction") is not False:
+        errors.append("real-RGB ledger reference-geometry leakage contract is not false")
+    decisions = (
+        ledger.get("object_2", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
+        ledger.get("object_4", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
+    )
+    if decisions != ("ACCEPT", "ABSTAIN"):
+        errors.append(f"real-RGB v5 decisions are inconsistent: {decisions!r}")
+    if "/home/" in REAL_RGB_LEDGER.read_text(encoding="utf-8"):
+        errors.append("real-RGB ledger contains machine-local runtime paths")
+
+
 def _check_metadata(errors: list[str]) -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
@@ -192,6 +211,7 @@ def main() -> None:
     _check_repository_surface(files, errors)
     _check_readme_links(errors)
     cases, views = _check_fixture_and_ledger(errors)
+    _check_real_rgb_ledger(errors)
     _check_metadata(errors)
     if errors:
         print("release check failed:", file=sys.stderr)

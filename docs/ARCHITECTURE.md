@@ -10,7 +10,8 @@ RGB views + target masks + calibrated cameras
   → masked calibrated PatchMatch
   → cross-view-confirmed depth fusion
   → measured surface
-  → restricted CAD operation proposals
+  → raw-surface proposals + evidence-fitted primitive proxy proposals
+  → restricted CAD operation candidates scored on the original views
   → evidence-preserving profile simplification
   → render CAD into every source camera
   → source-mask and measured-depth gates
@@ -87,9 +88,23 @@ from upstream target-mesh evaluation: it does not use IoU to unavailable CAD.
 Each candidate is transformed back to measured coordinates and rendered into
 the calibrated source views.
 
-An operation is retained only when its combined source-view score improves by
-at least 0.001. This prevents tiny score changes from accumulating unsupported
-holes or cuts.
+For the first operation, the policy sees two branches. One is the original
+measured-surface render. The other is a deterministic revolve proxy admitted
+only when measured 3D points support its axis, angular coverage and surface
+residual. The proxy is a denoising conditioner, not a reconstruction: it is
+never eligible for export, and both branches are scored against the original
+RGB, masks and measured depths. Unsupported connected-residual extrusions are
+not part of the direct runner because they can paint several projections with
+incorrect 3D volume.
+
+Every operation must first produce exactly one positive-volume, kernel-valid
+B-Rep. A prefix is retained when its silhouette/depth score improves by at
+least 0.001, or when internal-edge recall improves by at least 0.05 while edge
+precision remains at least 0.45 and silhouette, depth and the primary score
+each regress by no more than 0.05. All valid prefixes remain in an archive;
+the final selection backtracks to the strongest prefix that passes the final
+gates. This permits a bounded topology step without allowing the last sampled
+operation to overwrite a better CAD.
 
 ## Simplicity selection
 
@@ -97,24 +112,48 @@ Noisy measured surfaces can make a revolve proposal contain many short line
 segments, which appear as excessive rings in B-Rep viewers. DA3-CAD applies
 bounded Ramer–Douglas–Peucker simplification to explicit revolve line profiles
 at several tolerances. Every simplified program is re-executed and re-scored
-against the photographs. The fewest-point profile within 0.001 of the original
-score is selected.
+against the photographs. It is rejected if internal-edge precision or recall
+falls by more than 0.005. Among the remaining candidates, the fewest-point
+profile within 0.001 of the original score is selected.
 
 Thus simplification is not cosmetic mesh smoothing: the selected editable CAD
 must continue to explain the source evidence.
 
+
+## Iterative measured feature grammar
+
+After profile simplification, trusted code computes signed distances from the
+measured target surface to the current kernel-valid CAD. An outside, end-local,
+angularly supported residual can propose `axial_revolved_add`; an inside
+residual can propose `axial_revolved_cut`. The learned CADENA policy cannot call
+either operation.
+
+Full and conservative profiles are executed by OpenCascade and re-rendered in
+all source views. A candidate is retained only when it remains one valid solid
+and does not regress the parent source-view score or smooth-face topology. The
+residual is then recomputed from the new solid for at most one additional round.
+This is a bounded construction grammar, not a dictionary of part classes.
+
+The audit graph records three distinct relations: the learned proposal, an exact
+profile rewrite, and measured boolean operations applied after that rewrite.
+Every accepted node stores its actual per-prefix solid, face, edge and volume
+validation; rejected learned branches remain visible in the ledger.
 ## Acceptance
 
-The final candidate must pass two independent boundaries.
+The final candidate must pass independent source and kernel boundaries.
 
 Source-view gate:
 
 - mean silhouette IoU ≥ 0.87;
 - measured-depth inlier fraction at 3% tolerance ≥ 0.90.
+- when at least 128 internal appearance-edge pixels are present, rendered CAD
+  edge precision ≥ 0.45 and recall ≥ 0.12.
 
-These thresholds are marked provisional controlled-benchmark values in every
-report. Failing either produces exit code 3, `ABSTAIN` and `candidate.step`; it
-does not produce accepted `model.*` artifacts.
+The edge signal is a conservative selection/abstention cue, not proof that a
+painted RGB boundary is physical geometry. All thresholds are marked
+provisional controlled-diagnostic values in every report. Failing any gate
+produces exit code 3, `ABSTAIN` and `candidate.step`; it does not produce
+accepted `model.*` artifacts.
 
 Kernel gate:
 
@@ -128,7 +167,9 @@ still be rejected by the source-view gate.
 
 `model.stl` is a tessellated preview. Face-boundary seams or triangle lines in
 that file do not define CAD topology. `model.step` and its kernel report are the
-authoritative B-Rep.
+authoritative B-Rep. Evaluator v3 removes exact zero-area triangles emitted by
+OpenCascade at analytic revolution seams before mesh metrics; it does not fill
+holes, remesh or repair geometry.
 
 ## DA3 boundary
 
@@ -161,6 +202,7 @@ model.step               authoritative B-Rep
 model.stl                tessellated preview
 cadena_report.json       trajectory, scores, thresholds and kernel audit
 target.png               measured-surface render used by the proposer
+proposal_proxy.png       optional non-exportable primitive conditioning render
 step_*_input.png         iterative proposer diagnostics
 ```
 

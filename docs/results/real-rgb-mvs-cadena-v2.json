@@ -1,0 +1,123 @@
+{
+  "schema_version": "da3-cad-real-rgb-mvs-cadena-v2",
+  "date": "2026-08-16",
+  "claim": "controlled real-RGB failure audit; no real-object acceptance claim",
+  "supersedes": "real-rgb-mvs-cadena-v1.json",
+  "correction": "the v1 silhouette/depth gate did not measure internal CAD boundaries and incorrectly accepted a valid but incomplete revolve for T-LESS object 4",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "memory_mib": 16303
+  },
+  "gate": {
+    "mean_silhouette_iou_minimum": 0.87,
+    "depth_inlier_fraction_minimum": 0.9,
+    "relative_depth_tolerance": 0.03,
+    "appearance_edge_precision_minimum": 0.45,
+    "appearance_edge_recall_minimum": 0.12,
+    "appearance_edge_minimum_pixels": 128,
+    "threshold_status": "provisional two-object controlled diagnostic; broader frozen validation is required",
+    "edge_role": "selection and abstention evidence only; an RGB edge does not by itself prove physical geometry"
+  },
+  "object_4": {
+    "input": {
+      "dataset": "T-LESS",
+      "scene": 20,
+      "object": 4,
+      "rgb_views": 32,
+      "reference_geometry_access_during_reconstruction": false
+    },
+    "withdrawn_v1_candidate": {
+      "operations": [
+        "revolve"
+      ],
+      "source_view_score": 0.9105455622174661,
+      "silhouette_iou": 0.8857871943989293,
+      "depth_inlier_fraction": 0.956525388166177,
+      "appearance_edge_precision": 0.28402366863905326,
+      "appearance_edge_recall": 0.04329004329004329,
+      "appearance_edge_pixels": 1155,
+      "rendered_geometry_edge_pixels": 169,
+      "kernel_valid": true,
+      "kernel_solids": 1,
+      "decision_v1": "ACCEPT",
+      "decision_v2": "ABSTAIN",
+      "v2_reasons": [
+        "appearance-edge precision 0.2840 < 0.4500",
+        "appearance-edge recall 0.0433 < 0.1200"
+      ]
+    },
+    "best_four_expansion_candidate": {
+      "operations": [
+        "revolve"
+      ],
+      "source_view_score": 0.9160983181987512,
+      "silhouette_iou": 0.8954145016092347,
+      "depth_inlier_fraction": 0.9545111204364247,
+      "appearance_edge_precision": 0.5662650602409639,
+      "appearance_edge_recall": 0.07705627705627706,
+      "appearance_edge_pixels": 1155,
+      "rendered_geometry_edge_pixels": 166,
+      "kernel_valid": true,
+      "kernel_solids": 1,
+      "kernel_faces": 15,
+      "kernel_edges": 28,
+      "decision": "ABSTAIN",
+      "reasons": [
+        "appearance-edge recall 0.0771 < 0.1200"
+      ]
+    },
+    "posthoc_reference_evaluation": {
+      "access": "after candidate freeze; never used by reconstruction or product decision",
+      "source_view_score": 0.9249844895872595,
+      "silhouette_iou": 0.9083172721433483,
+      "depth_inlier_fraction": 0.955937893411666,
+      "appearance_edge_precision": 0.6705882352941176,
+      "appearance_edge_recall": 0.2077922077922078
+    }
+  },
+  "object_2": {
+    "input": {
+      "dataset": "T-LESS",
+      "scene": 20,
+      "object": 2,
+      "rgb_views": 32,
+      "reference_geometry_access_during_reconstruction": false
+    },
+    "best_four_expansion_candidate": {
+      "operations": [
+        "revolve"
+      ],
+      "source_view_score": 0.8606124809778567,
+      "silhouette_iou": 0.8483701415223,
+      "depth_inlier_fraction": 0.883348254252462,
+      "appearance_edge_precision": 0.7430639324487334,
+      "appearance_edge_recall": 0.4886025768087215,
+      "kernel_valid": true,
+      "decision": "ABSTAIN"
+    },
+    "search_diagnostic": {
+      "expansions_per_step": 4,
+      "next_operation_family": "hole",
+      "executable_expansions": 0,
+      "kernel_rejections": 4,
+      "reason": "every sampled cut split the B-Rep into two or three solids"
+    },
+    "posthoc_reference_evaluation": {
+      "access": "after candidate freeze; never used by reconstruction or product decision",
+      "source_view_score": 0.9306427443125922,
+      "silhouette_iou": 0.9126753603707259,
+      "depth_inlier_fraction": 0.9640107430617726,
+      "appearance_edge_precision": 0.7771156138259833,
+      "appearance_edge_recall": 0.6085232903865213
+    }
+  },
+  "decoder_upper_bound_diagnostic": {
+    "input": "T-LESS object 2 reference mesh; evaluator-only diagnosis",
+    "cadena_expansions": 4,
+    "first_valid_prefix_iou": 0.8126732770064299,
+    "second_prefix_mesh_iou": 0.822882274814785,
+    "second_prefix_kernel_solids": 2,
+    "conclusion": "CADENA remained incomplete and invalid even with perfect input geometry, so the current bottleneck is compositional CAD decoding, not only MVS"
+  },
+  "da3_role": "optional experimental confidence-aware prior; unused in these calibrated dense runs"
+}

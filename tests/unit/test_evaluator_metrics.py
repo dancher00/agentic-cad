@@ -155,7 +155,32 @@ def test_step_tessellation_uses_fixed_tolerances_and_matches_occ_volume(
             "digits_vertex": 12,
             "merge_texture_and_normals": True,
         },
+        "analytic_seam_cleanup": (
+            "remove exact zero-area triangles emitted by OCC tessellation; "
+            "no hole filling, remeshing, or geometry repair"
+        ),
     }
+
+
+def test_step_tessellation_removes_only_occ_axis_seam_triangles(tmp_path: Path) -> None:
+    revolved = (
+        cq.Workplane("XZ")
+        .moveTo(0.0, -1.0)
+        .lineTo(1.0, -1.0)
+        .lineTo(1.0, 1.0)
+        .lineTo(0.0, 1.0)
+        .close()
+        .revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+    )
+    step_path = tmp_path / "axis-touching-revolve.step"
+    cq.exporters.export(revolved, str(step_path))
+
+    mesh = tessellate_step(step_path)
+    validation = validate_mesh(mesh)
+
+    assert validation.valid
+    assert validation.watertight
+    assert np.all(np.asarray(mesh.area_faces) > 0.0)
 
 
 def test_file_mesh_loading_welds_vertices_but_does_not_repair(tmp_path: Path) -> None:

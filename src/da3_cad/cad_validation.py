@@ -51,8 +51,8 @@ def normalize_step_metadata(path: Path) -> None:
     path.write_text(normalized, encoding="utf-8")
 
 
-def validate_and_export_cadquery(result: Any, output_path: Path) -> CadKernelValidation:
-    """Require one positive-volume valid solid before exporting STEP."""
+def validate_cadquery(result: Any) -> CadKernelValidation:
+    """Require one positive-volume valid B-Rep solid without writing an artifact."""
 
     solids = _solids(result)
     if len(solids) != 1:
@@ -71,6 +71,13 @@ def validate_and_export_cadquery(result: Any, output_path: Path) -> CadKernelVal
         raise ValueError("CAD kernel reports an invalid B-Rep solid")
     if volume <= 0.0:
         raise ValueError("CAD B-Rep solid has non-positive volume")
+    return validation
+
+
+def validate_and_export_cadquery(result: Any, output_path: Path) -> CadKernelValidation:
+    """Require one positive-volume valid solid before exporting STEP."""
+
+    validation = validate_cadquery(result)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     cq.exporters.export(result, str(output_path))
     if not output_path.is_file() or output_path.stat().st_size == 0:

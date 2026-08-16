@@ -1,0 +1,246 @@
+{
+  "schema_version": "da3-cad-real-rgb-mvs-cadena-v5",
+  "date": "2026-08-16",
+  "claim": "controlled real-RGB iterative measured CAD grammar; object 2 remains a provisional ACCEPT and object 4 improves geometrically but remains ABSTAIN",
+  "supersedes": "real-rgb-mvs-cadena-v4.json",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "memory_mib": 16303
+  },
+  "input": {
+    "dataset": "T-LESS",
+    "scene": 20,
+    "rgb_views_per_object": 32,
+    "reference_geometry_access_during_reconstruction": false,
+    "scale_scope": "ignored for this architecture experiment"
+  },
+  "architecture_change": {
+    "learned_policy_role": "propose a restricted CADENA construction root",
+    "measured_feature_role": "iteratively fit bounded axial revolved additions or subtractions from signed target-surface residuals after each kernel-valid root/rewrite",
+    "learned_policy_can_invoke_measured_feature": false,
+    "trusted_operations": [
+      "axial_revolved_add",
+      "axial_revolved_cut"
+    ],
+    "maximum_measured_feature_rounds": 2,
+    "evidence_gates": {
+      "signed_surface_side_required": true,
+      "end_region_required": true,
+      "minimum_angular_coverage_fraction": 0.75,
+      "minimum_axial_span_required": true,
+      "maximum_normalized_profile_residual": 0.12,
+      "exact_single_solid_kernel_validation_per_prefix": true,
+      "source_view_non_regression_required": true
+    },
+    "beam_candidates": [
+      "simplified learned root",
+      "full measured axial add/cut",
+      "conservative measured axial add/cut",
+      "a second residual-refitted measured operation when still supported"
+    ],
+    "selection": "minimum profile complexity; source-view score within 0.001; then fewer and more conservative measured operations",
+    "provenance_chain": "learned proposal -> exact profile rewrite -> measured boolean operation, with relationship and full kernel validation stored at every accepted node",
+    "source_view_edges": "smooth-face group boundaries; tessellation seams within 15 degrees are ignored",
+    "renderer": {
+      "measured_render_quantization_step": 16,
+      "proposal_proxy_quantization_step": 64,
+      "downsample_factor": 1,
+      "reason": "remove one-pixel off-screen VTK raster jitter without coarsening measured verification renders"
+    }
+  },
+  "evaluator": {
+    "version": "da3-cad-evaluator-v3-centered-occ-seam-cleanup",
+    "alignment": "independent bbox centering and largest-extent normalization; no ICP or per-axis scaling",
+    "step_cleanup": "remove exact zero-area OCC seam triangles only; no hole filling or geometry repair",
+    "reference_access": "post-hoc after program and ACCEPT/ABSTAIN decision were frozen"
+  },
+  "object_2": {
+    "v3_baseline": {
+      "decision": "ABSTAIN",
+      "selected_branch": "revolve-proxy",
+      "source_view_score": 0.9076579031607919,
+      "silhouette_iou": 0.8654071728263956,
+      "depth_inlier_fraction": 0.9861235452103849,
+      "appearance_edge_precision": 0.4225352112676056,
+      "appearance_edge_recall": 0.03270564915758176,
+      "kernel_faces": 26,
+      "posthoc_mesh_iou": 0.4872734366132594,
+      "posthoc_chamfer_squared_x1000": 4.848997251990634
+    },
+    "v4_measured_topology": {
+      "selected_branch": "revolve-proxy root plus conservative measured axial-revolved-cut",
+      "decision": "ACCEPT",
+      "source_view_score": 0.9343022703691113,
+      "silhouette_iou": 0.907941100478338,
+      "depth_inlier_fraction": 0.9832587287376903,
+      "appearance_edge_precision": 0.5674368619022031,
+      "appearance_edge_recall": 0.8850346878097126,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 23,
+      "kernel_edges": 43,
+      "measured_feature": {
+        "kind": "axial-revolved-cut",
+        "axis": 2,
+        "support_points": 2299,
+        "angular_coverage_fraction": 1.0,
+        "axial_span_fraction": 0.1727270345733136,
+        "radial_growth_fraction": 0.5356912386838769,
+        "normalized_profile_residual": 0.10196379329706057,
+        "selected_variant": "conservative",
+        "radial_scale": 0.85,
+        "floor_offset": 2.985
+      },
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.4939017029194346,
+      "posthoc_chamfer_squared_x1000": 3.3742721861341454,
+      "delta_from_v3": {
+        "mesh_iou": 0.0066282663061752,
+        "chamfer_squared_x1000": -1.4747250658564886
+      },
+      "visual_audit": "the axial cavity is present and the macro envelope is coherent; external thread, knurl and scalloped detail remain smoothed and are not claimed as recovered",
+      "product_reason": "the measured cavity closes the internal-topology gate on 32 source views; this is a provisional controlled-case acceptance, not category-level validation"
+    },
+    "reproducibility": {
+      "independent_processes": 2,
+      "byte_identical": true,
+      "artifacts": {
+        "proposal_proxy.png_sha256": "35f52a5c2b548cfe5f1da30cae926337525f502e5403773162531db48448f235",
+        "model.py_sha256": "102badad2d2df50574a86d8a888cdf339332453889b16b10f736fb8504591255",
+        "cadena_report.json_sha256": "b4ae16a42fb47e42d0577a4cf8d0728450ce3b1a91974764b4b366ae971b0ae6"
+      }
+    },
+    "v5_iterative_measured_grammar": {
+      "selected_branch": "revolve-proxy root -> profile rewrite -> conservative measured axial-revolved-cut",
+      "decision": "ACCEPT",
+      "source_view_score": 0.9342689580031651,
+      "silhouette_iou": 0.9078898506845745,
+      "depth_inlier_fraction": 0.9832587287376903,
+      "appearance_edge_precision": 0.5474693021862833,
+      "appearance_edge_recall": 0.8850346878097126,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 22,
+      "kernel_edges": 41,
+      "measured_feature": {
+        "kind": "axial-revolved-cut",
+        "axis": 2,
+        "support_points": 2178,
+        "angular_coverage_fraction": 1.0,
+        "axial_span_fraction": 0.1687870109654936,
+        "radial_growth_fraction": 0.5303547212271296,
+        "normalized_profile_residual": 0.09441589060415922,
+        "selected_variant": "conservative",
+        "radial_scale": 0.85,
+        "floor_offset": 2.985
+      },
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.4923208907129654,
+      "posthoc_chamfer_squared_x1000": 3.3605365042411015,
+      "delta_from_v4": {
+        "mesh_iou": -0.0015808122064692,
+        "chamfer_squared_x1000": -0.0137356818930439
+      },
+      "visual_audit": "the axial cavity is present and the macro envelope is coherent; external thread, knurl and scalloped detail remain smoothed and are not claimed as recovered",
+      "product_reason": "the measured cavity passes the kernel and 32-source-view topology gates; the negligible IoU trade-off accompanies slightly better Chamfer and one fewer analytic face",
+      "reproducibility": {
+        "independent_processes": 2,
+        "byte_identical_program_and_step": true,
+        "artifacts": {
+          "proposal_proxy_png_sha256": "35f52a5c2b548cfe5f1da30cae926337525f502e5403773162531db48448f235",
+          "model_py_sha256": "a2abb8efa4a5d3ce401a5c23b935600e151a9650920fcad757799753a42404fd",
+          "model_step_sha256": "b5ccb16eefacc261ce50c4a617f5069a8041327d519fbb797377058a8cba25b4",
+          "cadena_report_json_sha256": "672093cabee2aa1471203261a635615b1ae76c7010f503896f4d1c2c28009e1a"
+        }
+      }
+    }
+  },
+  "object_4": {
+    "v3_baseline": {
+      "decision": "ABSTAIN",
+      "selected_branch": "measured-target",
+      "source_view_score": 0.9163813180026124,
+      "silhouette_iou": 0.8972508349528554,
+      "depth_inlier_fraction": 0.9519093579521611,
+      "appearance_edge_precision": 0.30859375,
+      "appearance_edge_recall": 0.07272727272727272,
+      "kernel_faces": 21,
+      "posthoc_mesh_iou": 0.5584520005087225,
+      "posthoc_chamfer_squared_x1000": 6.514816537569347
+    },
+    "v4_measured_topology": {
+      "selected_branch": "measured-target root without unsupported axial cut",
+      "decision": "ABSTAIN",
+      "decision_reason": "appearance-edge precision 0.2775 < 0.4500",
+      "source_view_score": 0.9158688737654368,
+      "silhouette_iou": 0.8966432268201272,
+      "depth_inlier_fraction": 0.9515736466638691,
+      "appearance_edge_precision": 0.27748294162244125,
+      "appearance_edge_recall": 0.7151515151515152,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 19,
+      "kernel_edges": 36,
+      "measured_feature": null,
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.5584940103890048,
+      "posthoc_chamfer_squared_x1000": 6.501227792217353,
+      "delta_from_v3": {
+        "mesh_iou": 0.0000420098802823,
+        "chamfer_squared_x1000": -0.013588745351994
+      },
+      "visual_audit": "the smooth main envelope is present, but small terminals and thread-like external details remain absent",
+      "product_reason": "the measured feature gates reject unsupported subtraction and the source-view topology gate preserves ABSTAIN"
+    },
+    "v5_iterative_measured_grammar": {
+      "selected_branch": "measured-target root -> profile rewrite -> conservative measured axial-revolved-add",
+      "decision": "ABSTAIN",
+      "decision_reason": "appearance-edge precision 0.3329 < 0.4500",
+      "source_view_score": 0.9273516774458683,
+      "silhouette_iou": 0.9082081715700987,
+      "depth_inlier_fraction": 0.9629039026437264,
+      "appearance_edge_precision": 0.3329229253878355,
+      "appearance_edge_recall": 0.7151515151515152,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 19,
+      "kernel_edges": 35,
+      "measured_feature": {
+        "kind": "axial-revolved-add",
+        "axis": 2,
+        "side": -1,
+        "support_points": 267,
+        "angular_coverage_fraction": 1.0,
+        "axial_span_fraction": 0.1433045143936853,
+        "normalized_profile_residual": 0.02666653212805851,
+        "selected_variant": "conservative",
+        "radial_scale": 0.85,
+        "axial_scale": 0.95
+      },
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.7400129732197381,
+      "posthoc_chamfer_squared_x1000": 2.161758062080477,
+      "delta_from_v4": {
+        "mesh_iou": 0.1815189628307333,
+        "chamfer_squared_x1000": -4.339469730136876
+      },
+      "visual_audit": "the previously missing lower axial extension is now present and the macro silhouette is much closer; the top pin and lower terminal flange are still absent",
+      "product_reason": "macro geometry improves strongly without reference access, but unexplained source-image edges keep the product decision at ABSTAIN",
+      "reproducibility": {
+        "independent_processes": 2,
+        "byte_identical_program_and_step": true,
+        "artifacts": {
+          "proposal_proxy_png_sha256": "9a3e07279fef33a6845d25df3b283ca175fe5311ad938676e9be6984af311633",
+          "candidate_py_sha256": "241bc098f027df0eea39ecf05fcaa951fb94ab2d896392bc720187e78e7a78b7",
+          "candidate_step_sha256": "30d6cde4cb7c4c15eb6e24a1c6a1f9b30119c3d7e93d61a9670ad2925658d18a",
+          "cadena_report_json_sha256": "2e169413aae29b40111d2161e61949943912901a55962eb6be7ec88e269ad797"
+        }
+      }
+    }
+  },
+  "test_gate": {
+    "ruff_format_check": "219 files formatted",
+    "ruff_check": "pass",
+    "mypy": "101 source files",
+    "pytest": "310 passed, 2 skipped",
+    "gpu_tests": "skipped by marker/environment in the repository gate; the two controlled fits ran separately on RTX 5080"
+  },
+  "conclusion": "A bounded signed-residual CAD grammar now composes learned revolve roots with measured add/cut operations and exact per-prefix provenance. It preserves the object-2 cavity and raises object-4 post-hoc IoU from 0.5585 to 0.7400 while correctly retaining ABSTAIN. Two controlled objects validate the mechanism, not universal generalization or SOTA.",
+  "da3_role": "optional experimental confidence-aware prior; unused in these calibrated dense runs"
+}

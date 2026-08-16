@@ -15,17 +15,20 @@ an optional confidence-aware depth prior for sparse or textureless views; the
 verified dense path uses calibrated multi-view stereo for metric consistency.
 
 The project separates measurement from CAD proposal and acceptance. A local
-CADENA-RL policy proposes restricted CadQuery operations, then every candidate
-is rendered back into the original calibrated RGB views. The system emits a
-single OpenCascade-valid STEP only when both silhouette and measured-depth
-gates pass; otherwise it returns ABSTAIN with an auditable candidate.
+CADENA-RL policy proposes restricted CadQuery operations. Every construction
+prefix must be one kernel-valid solid, is rendered into the calibrated source
+views, and is checked against silhouette, measured depth and internal RGB
+boundaries; otherwise the system returns ABSTAIN with an auditable candidate.
 
-On a controlled 32-view real-RGB T-LESS case, the released RTX 5080 path fused
-96,818 cross-view-confirmed points and returned one valid 8-face B-Rep solid.
-Post-hoc evaluator-only F-score was 0.905 at 2% of object diagonal without ICP.
-Two independent processes produced byte-identical CAD programs, reports and STEP files.
-A harder object with a missed opening is rejected instead of being presented
-as a successful STEP. The repository makes no SOTA claim.
+On two controlled 32-view real-RGB T-LESS cases, the RTX 5080 path emits two
+kernel-valid single-solid STEP candidates. V5 keeps CADENA as a restricted root
+proposal policy, then iteratively fits bounded axial additions or subtractions
+from signed measured-surface residuals in trusted code. Object 2 retains the
+observed cavity and provisional ACCEPT. Object 4 recovers a missing lower axial
+extension and improves post-hoc IoU from 0.558 to 0.740, but remains ABSTAIN
+because other visible edges are unexplained. Object-2 IoU is 0.492. Fine threads
+and terminals remain smoothed or absent. This is one controlled success and one
+honest rejection, not category-level generalization or a SOTA claim.
 
 Code is Apache-2.0. DA3, CADENA and dataset weights/data retain their upstream
 licenses and are not redistributed.
@@ -35,7 +38,7 @@ licenses and are not redistributed.
 
 - [x] Short end-to-end RGB → measured surface → CAD instructions.
 - [x] RTX 5080 full-path run with exact timing and stage reports.
-- [x] Independent source-view and OpenCascade acceptance gates.
+- [x] Silhouette, depth, internal-edge and per-prefix OpenCascade gates.
 - [x] Honest non-SOTA and scale boundaries.
 - [x] CPU smoke and 10-case synthetic regression benchmark.
 - [x] No redistributed model weights or real benchmark data.

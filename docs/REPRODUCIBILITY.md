@@ -80,22 +80,60 @@ da3-cad fit-cad outputs/dense/surface.ply \
   --verification-workspace outputs/dense/mvs \
   --cameras cameras.npz \
   --max-steps 8 \
+  --expansions 4 \
   --seed 20260815
 ```
 
-The controlled 32-view run records:
+The historical controlled 32-view object-4 run records:
 
 - PatchMatch 137.17 s; full dense stage 150.29 s;
 - 96,818 fused voxels and 4.8779 mean confirmations;
 - source score 0.91055, silhouette IoU 0.88579, depth inliers 0.95653;
 - one valid solid, 8 faces, 14 edges;
 - post-hoc no-ICP F-score 0.90463 at 2% and 0.98275 at 5%;
-- two independent processes produced byte-identical `model.py`, `model.step`
-  and `cadena_report.json` after renderer and STEP-metadata canonicalization.
+- two independent processes produced byte-identical candidate programs,
+  reports and STEP after renderer and STEP-metadata canonicalization.
 
-Reference T-LESS geometry was opened only after `model.step` and
-`cadena_report.json` existed. Its alignment is the dataset's registered object
-coordinate system; no ICP or evaluator alignment optimization was used.
+That v1 candidate is now `ABSTAIN`: its internal-edge precision/recall is
+0.28402/0.04329. The old acceptance claim is withdrawn; see
+[`results/real-rgb-mvs-cadena-v2.json`](results/real-rgb-mvs-cadena-v2.json).
+Reference T-LESS geometry was opened only after the candidate and report
+existed. Its alignment is the dataset's registered object coordinate system;
+no ICP or evaluator alignment optimization was used.
+
+The current v5 decoder keeps raw/proxy root proposals but fits bounded axial
+additions and subtractions only in trusted code from signed measured-surface
+evidence. The learned policy cannot call those operations. Reproduce the
+frozen CAD stage after preparing the ignored T-LESS workspaces:
+
+```bash
+da3-cad fit-cad \
+  outputs/controlled-tless-v1/s20-o2/mvs-calibrated-v4/surface-poisson.ply \
+  --output outputs/controlled-tless-v1/s20-o2/cadena-iterative-v27 \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace outputs/controlled-tless-v1/s20-o2/mvs-calibrated-v4 \
+  --cameras outputs/controlled-tless-v1/s20-o2/source/cameras.npz \
+  --max-steps 1 --expansions 4 --temperature 0.8 --seed 20260815
+
+da3-cad fit-cad \
+  outputs/controlled-tless-v1/s20-o4/dense-cli-v3/surface.ply \
+  --output outputs/controlled-tless-v1/s20-o4/cadena-iterative-add-v26 \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace outputs/controlled-tless-v1/s20-o4/dense-cli-v3/mvs \
+  --cameras outputs/controlled-tless-v1/s20-o4/source/cameras.npz \
+  --max-steps 1 --expansions 4 --temperature 0.8 --seed 20260815
+```
+
+Object 2 returns exit code 0 with `model.step`; object 4 returns exit code 3
+with the auditable `candidate.step`. Independent final-code runs produced
+byte-identical program and STEP artifacts for both objects. Generate the
+ignored local visual audit with `python scripts/build_real_rgb_cadena_report.py`.
+Exact metrics and hashes are in
+[`results/real-rgb-mvs-cadena-v5.json`](results/real-rgb-mvs-cadena-v5.json).
+Evaluator v3 removes exact zero-area OCC seam triangles at analytic seams but
+performs no mesh repair.
 
 ## CPU and release checks
 

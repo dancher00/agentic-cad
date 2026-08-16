@@ -549,6 +549,24 @@ def fit_cad_command(
         ),
     ],
     max_steps: Annotated[int, typer.Option("--max-steps", min=1, max=40)] = 8,
+    expansions: Annotated[
+        int,
+        typer.Option(
+            "--expansions",
+            min=1,
+            max=16,
+            help="CADENA alternatives sampled per construction step.",
+        ),
+    ] = 4,
+    temperature: Annotated[
+        float,
+        typer.Option(
+            "--temperature",
+            min=0.01,
+            max=2.0,
+            help="Sampling temperature when more than one expansion is requested.",
+        ),
+    ] = 0.8,
     seed: SeedOption = 20260815,
     dry_run: DryRunOption = False,
 ) -> None:
@@ -569,6 +587,10 @@ def fit_cad_command(
         str(cameras),
         "--max-steps",
         str(max_steps),
+        "--expansions",
+        str(expansions),
+        "--temperature",
+        str(temperature),
         "--seed",
         str(effective_seed),
     ]
@@ -584,6 +606,8 @@ def fit_cad_command(
                     "verification_workspace": str(verification_workspace.resolve()),
                     "cameras": str(cameras.resolve()),
                     "max_steps": max_steps,
+                    "expansions": expansions,
+                    "temperature": temperature,
                     "seed": effective_seed,
                     "writes": False,
                 }

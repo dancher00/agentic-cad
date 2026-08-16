@@ -1,5 +1,6 @@
 {
   "schema_version": "da3-cad-real-rgb-mvs-cadena-v1",
+  "claim_status": "withdrawn; superseded by real-rgb-mvs-cadena-v2.json after internal-edge audit",
   "date": "2026-08-15",
   "claim": "controlled end-to-end real-RGB acceptance case; not SOTA or category-level generalization",
   "hardware": {

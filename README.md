@@ -31,7 +31,7 @@ CUDA PatchMatch stereo
         ↓
 cross-view-confirmed dense points → measured surface
         ↓
-CADENA operation proposals (extrude/revolve/cut/...)
+raw-surface + non-exportable primitive-proxy CADENA proposals
         ↓
 simplest program that still explains the photographs
         ↓
@@ -142,35 +142,44 @@ Exit code `0` means `model.step` exists and passed both the B-Rep kernel and
 source-view gates. Exit code `3` means honest `ABSTAIN`; the rejected
 `candidate.py`, `candidate.step`, preview and full evidence remain for inspection.
 
-## Verified real-RGB result
+## Controlled real-RGB audit
 
-The release path was run end to end on 32 real T-LESS RGB views of object 4.
-Reference geometry was inaccessible during reconstruction and used only after
-the output was frozen.
+The path was run end to end on 32 real T-LESS RGB views each of objects 2 and
+4. Reference geometry was inaccessible during reconstruction and was opened
+only for the later diagnostic.
 
-| Check | Result |
-|---|---:|
-| CUDA PatchMatch (RTX 5080) | 137 s |
-| RGB → measured surface total | 150 s |
-| Cross-view-confirmed points | 96,818 |
-| Mean independent confirmations | 4.88 |
-| Selected CAD program | 1 revolve |
-| Profile simplification | 22 → 9 points |
-| Source-view silhouette IoU | 0.886 |
-| Source-view depth inliers (3%) | 0.957 |
-| OpenCascade result | 1 valid solid, 8 faces |
-| Post-hoc F-score @ 2% diagonal, no ICP | 0.905 |
-| Post-hoc F-score @ 5% diagonal, no ICP | 0.983 |
-| Repeated-process determinism | identical program, report and STEP SHA-256 |
+| Check | Object 2 | Object 4 |
+|---|---:|---:|
+| CAD root | revolve proxy | measured surface |
+| Measured feature | axial revolved cut | axial revolved add |
+| Silhouette / depth | 0.908 / 0.983 | 0.908 / 0.963 |
+| Smooth B-Rep edge precision / recall | 0.547 / 0.885 | 0.333 / 0.715 |
+| Kernel-valid single-solid STEP | yes | yes |
+| Product decision | **ACCEPT** | **ABSTAIN** |
+| Post-hoc v4 → v5 IoU | 0.494 → 0.492 | 0.558 → 0.740 |
+| Post-hoc v4 → v5 CD²×1000 | 3.374 → 3.361 | 6.501 → 2.162 |
 
-The more complex T-LESS object 2 loses a visible opening and is correctly
-rejected by the silhouette gate (`0.860 < 0.870`). This distinction matters: a
-syntactically valid but geometrically wrong STEP is more dangerous than an
-invalid file.
+V5 keeps CADENA as a restricted root proposer and moves residual feature
+recovery into trusted geometry. Signed target-surface points can support a
+bounded axial revolved addition or subtraction. After every kernel-valid
+operation the residual is recomputed; at most two measured rounds are explored.
+The policy cannot invoke either trusted operation. Every prefix must remain one
+valid solid and must not regress across the original 32 calibrated views.
 
-`model.stl` is only a tessellated preview and may show triangle seams. CAD
-validity and topology are defined by `model.step`; the verified real result has
-9 B-Rep faces, not thousands of CAD faces.
+Object 2 retains the observed internal cavity and provisional `ACCEPT`. Object
+4 now recovers the previously missing lower axial extension, but unexplained
+source-image edges preserve `ABSTAIN`; the top pin and terminal flange are not
+claimed as recovered. Independent reruns produced byte-identical programs and
+STEP files for both cases. Exact evidence is in
+[`real-rgb-mvs-cadena-v5.json`](docs/results/real-rgb-mvs-cadena-v5.json).
+
+This validates a repaired mechanism on two controlled objects—not exact reverse
+engineering, category-level validation or SOTA. Fine thread, knurl, scallops
+and small terminals are still outside the demonstrated capability.
+
+`model.stl` is only a tessellated preview. Its triangles are not B-Rep edges;
+CAD validity and topology are defined by `model.step`. The source verifier
+groups coplanar/smooth triangles and scores only smooth-face boundaries.
 
 ## CPU smoke and benchmark
 
@@ -192,10 +201,11 @@ The repository also contains a 10-case, 120-view synthetic regression suite:
 
 ## Current boundary
 
-This is not SOTA on CADBench. Today the accepted path is useful for isolated,
-rigid, mostly matte, single-solid objects that can be described by a short CAD
-program—especially axial parts and simple extrusions. Scale remains canonical
-unless the user supplies a physical dimension.
+This is not SOTA on CADBench. Today this is an auditable research pipeline for
+isolated, rigid, mostly matte, single-solid objects that may be described by a
+short CAD program. The synthetic regression suite is useful; broad real-object
+CAD recovery is not yet established. Scale remains canonical unless the user
+supplies a physical dimension.
 
 Known limitations: glossy or transparent surfaces, very thin walls, tiny
 features below stereo resolution, freeform surfaces, assemblies, joints and

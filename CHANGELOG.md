@@ -38,7 +38,34 @@ while it remains an alpha research system.
   ledger, poster, teaser and PDF.
 
 ### Fixed
+- Iterative signed-residual CAD grammar with trusted axial revolved additions
+  and subtractions, conservative variants, two bounded rounds, and exact
+  learned-root → profile-rewrite → measured-operation provenance with full
+  OpenCascade validation at every accepted prefix.
+- Recover strongly supported axial additions and cavities as trusted,
+  source-view-gated boolean operations after the learned CAD root; CADENA cannot
+  invoke them directly.
+- Controlled real-RGB v5 ledger and visual audit: object 2 retains its measured
+  cavity and provisional `ACCEPT`; object 4 improves post-hoc IoU from 0.5585
+  to 0.7400 while correctly remaining `ABSTAIN` on unexplained image edges.
+- Score smooth B-Rep group boundaries instead of STL tessellation seams, so
+  cylinder facets and coplanar triangles cannot masquerade as CAD topology.
+- Canonicalize proposal and measured renders separately; two independent
+  object-2 processes now emit byte-identical proposal PNG, program and report.
 
+- Replace projection-overfitting residual-component unions with a raw/proxy
+  first-operation A/B. The revolve proxy is conditioning-only, both branches
+  are verified on original views, and arbitrary unions are removed from the runner.
+- Prevent profile simplification from erasing visible CAD topology: rewrites
+  that regress internal-edge precision or recall by more than 0.005 are rejected.
+- Remove only exact zero-area triangles emitted by OpenCascade at analytic STEP
+  seams before evaluator metrics; evaluator v3 performs no geometry repair.
+- Withdraw the T-LESS object-4 false `ACCEPT`: silhouette and sparse depth hid
+  missing internal features. The verifier now audits internal RGB/CAD
+  boundaries; object 4 remains `ABSTAIN` under v4.
+- Validate every CADENA prefix as one OpenCascade-valid solid, allow only
+  bounded RGB-supported topology regressions, archive valid prefixes and
+  backtrack instead of returning the last intermediate construction.
 - Preserve analytic planes, cylinders and cones during world-frame rotation by
   emitting a rigid axis-angle transform instead of a general geometry transform.
 - Render release CAD previews as smooth shaded solids without exposing STL

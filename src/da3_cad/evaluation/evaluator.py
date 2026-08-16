@@ -26,7 +26,7 @@ from da3_cad.evaluation.mesh_iou import (
 from da3_cad.evaluation.surface_sampling import sample_surface_area_weighted
 from da3_cad.evaluation.types import MeshValidation, PerItemMetrics
 
-EVALUATOR_VERSION = "da3-cad-evaluator-v2-centered"
+EVALUATOR_VERSION = "da3-cad-evaluator-v3-centered-occ-seam-cleanup"
 
 
 class EvaluationError(RuntimeError):

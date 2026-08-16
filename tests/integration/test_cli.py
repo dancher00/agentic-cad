@@ -209,6 +209,8 @@ def test_fit_cad_dry_run_does_not_load_model_or_write(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.stdout
     assert "'command': 'fit-cad'" in result.stdout
+    assert "'expansions': 4" in result.stdout
+    assert "'temperature': 0.8" in result.stdout
     assert "'writes': False" in result.stdout
     assert not output.exists()
 
@@ -340,7 +342,7 @@ def test_evaluate_command_writes_centered_reference_metrics(
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["valid_prediction"] is True
     assert payload["iou"]["percent"] == 100.0
-    assert payload["evaluator"]["version"] == "da3-cad-evaluator-v2-centered"
+    assert payload["evaluator"]["version"] == "da3-cad-evaluator-v3-centered-occ-seam-cleanup"
 
 
 def test_geometry_base_dry_run_reports_pinned_model_without_writes(
