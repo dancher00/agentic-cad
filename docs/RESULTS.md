@@ -1,5 +1,40 @@
 # Results and claim boundaries
 
+## Five-object real-RGB photo-to-CAD audit v9
+
+The current product path is RGB-only exhaustive COLMAP -> target-masked
+PatchMatch -> cross-view fusion -> competing CAD roots -> source-view and
+OpenCascade gates. It was run on five physical T-LESS instances, 32 real RGB
+views each, on an RTX 5080. The CAD reference was unavailable until each STEP
+candidate and product decision existed.
+
+| Case | Selected root | Source score | Direct IoU v8 -> v9 | CD2 x1000 v8 -> v9 | Decision |
+|---|---|---:|---:|---:|---:|
+| o02-fixed | measured revolve | 0.909 | 0.297 -> 0.310 | 21.21 -> 22.93 | **ABSTAIN** |
+| o04-fixed | measured revolve | 0.902 | 0.204 -> 0.368 | 48.20 -> 29.40 | **ABSTAIN** |
+| o10 | measured sketch-extrusion | 0.761 | 0.142 -> 0.162 | 14.86 -> 13.37 | **ABSTAIN** |
+| o20-fixed | measured sketch-extrusion | 0.833 | 0.345 -> 0.398 | 20.86 -> 16.03 | **ABSTAIN** |
+| o25 | restricted CADENA | 0.889 | 0.644 -> 0.644 | 4.84 -> 4.84 | **ABSTAIN** |
+
+All five selected programs export one positive-volume, kernel-valid STEP solid.
+None passes every source gate. Their STEP files are therefore retained as
+`candidate.step`, never reported as successful `model.step` outputs.
+
+The mean direct no-alignment IoU improves 0.32627 -> 0.37633. Mean CD2 x1000
+improves 21.9939 -> 17.3131. On o25 the learned proposal remains stronger than
+the measured sketch, demonstrating that measured and learned roots must
+compete. On o04, pooled radial points previously invented an unsupported shell;
+disabling inner-profile inference without per-view point identity raises IoU
+from 0.204 to 0.368.
+
+This is a controlled engineering audit, not SOTA or category-level evidence.
+BOP masks and fixed instance indices are target-selection oracles. T-LESS RGB
+and visual derivatives are not redistributed. DA3 is not used in this dense
+benchmark. The portable evidence is
+[real-photo-e2e-v1.json](results/real-photo-e2e-v1.json); generate the ignored
+seven-page visual report with
+`python scripts/build_real_photo_e2e_report.py`.
+
 ## Controlled real-RGB measured grammar v6
 
 The current path is calibrated RGB → masked PatchMatch → cross-view fusion →

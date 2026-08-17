@@ -23,22 +23,29 @@ tolerances or manufacturing intent.
 ## The working path
 
 ```text
-overlapping RGB + target masks
-        ↓
-calibrated cameras (COLMAP or supplied)
-        ↓
-CUDA PatchMatch stereo
-        ↓
-cross-view-confirmed dense points → measured surface
-        ↓
-raw-surface + non-exportable primitive-proxy CADENA proposals
-        ↓
-simplest program that still explains the photographs
-        ↓
-source-view silhouette + depth gates
-        ↓
-OpenCascade validation → STEP or ABSTAIN
+overlapping RGB + one target mask per view
+        |
+RGB-only calibrated cameras (COLMAP or supplied)
+        |
+masked CUDA PatchMatch stereo
+        |
+cross-view-confirmed raw fused cloud
+        |                         \
+measured revolve/sketch roots      Poisson conditioning render -> CADENA
+        \                         /
+competing editable CAD candidates
+        |
+OpenCascade kernel + original-source-view gates
+        |
+one-solid STEP candidate + ACCEPT or ABSTAIN
 ```
+
+The raw fused cloud is the CAD measurement. The Poisson mesh is useful for a
+stable proposer render, but it is not allowed to replace denser measured
+points. Solid-revolve, arbitrary sketch-extrusion and restricted CADENA
+candidates compete under the same source-view and kernel gates. A pooled point
+cloud cannot prove an inner wall, so the direct revolve root does not invent a
+shell.
 
 Depth Anything 3 remains available as an optional confidence-aware depth prior
 for sparse or textureless views. It is not the camera source in the verified
@@ -99,17 +106,20 @@ correct default for unordered photographs:
 
 ```bash
 da3-cad prepare-photos-sfm photos/ \
+  --masks source_masks/ \
   --output work/sfm \
   --pairing exhaustive
 ```
 
-Then prepare matched RGB, masks and adjusted cameras. Existing source-resolution
-masks can be passed with `--masks`; alternatively use user boxes with the SAM2
-options described in the [photo guide](docs/INTERNET_PHOTO_TO_CAD.md).
+Then prepare matched RGB, masks and adjusted cameras. Source-resolution masks
+are undistorted by `prepare-photos-sfm` with the exact RGB camera model. If they
+are unavailable, omit `--masks`, recover cameras first, then create masks or
+SAM2 boxes for the registered frames as described in the
+[photo guide](docs/INTERNET_PHOTO_TO_CAD.md).
 
 ```bash
 da3-cad prepare-target work/sfm/registered_frames \
-  --masks source_masks/ \
+  --masks work/sfm/registered_masks \
   --cameras work/sfm/cameras.npz \
   --output work/target
 ```
@@ -135,47 +145,56 @@ da3-cad fit-cad work/dense/surface.ply \
   --cadena-checkout data/upstream/cadena \
   --cadena-checkpoint data/checkpoints/cadena/rl \
   --verification-workspace work/dense/mvs \
-  --cameras work/target/cameras.npz
+  --cameras work/target/cameras.npz \
+  --measurements work/dense/fused_cloud.ply
 ```
 
 Exit code `0` means `model.step` exists and passed both the B-Rep kernel and
 source-view gates. Exit code `3` means honest `ABSTAIN`; the rejected
 `candidate.py`, `candidate.step`, preview and full evidence remain for inspection.
 
-## Controlled real-RGB and grammar audit
+## Five-object controlled real-RGB audit
 
-The path was rerun on 32 real T-LESS RGB views each of objects 2 and 4.
-Reference geometry was inaccessible during reconstruction and was opened only
-for the post-hoc diagnostic.
+The current v9 path was rerun on five physical T-LESS instances, with 32 real
+RGB views per object. RGB-only exhaustive COLMAP recovered every camera; masks
+constrained PatchMatch and fusion. The reference CAD mesh was inaccessible
+until after STEP generation and the product decision.
 
-| Check | Object 2 | Object 4 |
-|---|---:|---:|
-| CAD root | revolve proxy | measured surface |
-| Measured feature | axial revolved cut | axial revolved add |
-| Silhouette / depth | 0.910 / 0.983 | 0.908 / 0.963 |
-| Smooth B-Rep edge precision / recall | 0.567 / 0.873 | 0.333 / 0.715 |
-| Kernel-valid single-solid STEP | yes | yes |
-| Product decision | **ACCEPT** | **ABSTAIN** |
-| Post-hoc v5 → v6 IoU | 0.492 → 0.535 | 0.740 → 0.740 |
-| Post-hoc v5 → v6 CD²×1000 | 3.361 → 3.782 | 2.162 → 2.162 |
+| Case | Selected root | Source score | Silhouette / depth | Edge P/R | Direct IoU | Decision |
+|---|---|---:|---:|---:|---:|---:|
+| o02-fixed | measured revolve | 0.909 | 0.876 / 0.972 | 0.436 / 0.673 | 0.310 | **ABSTAIN** |
+| o04-fixed | measured revolve | 0.902 | 0.857 / 0.986 | 0.178 / 0.401 | 0.368 | **ABSTAIN** |
+| o10 | measured sketch-extrusion | 0.761 | 0.693 / 0.887 | 0.232 / 0.174 | 0.162 | **ABSTAIN** |
+| o20-fixed | measured sketch-extrusion | 0.833 | 0.760 / 0.968 | 0.358 / 0.324 | 0.398 | **ABSTAIN** |
+| o25 | restricted CADENA | 0.889 | 0.860 / 0.945 | 0.369 / 0.607 | 0.644 | **ABSTAIN** |
 
-V6 keeps CADENA as a restricted root proposer. Trusted code then recomputes
-the signed measured-surface residual and may fit one of four general
-operations: axial revolved add/cut or arbitrary constant-section planar-profile
-add/cut. At most two operations are explored. CADENA cannot invoke these
-trusted operations, and every accepted prefix must remain one valid solid
-without regressing across the original calibrated views.
+Every run emitted one kernel-valid single-solid candidate STEP, but no case
+passed every frozen source-view gate. That distinction is intentional:
+kernel-valid but visibly wrong CAD is not published as a successful model.
 
-Object 2 retains the measured cavity and improves post-hoc volume IoU by 0.043,
-but its surface Chamfer becomes worse by 0.422; both sides of that trade-off
-are reported. Object 4 is unchanged and remains `ABSTAIN` because its edge
-precision is below the frozen gate. Independent final runs produced identical
-programs and STEP files for both controls; object 4 still had a two-channel-pixel
-difference in a rejected proposal trace, with no product effect. Exact evidence
-is in [`real-rgb-mvs-cadena-v6.json`](docs/results/real-rgb-mvs-cadena-v6.json).
+Compared with the previous candidate selector, mean post-hoc no-alignment IoU
+rose from 0.3263 to 0.3763 and mean CD2 x1000 fell from 21.99 to 17.31.
+The largest fix was o04: pooled radial points had been misread as an inner wall.
+Disabling unsupported shell inference raised IoU from 0.204 to 0.368. These are
+five-object engineering diagnostics, not SOTA or population-level accuracy.
 
-The new planar grammar has a separate deterministic CPU capability test. It
-starts from target-surface samples and a known root B-Rep, not photographs:
+The portable ledger is
+[real-photo-e2e-v1.json](docs/results/real-photo-e2e-v1.json). With the ignored
+T-LESS workspace present, generate the seven-page PDF and overview with:
+
+```bash
+python scripts/build_real_photo_e2e_report.py
+```
+
+T-LESS masks and fixed instance indices are target-selection oracles and are
+disclosed in the ledger. T-LESS RGB and derived renders remain local; they are
+not redistributed. DA3 was not used in these five dense runs.
+
+### Planar grammar capability test
+
+A separate deterministic CPU test isolates the grammar from camera, MVS and
+proposal failures. It starts with target-surface samples and a known root
+B-Rep, not photographs.
 
 | Case | Operation | Exact volume IoU | Valid one-solid STEP |
 |---|---|---:|---:|
@@ -184,18 +203,11 @@ starts from target-surface samples and a known root B-Rep, not photographs:
 | U-like channel | cut | 0.964 | yes |
 | hexagonal channel | cut | 0.986 | yes |
 
-All four case axes are selected correctly; mean exact volume IoU is 0.981. A
-non-constant frustum is rejected, preventing a constant-section fit from
-overclaiming tapered geometry. Reproduce it with
-`python scripts/run_measured_planar_grammar_benchmark.py`; the portable ledger
-is [`measured-planar-grammar-v6.json`](docs/results/measured-planar-grammar-v6.json).
-Generate the ignored four-page visual audit with
-`python scripts/build_real_rgb_cadena_report.py`.
-
-This validates a grammar mechanism and preserves two real controls. It does not
-establish universal photo-to-CAD, real-photo planar-feature accuracy, arbitrary
-feature orientation or SOTA. `model.stl` remains only a tessellated preview;
-CAD topology is defined by `model.step`.
+All four axes are selected correctly; mean exact volume IoU is 0.981. A
+non-constant frustum is rejected. Reproduce it with
+`python scripts/run_measured_planar_grammar_benchmark.py`; the ledger is
+[measured-planar-grammar-v6.json](docs/results/measured-planar-grammar-v6.json).
+This proves a grammar mechanism, not universal photo-to-CAD.
 
 ## CPU smoke and benchmark
 

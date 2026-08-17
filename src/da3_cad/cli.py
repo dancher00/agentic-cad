@@ -712,7 +712,7 @@ def prepare_photos_sfm_command(
     ] = 0.8,
     dry_run: DryRunOption = False,
 ) -> None:
-    """Recover trusted cameras for photos before segmentation and DA3 depth."""
+    """Recover calibrated cameras before segmentation and dense reconstruction."""
 
     if dry_run:
         console.print(
@@ -758,8 +758,8 @@ def prepare_photos_sfm_command(
         console.print(f"[green]Registered masks:[/green] {cameras.registered_masks_dir}")
     console.print(f"[green]SfM report:[/green] {cameras.report_path}")
     console.print(
-        "[cyan]Next:[/cyan] segment the registered frames with prepare-target and pass "
-        "the adjusted cameras.npz to reconstruct."
+        "[cyan]Next:[/cyan] run prepare-target, dense-surface, then fit-cad with "
+        "the adjusted cameras.npz."
     )
 
 

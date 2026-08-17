@@ -1,163 +1,197 @@
-# Интернет-фото → CAD
+# Фотографии -> CAD
 
-Основной маршрут DA3-CAD принимает несколько ракурсов одного неподвижного
-предмета и выдаёт редактируемый CadQuery, один проверенный STEP solid, STL,
-параметры и полный provenance.
+Текущий основной маршрут DA3-CAD принимает несколько согласованных ракурсов
+одного неподвижного предмета и возвращает редактируемый CadQuery/STEP-кандидат
+вместе с честным решением `ACCEPT` или `ABSTAIN`.
+
+Это не восстановление исходного feature tree и не автоматическая метрология.
+Без известного физического размера единицы результата остаются каноническими.
+
+## Контракт входа
+
+Нужны 30-60 резких фотографий одного физического экземпляра:
+
+- предмет и фон неподвижны, перемещается камера;
+- соседние кадры имеют 60-80% перекрытия;
+- есть нижний, средний и верхний пояса ракурсов;
+- присутствуют противоположные стороны, а не только экваториальная дуга;
+- фокус, зум и экспозиция по возможности зафиксированы;
+- для каждого кадра задана бинарная маска выбранного экземпляра.
+
+Пользователь знает, какой предмет он снимает, но не обязан указывать его класс
+или CAD-тип. Маска выбирает физический экземпляр; словарь деталей не
+используется.
+
+Случайные фотографии похожих товаров из интернета обычно не подходят:
+экземпляр, оптика, масштаб и скрытая геометрия могут отличаться. Нужен
+многовидовой набор одного предмета.
+
+## Алгоритм
 
 ```text
-RGB + выбранный target (box или mask)
-    → SAM2 mask → общий target/context crop
-    → DA3-LARGE-1.1 (depth/confidence/K/E)
-    → observed masked depth + trusted fusion + filtered surface
-    → camera coverage + missing-view suggestions
-    → CAD grammar:
-        line/circle sketch + cuts + extrude
-        или axial profile + revolve
-    → безопасная проверка CadQuery
-    → model.py + STEP + STL + отчёты
+несколько RGB + маски выбранного экземпляра
+        |
+exhaustive COLMAP SfM -> калиброванные камеры
+        |
+точное undistort RGB и тех же масок
+        |
+masked CUDA PatchMatch
+        |
+cross-view-confirmed raw fused cloud
+        |                         \
+измеренные revolve/sketch roots    Poisson render -> CADENA proposals
+        \                         /
+конкурирующие CadQuery-кандидаты
+        |
+проекция обратно во все исходные виды
+        |
+silhouette + depth + edge gates
+        |
+OpenCascade: один valid solid -> STEP candidate
+        |
+ACCEPT или ABSTAIN
 ```
 
-## Как снимать
+Ключевой контракт: сырое слитое облако является входом измерительного
+CAD-фиттера. Poisson-поверхность менее плотная и может быть не watertight; она
+используется как стабильный render для proposer, но не заменяет исходные точки.
 
-Оптимальный практический вход — 12–24 кадра:
+Прямые корневые гипотезы не являются классами деталей:
 
-- один и тот же физический объект, геометрия не меняется;
-- объект целиком виден и находится примерно в центре;
-- соседние ракурсы имеют большое перекрытие;
-- камера обходит объект, зум и фокус фиксированы;
-- есть боковые, верхние и несколько нижних наклонных видов;
-- нет сильного motion blur, пересветов и движущихся частей.
+- `revolve`: произвольный измеренный осевой профиль и полный оборот;
+- `sketch-extrusion`: произвольный замкнутый профиль из линий/окружности и
+  extrusion вдоль лучшей оси;
+- restricted CADENA: дополнительный learned-кандидат.
 
-Случайные фотографии похожей модели из разных магазинов не образуют корректную
-многовидовую последовательность: экземпляры, объективы и скрытые варианты
-геометрии могут различаться. Сначала нужно отобрать согласованный набор одного
-объекта.
+Все кандидаты проходят одинаковые kernel/source-view gates. У pooled cloud нет
+per-view identity, поэтому прямой revolve не имеет права придумывать shell или
+внутреннюю стенку. Такая топология требует отдельного многовидового
+доказательства.
 
-## Выбор target и запуск
+## Запуск
 
-Пользователь или робот знает, какой физический предмет выбран в кадре. Он не
-обязан знать класс или CAD-тип предмета: достаточно loose bounding box либо
-готовой маски для каждого вида. Сегментация поэтому выполняется до DA3.
-
-```bash
-da3-cad prepare-target photos/ \
-  --boxes boxes.json \
-  --output captures/object \
-  --segment-device cuda
-
-da3-cad doctor captures/object/images
-da3-cad reconstruct captures/object/images \
-  --output outputs/object \
-  --config configs/internet_photo_masked.yaml \
-  --masks captures/object/masks \
-  --accept-noncommercial-weights
-```
-
-`boxes.json` хранит по одному `xyxy` для каждого имени изображения в
-`normalized-exif-corrected-xyxy` или `pixel-exif-corrected-xyxy`. Это указание
-экземпляра для SAM2, а не class label и не автоматический detector.
-
-Если источник уже дал точные PNG-маски с теми же stem:
+Сначала восстанавливаются камеры по полным исходным кадрам. Для
+неупорядоченных фотографий нужен exhaustive matching. Переданные source masks
+undistort-ятся той же моделью камеры, что и RGB:
 
 ```bash
-da3-cad prepare-target photos/ \
+da3-cad prepare-photos-sfm photos/ \
   --masks source_masks/ \
-  --output captures/object \
-  --selection-source user-mask
+  --output work/sfm \
+  --pairing exhaustive
 ```
 
-`prepare-target` сохраняет маску, выбирает одинаковый размер crop для всех видов,
-оставляет реальный контекст и не растягивает отдельные изображения. При передаче
-исходного `--cameras cameras.npz` intrinsics переводятся в координаты crop;
+Если source masks ещё нет, `--masks` можно опустить. После SfM создайте masks
+или SAM2 boxes непосредственно для `registered_frames/`; в следующей команде
+передайте соответствующий `--masks` или `--boxes`.
 
-extrinsics не меняются.
-## Камеры и масштаб
-
-Внешние камеры обычно повышают устойчивость:
+Затем объект вырезается уже в зарегистрированных undistorted кадрах:
 
 ```bash
-da3-cad reconstruct captures/object/images \
-  --output outputs/object-calibrated \
-  --config configs/internet_photo_masked.yaml \
-  --masks captures/object/masks \
-  --cameras captures/object/cameras.npz \
-  --accept-noncommercial-weights
+da3-cad prepare-target work/sfm/registered_frames \
+  --masks work/sfm/registered_masks \
+  --cameras work/sfm/cameras.npz \
+  --output work/target
 ```
 
-COLMAP и any-view DA3 не дают гарантированного физического масштаба. Чтобы
-получить миллиметры, передайте один действительно измеренный именованный размер:
+Строится измеренная геометрия:
 
 ```bash
---known-dimension extrusion_length=120mm
+da3-cad dense-surface work/target/images \
+  --masks work/target/masks \
+  --cameras work/target/cameras.npz \
+  --output work/dense \
+  --mvs-python .venv-mvs/bin/python
 ```
 
-Без такого свидетельства результат честно помечается как
-`canonical-model-unit`.
+И затем CAD:
 
-## Что происходит после RGB
+```bash
+da3-cad fit-cad work/dense/surface.ply \
+  --measurements work/dense/fused_cloud.ply \
+  --output work/cad \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace work/dense/mvs \
+  --cameras work/target/cameras.npz
+```
 
-1. Пользователь или робот отмечает выбранный экземпляр box или mask.
-2. SAM2 преобразует box в full-resolution mask; сомнительные виды уточняются
-   детерминированными positive/negative prompts, holes сохраняются.
-3. Один общий размер crop сохраняет projective scale между видами и контекст;
-   маски переносятся в него без resize.
-4. DA3-LARGE-1.1 выдаёт для каждого подготовленного вида z-depth, confidence,
-   `K` и world-to-camera `E`.
-5. Все finite positive depth-пиксели внутри target mask образуют observed channel;
-   он остаётся плотной диагностикой и не называется очищенной геометрией.
-6. Отдельный confidence gate образует trusted fusion для профиля и apertures;
-   outlier/multi-view consistency строит filtered surface для ориентации и score.
-7. Каноническая ориентация и scale channel вычисляются детерминированно; фильтр
-   не считается более полным описанием объекта, чем raw evidence.
-8. Ветка `extrude` проверяет ось, восстанавливает line/circle profile и принимает
-   cut по повторяющейся дыре в masks либо по RGB-эллипсу, внутри которого DA3
-   depth не объясняется локальной плоскостью. Raw 3D void остаётся предпочтительным
-   измерением, но заполненная foreground-mask больше не стирает видимое отверстие.
-9. Ветка `revolve` сначала проверяет raw 3D radial surface. После её отказа outer
-   profile можно взять из нескольких согласованных silhouettes. Внутренний
-   RGB-эллипс требует повторяемого концентрического обода и торцевых ракурсов.
-   Обода распределяются между двумя концами силуэта, после чего сравниваются
-   `solid`, две глухие полости и `through`; сквозной вариант разрешён только при
-   evidence на обоих концах от достаточно разнесённых направлений камер.
-10. Направления камер кластеризуются; при недостаточном покрытии отчёт предлагает
-    недостающие направления, а одинаковые соседние video frames не считаются новыми видами.
-11. CAD surface проецируется обратно в masks/depth и получает provenance
-    measured, weakly measured, unobserved или contradicted. Достроение допустимо
-    только при недостаточном покрытии и отсутствии видимого противоречия.
-12. STEP принимается только как один solid с конечным положительным объёмом;
-    иначе pipeline честно abstains без template или скрытого fallback.
+Код возврата `0` означает, что `model.step` прошёл kernel и source-view
+гейты. Код `3` означает `ABSTAIN`: сохраняются `candidate.py`,
+`candidate.step`, preview и причины отказа.
 
-## Пять реально проверенных интернет-объектов
+## Что проверяется
 
-Закреплены пять разрешённых Google Objectron videos. Для каждого извлекается
-пул из 40 кадров: DA3 оценивает позы всего пула, mask-quality gate удаляет
-испорченные сегментации, затем выбираются 24–40 разных ракурсов и выбранный
-subset повторно проходит DA3 перед fusion/CAD.
+До CAD-фиттинга виды без достаточной измеренной глубины исключаются из
+верификации: требуется минимум 128 depth pixels и покрытие минимум 10% target
+mask. Это не ослабляет пороги кандидата; плохой depth-view просто не считается
+измерением.
 
-| Объект | Кадры | Результат |
-|---|---:|---|
-| Книга | 40 → 24 | **ACCEPT**, `extrude`; measured 68,7%, contradicted 9,7% |
-| Цилиндрическая бутылка | 40 → 40 | STEP candidate, **UNSAFE**; contradicted 42,4% |
-| Камера | 40 → 40 | **ABSTAIN**: нужны составные body + lens |
-| Кружка с ручкой | 40 → 40 | **ABSTAIN**: нужны shell + handle + union |
-| Открытый ноутбук | 40 → 39 | **ABSTAIN**: пустой mask удалён; нужны две пластины и hinge |
+Финальный кандидат должен пройти:
 
-Это integration gate, не benchmark точности: reference CAD и физического scale
-нет. Из 200 pool-кадров 183 использованы в reconstruction pass. Два прогона
-создали kernel-valid STEP, product gate принимает только книгу. Новые виды не
-дали дополнительных ACCEPT, но убрали ложный coarse-extrude ноутбука и показали,
-что pose diversity нельзя подменять surface provenance. Полный ledger:
-[`results/real-photo-v3.json`](results/real-photo-v3.json).
-Исторический visual-hull run остаётся в [`RESULTS.md`](RESULTS.md).
+- mean silhouette IoU не ниже 0.87;
+- depth inlier fraction при 3% не ниже 0.90;
+- при наличии внутренних RGB-границ: edge precision не ниже 0.45 и recall не
+  ниже 0.12;
+- ровно один положительный OpenCascade solid;
+- `isValid() == true` и непустой STEP export.
 
-## Что пока нельзя обещать
+Валидный B-Rep может быть геометрически неверным. Поэтому kernel-valid STEP без
+source-view соответствия остаётся `candidate.step`, а не успешным
+`model.step`.
 
-- точную скрытую геометрию из одного фото;
-- исходное дерево операций и design intent;
-- надёжные отверстия, карманы, фаски, скругления и паттерны для любой детали;
-- резьбы, допуски, посадки, GD&T, материалы и сборки;
-- миллиметры без калибровки или известного размера;
-- производственную точность без сравнения с reference CAD/метрологией.
+Линии и треугольники в STL-preview не являются CAD-топологией. Авторитетный
+результат -- STEP и его kernel report.
 
-RTX 5080 16 ГБ достаточна для текущего inference. H100 полезна для будущего
-обучения распознавания CAD-features и больших benchmark-прогонов.
+## Роль DA3
+
+DA3 больше не является источником камер или основной метрической геометрии.
+В dense-маршруте камеры даёт COLMAP, а глубину -- calibrated PatchMatch.
+
+DA3 сохраняется как экспериментальный confidence-aware prior для sparse или
+textureless 2DGS. Он выключен по умолчанию, пока held-out multi-seed тесты не
+покажут устойчивый выигрыш. Подробности:
+[BREPGAUSSIAN_DA3.md](BREPGAUSSIAN_DA3.md).
+
+## Проверенный real-RGB аудит
+
+Пять физических T-LESS объектов прогнаны по 32 RGB-кадрам каждый:
+
+| Case | Выбранный root | Direct IoU | Решение |
+|---|---|---:|---:|
+| o02-fixed | measured revolve | 0.310 | **ABSTAIN** |
+| o04-fixed | measured revolve | 0.368 | **ABSTAIN** |
+| o10 | measured sketch-extrusion | 0.162 | **ABSTAIN** |
+| o20-fixed | measured sketch-extrusion | 0.398 | **ABSTAIN** |
+| o25 | restricted CADENA | 0.644 | **ABSTAIN** |
+
+Все пять STEP-кандидатов kernel-valid и содержат один solid, но каждый нарушает
+хотя бы один frozen source-view gate. Средний no-alignment IoU вырос с 0.3263
+до 0.3763; это инженерный прогресс, а не готовое универсальное решение и не
+SOTA.
+
+BOP masks и fixed instance index являются disclosed target-selection oracles.
+Reference CAD открывался только post-hoc. Ledger:
+[results/real-photo-e2e-v1.json](results/real-photo-e2e-v1.json). Локальный
+семистраничный отчёт строится командой:
+
+```bash
+python scripts/build_real_photo_e2e_report.py
+```
+
+T-LESS RGB и производные изображения не распространяются репозиторием.
+
+## Текущие ограничения
+
+Нельзя обещать:
+
+- исходное дерево операций, design intent, допуски, GD&T и посадки;
+- миллиметры без известного размера или внешней метрической калибровки;
+- скрытые полости и обратную сторону при отсутствии наблюдений;
+- надёжные резьбы, мелкие фаски/скругления и элементы ниже stereo resolution;
+- прозрачные, зеркальные, очень тонкие или движущиеся детали;
+- assemblies, joints и несколько независимо движущихся тел;
+- universal photo-to-CAD или SOTA по пяти объектам.
+
+RTX 5080 16 GB достаточна для текущего inference. H100 ускоряет большие
+эксперименты, но не исправляет неполные ракурсы или неверную грамматику.

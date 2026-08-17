@@ -79,10 +79,33 @@ da3-cad fit-cad outputs/dense/surface.ply \
   --cadena-checkpoint data/checkpoints/cadena/rl \
   --verification-workspace outputs/dense/mvs \
   --cameras cameras.npz \
+  --measurements outputs/dense/fused_cloud.ply \
   --max-steps 8 \
   --expansions 4 \
   --seed 20260815
 ```
+
+### Current five-object v9 audit
+
+The current controlled workspace uses the same `fit-cad` command with
+`--measurements dense/fused_cloud.ply` for all five cases. Each case has 32
+real RGB images, one fixed physical instance, RGB-only exhaustive COLMAP
+cameras and a masked PatchMatch workspace. DA3 is not used.
+
+After the five ignored run directories exist, regenerate the portable ledger,
+seven-page PDF and overview:
+
+```bash
+python scripts/build_real_photo_e2e_report.py
+```
+
+Expected aggregate: 5/5 kernel-valid single-solid STEP candidates, 0 ACCEPT,
+5 ABSTAIN, mean direct IoU 0.376325 and mean CD2 x1000 17.3131. The script
+reads T-LESS CAD only for post-hoc metrics/visuals; reconstruction reports
+declare `reference_geometry_access: false`. Exact case inputs, selected
+instance indices, source scores and v8/v9 metrics are frozen in
+[real-photo-e2e-v1.json](results/real-photo-e2e-v1.json). T-LESS media and the
+generated visual report remain ignored.
 
 The historical controlled 32-view object-4 run records:
 

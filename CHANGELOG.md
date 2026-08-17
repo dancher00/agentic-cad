@@ -7,6 +7,13 @@ while it remains an alpha research system.
 
 ### Added
 
+- Five-object real-RGB v9 audit with 32 registered views per object, a portable
+  no-leakage ledger and a reproducible seven-page local visual report. All five
+  single-solid STEP candidates remain honestly `ABSTAIN` under frozen
+  source-view gates.
+- Exact source-mask undistortion in `prepare-photos-sfm` and direct measured
+  revolve/sketch roots competing with the restricted CADENA proposal.
+
 - Trusted arbitrary constant-section planar-profile additions and cuts recovered
   from signed measured-surface residuals, with three-axis search, attachment,
   exact one-solid validation and bounded two-round composition.
@@ -47,6 +54,11 @@ while it remains an alpha research system.
   ledger, poster, teaser and PDF.
 
 ### Fixed
+
+- Use the cross-view-confirmed raw fused cloud for CAD measurements while
+  retaining Poisson only as a conditioning render.
+- Stop CADENA rendering from mutating/recentering its input proxy in place and
+  forbid pooled-point revolve roots from inventing unsupported inner shells.
 
 - Canonicalize full-resolution CADENA proxy renders with deterministic seeding,
   64-level quantization and a 3×3 isolated-spur filter, preventing a single VTK

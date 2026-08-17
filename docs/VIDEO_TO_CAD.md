@@ -1,124 +1,113 @@
 # Video to CAD
 
-The supported capture model is a stationary rigid object observed by a moving
-camera. DA3-CAD first selects sharp, visually and temporally diverse key frames;
-it can then recover cameras with sequential COLMAP and feed those cameras back
-into DA3-LARGE-1.1.
+Поддерживаемая съёмка: один неподвижный жёсткий предмет, вокруг которого
+движется RGB-камера. Видео сначала превращается в набор резких перекрывающихся
+кадров; дальше используется тот же COLMAP/MVS/CAD путь, что и для фотографий.
 
-## Capture recommendations
+## Как снимать
 
-- Complete a slow orbit rather than a fast pan.
-- Keep 60–80% overlap between neighbouring views.
-- Lock zoom, focus, exposure, and white balance when possible.
-- Keep the object and background static.
-- Include elevated and low oblique views.
-- Avoid motion blur, reflections, hands, and moving articulation.
-- Add removable background texture when the object and scene are featureless.
+- сделайте медленный полный обход вместо быстрого pan;
+- держите 60–80% overlap соседних кадров;
+- добавьте верхние и нижние косые ракурсы;
+- по возможности зафиксируйте zoom, focus, exposure и white balance;
+- предмет, фон и освещение должны оставаться неподвижными;
+- избегайте motion blur, рук, бликов и движущихся частей.
 
-A turntable is not supported by the current SfM contract because the background
-is static while the object moves. Record a moving camera instead.
+Обычный turntable не соответствует текущему SfM-контракту: камера и фон
+неподвижны, а объект движется. Нужен moving-camera capture либо отдельный
+object-centric pose estimator.
 
-## Prepare video
+## 1. Извлечь кадры и камеры
 
 ```bash
 da3-cad prepare-video object.mp4 \
-  --output captures/object \
-  --views 24
+  --output work/video \
+  --views 32
 ```
 
-The output includes:
+`prepare-video` выбирает резкие и визуально/временно разнообразные кадры,
+запускает sequential COLMAP, undistort и записывает provenance:
 
 ```text
-captures/object/
+work/video/
 ├── capture.json
-├── frames/                       selected original frames
+├── frames/
 └── colmap/
     ├── camera_recovery.json
     ├── cameras.npz
-    └── registered_frames/        undistorted, registered RGB inputs
+    └── registered_frames/
 ```
 
-Frame candidates are sampled uniformly in time. Selection starts from a
-high-quality early frame and greedily fills appearance and temporal gaps. Every
-selected frame records source index, timestamp, blur/exposure score, and SHA-256.
+Для видео sequential pairing корректен, потому что кадр N перекрывается с
+N+1. Для отдельной неупорядоченной фотосъёмки используйте
+`prepare-photos-sfm --pairing exhaustive`.
 
-COLMAP uses CPU SIFT, sequential overlap matching, incremental mapping, and
-undistortion. The camera bundle records registration completeness, sparse-point
-count, reprojection error, camera-centre rank, and arbitrary scale status.
+## 2. Выбрать экземпляр
 
-To extract frames without COLMAP:
+Создайте masks или boxes уже для `registered_frames/`. Пользователь знает,
+какой физический экземпляр выбран; category label CAD-грамматике не нужен.
 
 ```bash
-da3-cad prepare-video object.mp4 \
-  --output captures/object-unposed \
-  --views 16 \
-  --no-recover-cameras
+da3-cad prepare-target work/video/colmap/registered_frames \
+  --masks registered_masks/ \
+  --cameras work/video/colmap/cameras.npz \
+  --output work/target
 ```
 
-## Select the target and reconstruct
+С boxes вместо masks можно включить SAM2:
 
 ```bash
-da3-cad prepare-target captures/object/colmap/registered_frames \
+da3-cad prepare-target work/video/colmap/registered_frames \
   --boxes boxes.json \
-  --cameras captures/object/colmap/cameras.npz \
-  --output captures/object/target \
+  --cameras work/video/colmap/cameras.npz \
+  --output work/target \
   --segment-device cuda
-
-da3-cad reconstruct captures/object/target/images \
-  --output outputs/object \
-  --config configs/internet_photo_masked.yaml \
-  --masks captures/object/target/masks \
-  --cameras captures/object/target/cameras.npz \
-  --accept-noncommercial-weights
 ```
 
-The user or robot is assumed to know which instance it selected. Per-view boxes
-or tracked masks express that choice without requiring a category label.
-`prepare-target` runs before DA3, preserves target support and genuine context,
-and translates intrinsics after cropping. With source-resolution masks, replace
-`--boxes boxes.json` with `--masks source_masks/`; SAM2 is not loaded.
-
-For an unposed capture, apply the same target preparation to `frames/`, omit
-`--cameras`, and let DA3 estimate cameras. The legacy post-DA3 automatic mask is
-kept only for simple central-object scenes.
-
-## Scale
-
-COLMAP coordinates are defined only up to a similarity transform. A named
-measurement can supply scale:
+## 3. Построить измеренную поверхность
 
 ```bash
---known-dimension extrusion_length=120mm
+da3-cad dense-surface work/target/images \
+  --masks work/target/masks \
+  --cameras work/target/cameras.npz \
+  --output work/dense \
+  --mvs-python .venv-mvs/bin/python
 ```
 
-The value is transferred only after the CAD backend emits that exact parameter.
-Otherwise the run must remain in canonical units.
+Авторитетное измерение — `work/dense/fused_cloud.ply`. Poisson
+`surface.ply` нужен как conditioning render и может быть визуально менее
+плотным.
 
-## Reproducible Internet example
-
-The five-object Objectron benchmark downloader prints and requires the dataset
-terms, checks every fixed video hash, and writes only to ignored capture storage:
+## 4. Построить и проверить CAD
 
 ```bash
-python scripts/fetch_real_object_benchmark.py --dry-run
-python scripts/fetch_real_object_benchmark.py \
-  --accept-license c-uda-1.0
+da3-cad fit-cad work/dense/surface.ply \
+  --measurements work/dense/fused_cloud.ply \
+  --output work/cad \
+  --cadena-checkout data/upstream/cadena \
+  --cadena-checkpoint data/checkpoints/cadena/rl \
+  --verification-workspace work/dense/mvs \
+  --cameras work/target/cameras.npz
 ```
 
-Each source is stored as
-`captures/real_objects/raw/<object>/video.MOV`. The matching annotation supplies
-only projected target boxes; it is neither a pixel mask nor CAD ground truth.
-Run `prepare-video`, import/track boxes, `prepare-target`, and `reconstruct` as
-above. The checked-in [current v2 result ledger](results/real-photo-v3.json) contains
-exact source IDs and both video/annotation hashes, preprocessing contracts,
-failures and metrics, but no third-party video or derived frame.
+Код возврата 0 означает accepted `model.step`. Код 3 означает `ABSTAIN`:
+`candidate.step` и причины отказа сохраняются для аудита.
 
-## Common failures
+DA3 в этом dense video path не даёт ни камеры, ни основную глубину. Его
+экспериментальная роль — confidence-aware prior для sparse/textureless 2DGS; по
+умолчанию он выключен.
 
-- Few registered frames: increase overlap, sharpness, and background features.
-- Rank-deficient cameras: add elevation change and complete more of the orbit.
-- Wrong mask: provide explicit masks; do not treat input IoU as ground truth.
-- Filled cavities: add views that directly observe the concavity; neither DA3
-  surface fusion nor a sketch grammar can infer invisible geometry.
-- Wrong dimensions: add calibrated metric evidence; camera recovery alone does
-  not establish millimetres.
+## Масштаб и типичные ошибки
+
+COLMAP восстанавливает геометрию с неизвестным similarity scale. До добавления
+известного размера CAD остаётся в canonical units.
+
+- мало registered frames → снимайте медленнее, добавьте texture и overlap;
+- не видны верх/низ → добавьте высотные пояса;
+- заполнена полость → снимите вид, прямо наблюдающий её;
+- неверный mask → исправьте target tracking;
+- неверные размеры → добавьте известную длину или внешнюю metric calibration;
+- много кадров с одной дуги → это всё ещё плохое camera coverage.
+
+Подробности фото-пути:
+[INTERNET_PHOTO_TO_CAD.md](INTERNET_PHOTO_TO_CAD.md).

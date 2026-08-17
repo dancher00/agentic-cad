@@ -71,32 +71,43 @@ pixel must reproject into at least one independently measured neighbour within
 then enter deterministic voxel averaging. The report records per-view input and
 acceptance counts, total fused voxels and mean independent confirmations.
 
-Poisson meshing converts the confirmed points into a measured surface for the
-CAD proposer. It is not treated as ground truth and its watertightness is
-reported honestly. It may contain missing patches or smooth sub-resolution
-features.
+Poisson meshing converts the confirmed points into a stable conditioning
+surface. It is not the CAD measurement, is not treated as ground truth and has
+its watertightness reported honestly. The denser raw fused cloud remains the
+input to measured CAD fitting; Poisson may contain missing patches or smooth
+sub-resolution features.
 
 ## CAD program inference
 
-The packaged direct runner loads a local CADENA-RL checkpoint on one GPU. Each
-model response must parse as exactly one assignment of the form
-`r = operation(...)`. Only the published operation allowlist is accepted;
-arguments must be literals or the current solid. Invalid source is never
-executed.
+The direct runner treats CADENA-RL as one candidate generator, not as the
+sole geometry path. If the local checkpoint is present, each model response
+must parse as exactly one assignment of the form `r = operation(...)`. Only the
+published operation allowlist is accepted; arguments must be literals or the
+current solid. Invalid source is never executed.
 
-Candidate programs execute through CADENA's CadQuery DSL. Selection differs
-from upstream target-mesh evaluation: it does not use IoU to unavailable CAD.
-Each candidate is transformed back to measured coordinates and rendered into
-the calibrated source views.
+Before learned sampling, trusted code fits two direct hypotheses to the raw
+cross-view-confirmed cloud:
 
-For the first operation, the policy sees two branches. One is the original
-measured-surface render. The other is a deterministic revolve proxy admitted
-only when measured 3D points support its axis, angular coverage and surface
-residual. The proxy is a denoising conditioner, not a reconstruction: it is
-never eligible for export, and both branches are scored against the original
-RGB, masks and measured depths. Unsupported connected-residual extrusions are
-not part of the direct runner because they can paint several projections with
-incorrect 3D volume.
+- a solid 360-degree revolve with an arbitrary measured axial profile;
+- an arbitrary line/circle sketch extruded along its best measured axis.
+
+These are grammar hypotheses, not named part classes. They are eligible for
+selection only after producing exactly one kernel-valid B-Rep and being rendered
+back into every admitted source view. CADENA proposals enter the same pool and
+use the same gates. This competition matters: measured roots win four of five
+current real-RGB controls, while the learned root remains stronger on o25.
+
+The raw fused cloud is the measurement input for both direct roots. The Poisson
+mesh is retained as a stable conditioning render for CADENA and for residual
+visualization; its lower density or non-watertight boundary cannot replace the
+raw evidence. Rendering always receives a copy because CADENA's plotter
+recenters mesh inputs in place.
+
+Pooled proxy points do not preserve per-view identity. Therefore direct revolve
+roots set `shell_enabled=False`: radial quantiles may support an exterior but
+cannot prove an inner wall. Shell or through-cavity topology requires
+view-preserving mask/depth evidence in a later measured operation. This rule
+removed a false o04 cavity without weakening any acceptance threshold.
 
 Every operation must first produce exactly one positive-volume, kernel-valid
 B-Rep. A prefix is retained when its silhouette/depth score improves by at
@@ -219,7 +230,8 @@ model.step               authoritative B-Rep
 model.stl                tessellated preview
 cadena_report.json       trajectory, scores, thresholds and kernel audit
 target.png               measured-surface render used by the proposer
-proposal_proxy.png       optional non-exportable primitive conditioning render
+proposal_proxy.png       measured revolve preview / optional conditioner
+sketch_extrusion_proxy.png measured sketch-extrusion preview
 step_*_input.png         iterative proposer diagnostics
 ```
 
