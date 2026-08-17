@@ -548,6 +548,24 @@ def fit_cad_command(
             help="Exact calibrated cameras used by dense-surface.",
         ),
     ],
+    measurements: Annotated[
+        Path | None,
+        typer.Option(
+            "--measurements",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Raw fused_cloud.ply used by trusted measured feature fitting.",
+        ),
+    ] = None,
+    maximum_measurement_points: Annotated[
+        int,
+        typer.Option(
+            "--maximum-measurement-points",
+            min=256,
+            help="Deterministic cap for raw points passed to measured CAD fitting.",
+        ),
+    ] = 10_000,
     max_steps: Annotated[int, typer.Option("--max-steps", min=1, max=40)] = 8,
     expansions: Annotated[
         int,
@@ -585,6 +603,8 @@ def fit_cad_command(
         str(verification_workspace),
         "--cameras",
         str(cameras),
+        "--maximum-measurement-points",
+        str(maximum_measurement_points),
         "--max-steps",
         str(max_steps),
         "--expansions",
@@ -594,12 +614,18 @@ def fit_cad_command(
         "--seed",
         str(effective_seed),
     ]
+    if measurements is not None:
+        command.extend(["--measurements", str(measurements)])
     if dry_run:
         console.print(
             Pretty(
                 {
                     "command": "fit-cad",
                     "surface": str(surface.resolve()),
+                    "measurements": (
+                        str(measurements.resolve()) if measurements is not None else None
+                    ),
+                    "maximum_measurement_points": maximum_measurement_points,
                     "output": str(output_dir.resolve()),
                     "cadena_checkout": str(cadena_checkout.resolve()),
                     "cadena_checkpoint": str(cadena_checkpoint.resolve()),
@@ -644,6 +670,16 @@ def prepare_photos_sfm_command(
     output_dir: Annotated[
         Path, typer.Option("--output", "-o", help="New COLMAP camera-recovery directory.")
     ],
+    masks_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--masks",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Optional source-resolution PNG masks to undistort with registered photos.",
+        ),
+    ] = None,
     pairing: Annotated[
         Literal["exhaustive", "sequential"],
         typer.Option(
@@ -685,6 +721,7 @@ def prepare_photos_sfm_command(
                     "command": "prepare-photos-sfm",
                     "photos": str(photos_dir.resolve()),
                     "output": str(output_dir.resolve()),
+                    "masks": str(masks_dir.resolve()) if masks_dir is not None else None,
                     "pairing": pairing,
                     "device": device,
                     "camera_model": camera_model,
@@ -701,6 +738,7 @@ def prepare_photos_sfm_command(
             cameras = recover_colmap_cameras(
                 photos_dir,
                 output_dir,
+                masks_dir=masks_dir,
                 camera_model=camera_model,
                 pairing=pairing,
                 device=device,
@@ -716,6 +754,8 @@ def prepare_photos_sfm_command(
         raise typer.Exit(1) from error
     console.print(f"[green]Registered frames:[/green] {cameras.registered_frames_dir}")
     console.print(f"[green]Camera bundle:[/green] {cameras.camera_bundle_path}")
+    if cameras.registered_masks_dir is not None:
+        console.print(f"[green]Registered masks:[/green] {cameras.registered_masks_dir}")
     console.print(f"[green]SfM report:[/green] {cameras.report_path}")
     console.print(
         "[cyan]Next:[/cyan] segment the registered frames with prepare-target and pass "

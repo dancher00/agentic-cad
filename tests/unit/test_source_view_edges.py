@@ -7,6 +7,7 @@ import trimesh
 from da3_cad.evaluation.source_view_verifier import (
     SourceViewScore,
     _appearance_edges,
+    _depth_view_admission,
     _rendered_geometry_edges,
     _smooth_face_groups,
     appearance_topology_regressions,
@@ -102,3 +103,37 @@ def test_cosmetic_rewrite_cannot_erase_visible_topology() -> None:
         baseline,
         _score(precision=0.57, recall=0.076),
     )
+
+
+def test_depth_view_admission_rejects_unmeasured_patchmatch_view() -> None:
+    mask = np.ones((20, 20), dtype=np.bool_)
+    depth = np.zeros((20, 20), dtype=np.float32)
+    depth[:5, :5] = 2.0
+
+    admitted, report = _depth_view_admission(
+        depth,
+        mask,
+        minimum_pixels=128,
+        minimum_mask_fraction=0.10,
+    )
+
+    assert not admitted
+    assert report["measured_depth_pixels"] == 25
+    assert report["measured_mask_fraction"] == 0.0625
+    assert len(report["reasons"]) == 2
+
+
+def test_depth_view_admission_accepts_cross_view_confirmed_depth() -> None:
+    mask = np.ones((20, 20), dtype=np.bool_)
+    depth = np.full((20, 20), 2.0, dtype=np.float32)
+
+    admitted, report = _depth_view_admission(
+        depth,
+        mask,
+        minimum_pixels=128,
+        minimum_mask_fraction=0.10,
+    )
+
+    assert admitted
+    assert report["measured_depth_pixels"] == 400
+    assert report["reasons"] == []

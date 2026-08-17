@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
+from PIL import Image
 
 from da3_cad.geometry.fusion import ScaleChannel
 from da3_cad.geometry.unprojection import as_homogeneous_extrinsic
@@ -185,6 +186,7 @@ class ColmapCameraResult:
     report_path: Path
     bundle: CameraBundle
     report: dict[str, object]
+    registered_masks_dir: Path | None = None
 
 
 def _pycolmap() -> Any:
@@ -262,10 +264,39 @@ def _write_camera_recovery_report(path: Path, report: dict[str, object]) -> None
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _undistort_registered_mask(
+    pycolmap: Any,
+    *,
+    options: Any,
+    source: Path,
+    destination: Path,
+    camera: Any,
+) -> None:
+    bitmap = pycolmap.Bitmap.read(str(source), False)
+    if bitmap is None:
+        raise RuntimeError(f"pycolmap could not read source mask: {source}")
+    if int(bitmap.width) != int(camera.width) or int(bitmap.height) != int(camera.height):
+        raise ValueError(
+            "source mask dimensions must match the COLMAP source camera: "
+            f"{source} is {bitmap.width}x{bitmap.height}, "
+            f"expected {camera.width}x{camera.height}"
+        )
+    undistorted, _ = pycolmap.undistort_image(options, bitmap, camera)
+    values = np.asarray(undistorted.to_array())
+    if values.ndim == 3:
+        values = values[..., 0]
+    if values.ndim != 2:
+        raise RuntimeError(f"undistorted mask is not a grayscale image: {source}")
+    binary = np.where(values >= 128, 255, 0).astype(np.uint8)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(binary).save(destination)
+
+
 def recover_colmap_cameras(
     frames_dir: Path,
     output_dir: Path,
     *,
+    masks_dir: Path | None = None,
     camera_model: str = "SIMPLE_RADIAL",
     pairing: ColmapPairing = "sequential",
     device: ColmapDevice = "auto",
@@ -283,6 +314,20 @@ def recover_colmap_cameras(
     )
     if len(image_names) < 3:
         raise ValueError("COLMAP recovery requires at least three frames")
+    resolved_masks_dir: Path | None = None
+    if masks_dir is not None:
+        resolved_masks_dir = masks_dir.resolve()
+        if not resolved_masks_dir.is_dir():
+            raise ValueError(f"masks directory does not exist: {resolved_masks_dir}")
+        missing_masks = [
+            name
+            for name in image_names
+            if not (resolved_masks_dir / Path(name).with_suffix(".png").name).is_file()
+        ]
+        if missing_masks:
+            raise ValueError(
+                f"source masks must include one PNG per photo stem; missing {missing_masks[:5]}"
+            )
     if pairing not in {"sequential", "exhaustive"}:
         raise ValueError(f"unsupported COLMAP pairing: {pairing!r}")
     if not 0.0 < minimum_registered_fraction <= 1.0:
@@ -400,6 +445,11 @@ def recover_colmap_cameras(
     reconstruction.write(str(model_dir))
     registered_dir = output_dir / "registered_frames"
     registered_dir.mkdir()
+    registered_masks_dir = (
+        output_dir / "registered_masks" if resolved_masks_dir is not None else None
+    )
+    if registered_masks_dir is not None:
+        registered_masks_dir.mkdir()
     intrinsics: list[FloatArray] = []
     extrinsics: list[FloatArray] = []
     names: list[str] = []
@@ -418,6 +468,15 @@ def recover_colmap_cameras(
         destination = registered_dir / str(image.name)
         if not undistorted_bitmap.write(str(destination)):
             raise RuntimeError(f"failed to write undistorted frame: {destination}")
+        if registered_masks_dir is not None and resolved_masks_dir is not None:
+            mask_name = Path(str(image.name)).with_suffix(".png").name
+            _undistort_registered_mask(
+                pycolmap,
+                options=undistort_options,
+                source=resolved_masks_dir / mask_name,
+                destination=registered_masks_dir / mask_name,
+                camera=camera,
+            )
         matrix = np.asarray(image.cam_from_world().matrix(), dtype=np.float64)
         homogeneous = np.eye(4, dtype=np.float64)
         homogeneous[:3, :4] = matrix
@@ -474,6 +533,7 @@ def recover_colmap_cameras(
             "camera_center_rank_passed": True,
         },
         "undistorted_for_da3": True,
+        "source_masks_undistorted": registered_masks_dir is not None,
     }
     bundle = CameraBundle(
         image_names=tuple(names),
@@ -492,6 +552,9 @@ def recover_colmap_cameras(
         "camera_bundle": bundle.as_dict(),
         "input_frames_dir": str(frames_dir),
         "registered_frames_dir": str(registered_dir),
+        "registered_masks_dir": (
+            str(registered_masks_dir) if registered_masks_dir is not None else None
+        ),
         "warnings": [
             "COLMAP world scale is arbitrary; use a fiducial or a named known "
             "dimension for millimetres",
@@ -510,4 +573,5 @@ def recover_colmap_cameras(
         report_path=report_path,
         bundle=bundle,
         report=report,
+        registered_masks_dir=registered_masks_dir,
     )

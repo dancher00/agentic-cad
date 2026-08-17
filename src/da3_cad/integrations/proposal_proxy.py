@@ -7,8 +7,11 @@ from dataclasses import dataclass
 import numpy as np
 
 from da3_cad.backends.revolve import RevolveCadBackend
-from da3_cad.backends.sketch_extrusion import UnsupportedProfileError
-from da3_cad.config import CanonicalizerConfig, RevolveConfig
+from da3_cad.backends.sketch_extrusion import (
+    SketchExtrusionCadBackend,
+    UnsupportedProfileError,
+)
+from da3_cad.config import CanonicalizerConfig, RevolveConfig, SketchExtrusionConfig
 from da3_cad.geometry.canonicalizer import PointCloudCanonicalizer
 from da3_cad.geometry.fusion import (
     FusedPointCloud,
@@ -21,19 +24,19 @@ from da3_cad.models import FloatArray
 
 @dataclass(frozen=True, slots=True)
 class ProposalProxy:
-    """A simple CAD program inferred from 3D evidence, never an accepted result."""
+    """A simple CAD program inferred from 3D evidence."""
 
     source: str
     family: str
     selected_axis: int
-    radial_symmetry_score: float
+    radial_symmetry_score: float | None
     normalized_surface_p90: float
     profile_vertices: int
     report: dict[str, object]
 
     def as_dict(self) -> dict[str, object]:
         return {
-            "role": "proposal-conditioning-only",
+            "role": "measured-cad-hypothesis",
             "family": self.family,
             "selected_axis": self.selected_axis,
             "radial_symmetry_score": self.radial_symmetry_score,
@@ -86,10 +89,10 @@ def fit_revolve_proposal_proxy(
 ) -> ProposalProxy | None:
     """Fit a conservative revolve proxy for proposal conditioning.
 
-    The relaxed symmetry floor is safe here because the proxy cannot be
-    exported or accepted.  It only removes MVS raster noise before the learned
-    proposal model sees the object.  Every decoded CAD candidate is still
-    scored against the original source views.
+    The relaxed symmetry floor admits an additional geometric hypothesis; the
+    result is still kernel-validated and scored against the original source
+    views. Shell inference is disabled because this adapter does not preserve
+    per-view identity and therefore cannot prove an inner surface.
     """
 
     if not 0.0 <= minimum_radial_symmetry_score <= 1.0:
@@ -104,6 +107,9 @@ def fit_revolve_proposal_proxy(
     backend = RevolveCadBackend(
         RevolveConfig(
             minimum_radial_symmetry_score=minimum_radial_symmetry_score,
+            # This adapter deliberately drops per-view identity. Inferring an inner
+            # profile from pooled radial quantiles would invent unsupported cavities.
+            shell_enabled=False,
         )
     )
     try:
@@ -127,6 +133,54 @@ def fit_revolve_proposal_proxy(
             "angular_coverage_fraction": selected.angular_coverage_fraction,
             "supported_bin_fraction": selected.supported_bin_fraction,
             "unsupported_point_fraction": selected.unsupported_point_fraction,
+            "scale": report.scale.as_dict(),
+        },
+    )
+
+
+def fit_sketch_extrusion_proposal_proxy(
+    points: FloatArray,
+    *,
+    seed: int,
+) -> ProposalProxy | None:
+    """Fit a constant-section sketch extrusion to measured 3D evidence.
+
+    This is a geometric hypothesis, not a class lookup: the profile may be an
+    arbitrary line loop (including L, T, U and hex profiles) or one circle.
+    Callers must still validate the B-Rep and score it against source views.
+    """
+
+    canonical = PointCloudCanonicalizer(
+        CanonicalizerConfig(
+            outlier_enabled=False,
+            consistency_enabled=False,
+            plane_ransac_iterations=128,
+        )
+    ).run(_point_cloud(points), seed=seed)
+    backend = SketchExtrusionCadBackend(SketchExtrusionConfig())
+    try:
+        program = backend.generate(canonical, seed=seed)
+    except (UnsupportedProfileError, ValueError):
+        return None
+    report = backend.last_report
+    if report is None:
+        raise RuntimeError("proposal sketch-extrusion fitter lost its report")
+    selected = next(item for item in report.axis_candidates if item.axis == report.selected_axis)
+    profile_vertices = len(report.outer_loop.points) if report.outer_loop.kind == "polyline" else 0
+    return ProposalProxy(
+        source=program.source,
+        family=program.program_family,
+        selected_axis=report.selected_axis,
+        radial_symmetry_score=None,
+        normalized_surface_p90=selected.normalized_surface_p90,
+        profile_vertices=profile_vertices,
+        report={
+            "generator_backend": program.backend,
+            "profile_kind": report.outer_loop.kind,
+            "profile_area_fraction": selected.profile_area_fraction,
+            "profile_occupancy_iou": selected.profile_occupancy_iou,
+            "component_area_fraction": selected.component_area_fraction,
+            "aperture_count": len(report.apertures),
             "scale": report.scale.as_dict(),
         },
     )

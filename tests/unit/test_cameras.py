@@ -5,11 +5,13 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from da3_cad.geometry.cameras import (
     CameraBundle,
     _match_colmap_features,
     _resolve_colmap_device,
+    _undistort_registered_mask,
     _write_camera_recovery_report,
     load_camera_bundle,
 )
@@ -191,3 +193,49 @@ def test_camera_recovery_report_is_strict_json_with_real_newline(tmp_path: Path)
     assert json.loads(raw) == report
     assert raw.endswith("\n")
     assert not raw.endswith("\\n")
+
+
+class _FakeMaskBitmap:
+    def __init__(self, values: np.ndarray) -> None:
+        self._values = values
+        self.height, self.width = values.shape
+        self.channels = 1
+
+    @classmethod
+    def read(cls, _path: str, _as_rgb: bool) -> _FakeMaskBitmap:
+        return cls(np.zeros((2, 3), dtype=np.uint8))
+
+    def to_array(self) -> np.ndarray:
+        return self._values
+
+
+class _FakeMaskPycolmap:
+    Bitmap = _FakeMaskBitmap
+
+    @staticmethod
+    def undistort_image(
+        _options: object,
+        _bitmap: _FakeMaskBitmap,
+        _camera: object,
+    ) -> tuple[_FakeMaskBitmap, object]:
+        values = np.asarray(((0, 127), (128, 255)), dtype=np.uint8)
+        return _FakeMaskBitmap(values), object()
+
+
+def test_colmap_mask_undistort_preserves_binary_contract(tmp_path: Path) -> None:
+    source = tmp_path / "source.png"
+    destination = tmp_path / "registered.png"
+    source.write_bytes(b"fake-bitmap-reader-does-not-open-this")
+    camera = type("Camera", (), {"width": 3, "height": 2})()
+
+    _undistort_registered_mask(
+        _FakeMaskPycolmap(),
+        options=object(),
+        source=source,
+        destination=destination,
+        camera=camera,
+    )
+
+    with Image.open(destination) as image:
+        values = np.asarray(image)
+    np.testing.assert_array_equal(values, np.asarray(((0, 0), (255, 255)), dtype=np.uint8))
