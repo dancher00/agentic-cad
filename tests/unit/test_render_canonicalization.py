@@ -5,7 +5,9 @@ import pytest
 from PIL import Image
 
 from da3_cad.integrations.render_canonicalization import (
+    CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
     CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+    CADENA_PROXY_SPUR_FILTER_SIZE,
     canonicalize_rgb_render,
 )
 
@@ -43,9 +45,52 @@ def test_canonicalization_removes_single_boundary_pixel_jitter() -> None:
     assert np.array_equal(canonical_left, canonical_right)
 
 
+def test_proxy_spur_filter_removes_quantization_boundary_flip() -> None:
+    left = np.zeros((9, 9, 3), dtype=np.uint8)
+    right = left.copy()
+    observed_boundary = np.asarray(
+        (
+            (255, 255, 255, 255, 255),
+            (255, 255, 192, 192, 192),
+            (255, 255, 255, 192, 192),
+            (192, 192, 192, 192, 192),
+            (128, 128, 128, 128, 64),
+        ),
+        dtype=np.uint8,
+    )
+    left[2:7, 2:7, 1] = observed_boundary
+    right[2:7, 2:7, 1] = observed_boundary
+    right[4, 4, 1] = 192
+
+    canonical_left = np.asarray(
+        canonicalize_rgb_render(
+            Image.fromarray(left),
+            downsample_factor=CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
+            quantization_step=CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+            spur_filter_size=CADENA_PROXY_SPUR_FILTER_SIZE,
+        )
+    )
+    canonical_right = np.asarray(
+        canonicalize_rgb_render(
+            Image.fromarray(right),
+            downsample_factor=CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
+            quantization_step=CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+            spur_filter_size=CADENA_PROXY_SPUR_FILTER_SIZE,
+        )
+    )
+
+    assert canonical_left.shape == (9, 9, 3)
+    assert np.array_equal(canonical_left, canonical_right)
+
+
 def test_canonicalization_rejects_unsafe_downsample_factor() -> None:
     with pytest.raises(ValueError, match="downsample factor"):
         canonicalize_rgb_render(Image.new("RGB", (8, 8)), downsample_factor=3)
+
+
+def test_canonicalization_rejects_unsafe_spur_filter() -> None:
+    with pytest.raises(ValueError, match="spur filter size"):
+        canonicalize_rgb_render(Image.new("RGB", (8, 8)), spur_filter_size=5)
 
 
 @pytest.mark.parametrize("step", [0, 1, 3, 65])

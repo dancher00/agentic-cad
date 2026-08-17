@@ -7,6 +7,15 @@ while it remains an alpha research system.
 
 ### Added
 
+- Trusted arbitrary constant-section planar-profile additions and cuts recovered
+  from signed measured-surface residuals, with three-axis search, attachment,
+  exact one-solid validation and bounded two-round composition.
+- Deterministic L/T/U/hex grammar capability ledger and visual benchmark:
+  4/4 valid STEP solids, 0.9805 mean exact-volume IoU, plus rejection of a
+  non-constant frustum negative control.
+- Controlled real-RGB v6 ledger and four-page visual audit preserving object 2
+  `ACCEPT` and object 4 `ABSTAIN` without reference access during fitting.
+
 - One-command `da3-cad cpu-smoke` path from four tracked PNGs to a validated
   single-solid `model.step`, with a 60-second CPU contract and reproducible README GIF.
 - Class-free `axial-shell-loop` grammar family: repeated loop topology, RGB rim
@@ -38,6 +47,10 @@ while it remains an alpha research system.
   ledger, poster, teaser and PDF.
 
 ### Fixed
+
+- Canonicalize full-resolution CADENA proxy renders with deterministic seeding,
+  64-level quantization and a 3×3 isolated-spur filter, preventing a single VTK
+  boundary pixel from changing the accepted object-2 program.
 - Iterative signed-residual CAD grammar with trusted axial revolved additions
   and subtractions, conservative variants, two bounded rounds, and exact
   learned-root → profile-rewrite → measured-operation provenance with full

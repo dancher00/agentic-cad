@@ -16,7 +16,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "sample_data" / "public_benchmark_v2"
 LEDGER = ROOT / "docs" / "results" / "public-benchmark-v2.json"
-REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v5.json"
+REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v6.json"
+PLANAR_GRAMMAR_LEDGER = ROOT / "docs" / "results" / "measured-planar-grammar-v6.json"
 MAX_PUBLIC_FILE_BYTES = 8 * 1024 * 1024
 
 REQUIRED = (
@@ -31,8 +32,10 @@ REQUIRED = (
     "docs/assets/release/cpu_smoke.gif",
     "docs/assets/release/public_benchmark_v2.png",
     "docs/results/public-benchmark-v2.json",
-    "docs/results/real-rgb-mvs-cadena-v5.json",
+    "docs/results/real-rgb-mvs-cadena-v6.json",
+    "docs/results/measured-planar-grammar-v6.json",
     "scripts/build_real_rgb_cadena_report.py",
+    "scripts/run_measured_planar_grammar_benchmark.py",
     "sample_data/public_benchmark_v2/README.md",
     "sample_data/public_benchmark_v2/manifest.json",
     "configs/public_benchmark_v2.yaml",
@@ -168,18 +171,70 @@ def _check_fixture_and_ledger(errors: list[str]) -> tuple[int, int]:
 
 def _check_real_rgb_ledger(errors: list[str]) -> None:
     ledger = _read_json(REAL_RGB_LEDGER)
-    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v5":
-        errors.append("real-RGB ledger schema is not v5")
+    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v6":
+        errors.append("real-RGB ledger schema is not v6")
     if ledger.get("input", {}).get("reference_geometry_access_during_reconstruction") is not False:
         errors.append("real-RGB ledger reference-geometry leakage contract is not false")
+    architecture = ledger.get("architecture_change", {})
+    if architecture.get("trusted_operations") != [
+        "axial_revolved_add",
+        "axial_revolved_cut",
+        "planar_profile_add",
+        "planar_profile_cut",
+    ]:
+        errors.append("real-RGB v6 trusted operation contract is inconsistent")
+    if architecture.get("learned_policy_can_invoke_measured_feature") is not False:
+        errors.append("learned policy must not invoke trusted measured features")
+    if architecture.get("maximum_measured_feature_rounds") != 2:
+        errors.append("real-RGB v6 measured search must remain bounded to two rounds")
+    controls = ledger.get("real_controls", {})
     decisions = (
-        ledger.get("object_2", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
-        ledger.get("object_4", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
+        controls.get("object_2", {}).get("decision"),
+        controls.get("object_4", {}).get("decision"),
     )
     if decisions != ("ACCEPT", "ABSTAIN"):
-        errors.append(f"real-RGB v5 decisions are inconsistent: {decisions!r}")
+        errors.append(f"real-RGB v6 decisions are inconsistent: {decisions!r}")
+    for object_id in ("object_2", "object_4"):
+        if controls.get(object_id, {}).get("kernel_valid_single_solid") is not True:
+            errors.append(f"real-RGB v6 {object_id} is not one kernel-valid solid")
     if "/home/" in REAL_RGB_LEDGER.read_text(encoding="utf-8"):
         errors.append("real-RGB ledger contains machine-local runtime paths")
+
+
+def _check_planar_grammar_ledger(errors: list[str]) -> None:
+    ledger = _read_json(PLANAR_GRAMMAR_LEDGER)
+    if ledger.get("schema_version") != "da3-cad-measured-planar-grammar-v6":
+        errors.append("measured planar grammar ledger schema is not v6")
+    if ledger.get("method", {}).get("operations") != [
+        "planar_profile_add",
+        "planar_profile_cut",
+    ]:
+        errors.append("measured planar grammar operations are inconsistent")
+    cases = ledger.get("cases", [])
+    case_ids = [case.get("id") for case in cases if isinstance(case, dict)]
+    if case_ids != ["l_add", "t_add", "u_cut", "hex_cut"]:
+        errors.append(f"measured planar grammar cases are inconsistent: {case_ids!r}")
+    summary = ledger.get("summary", {})
+    expected_summary = {
+        "positive_cases": 4,
+        "valid_single_solid_steps": 4,
+        "correct_axis_selections": 4,
+        "negative_controls_passed": 1,
+    }
+    for key, expected in expected_summary.items():
+        if summary.get(key) != expected:
+            errors.append(f"measured planar grammar summary {key!r} is not {expected!r}")
+    if float(summary.get("mean_exact_volume_iou", 0.0)) < 0.97:
+        errors.append("measured planar grammar mean exact-volume IoU is below 0.97")
+    controls = ledger.get("negative_controls", [])
+    if len(controls) != 1 or controls[0].get("id") != "nonconstant_frustum_add":
+        errors.append("measured planar grammar frustum control is missing")
+    elif controls[0].get("candidate_count") != 0 or controls[0].get("passed") is not True:
+        errors.append("measured planar grammar frustum control was not rejected")
+    if ledger.get("claim_boundary", {}).get("fit_reference_cad_access") is not False:
+        errors.append("measured planar grammar reference-CAD leakage contract is not false")
+    if "/home/" in PLANAR_GRAMMAR_LEDGER.read_text(encoding="utf-8"):
+        errors.append("measured planar grammar ledger contains machine-local runtime paths")
 
 
 def _check_metadata(errors: list[str]) -> None:
@@ -212,6 +267,7 @@ def main() -> None:
     _check_readme_links(errors)
     cases, views = _check_fixture_and_ledger(errors)
     _check_real_rgb_ledger(errors)
+    _check_planar_grammar_ledger(errors)
     _check_metadata(errors)
     if errors:
         print("release check failed:", file=sys.stderr)

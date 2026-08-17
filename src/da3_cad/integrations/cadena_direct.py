@@ -46,12 +46,18 @@ from da3_cad.integrations.construction_graph import (
 from da3_cad.integrations.measured_features import (
     AxialRevolvedAdd,
     AxialRevolvedCut,
+    PlanarProfileAdd,
+    PlanarProfileCut,
     fit_axial_revolved_add,
     fit_axial_revolved_cut,
+    fit_planar_profile_add_candidates,
+    fit_planar_profile_cut_candidates,
 )
 from da3_cad.integrations.proposal_proxy import fit_revolve_proposal_proxy
 from da3_cad.integrations.render_canonicalization import (
+    CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
     CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+    CADENA_PROXY_SPUR_FILTER_SIZE,
     CADENA_RENDER_DOWNSAMPLE_FACTOR,
     CADENA_RENDER_QUANTIZATION_STEP,
     canonicalize_rgb_render,
@@ -136,6 +142,7 @@ def _imports(checkout: Path) -> tuple[Any, Any, str, Any, Any, Any]:
         CODE_PREFIX
         + "\nfrom da3_cad.integrations.measured_features import ("
         + "\n    axial_revolved_add, axial_revolved_cut,"
+        + "\n    planar_profile_add, planar_profile_cut,"
         + "\n)",
         code_to_mesh,
         transform_mesh_0_1,
@@ -317,6 +324,44 @@ def _fit_best_axial_revolved_add(
     return selected, candidates
 
 
+def _fit_best_planar_profile_add(
+    target_points: FloatArray,
+    current_mesh: trimesh.Trimesh,
+) -> tuple[PlanarProfileAdd | None, tuple[PlanarProfileAdd, ...]]:
+    candidates = fit_planar_profile_add_candidates(target_points, current_mesh)
+    if not candidates:
+        return None, ()
+    selected = max(
+        candidates,
+        key=lambda value: (
+            value.axial_coverage_fraction,
+            value.profile_occupancy_iou,
+            -value.constant_section_residual,
+            value.support_points,
+        ),
+    )
+    return selected, candidates
+
+
+def _fit_best_planar_profile_cut(
+    target_points: FloatArray,
+    current_mesh: trimesh.Trimesh,
+) -> tuple[PlanarProfileCut | None, tuple[PlanarProfileCut, ...]]:
+    candidates = fit_planar_profile_cut_candidates(target_points, current_mesh)
+    if not candidates:
+        return None, ()
+    selected = max(
+        candidates,
+        key=lambda value: (
+            value.axial_coverage_fraction,
+            value.profile_occupancy_iou,
+            -value.constant_section_residual,
+            value.support_points,
+        ),
+    )
+    return selected, candidates
+
+
 def main() -> None:
     args = _parser().parse_args()
     if args.output_dir.exists():
@@ -342,9 +387,12 @@ def main() -> None:
     if args.minimum_appearance_edge_pixels < 0:
         raise ValueError("minimum appearance edge pixels must be non-negative")
     os.environ.setdefault("PYVISTA_OFF_SCREEN", "true")
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    torch.use_deterministic_algorithms(True)
     Plotter, get_point, code_prefix, code_to_mesh, transform_target, metric_tools = _imports(
         args.checkout
     )
@@ -425,7 +473,9 @@ def main() -> None:
             else:
                 proposal_image = canonicalize_rgb_render(
                     plotter.get_img(proxy_mesh, None),
+                    downsample_factor=CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
                     quantization_step=CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+                    spur_filter_size=CADENA_PROXY_SPUR_FILTER_SIZE,
                 )
                 proposal_image.save(output / "proposal_proxy.png")
                 proxy_mesh.export(output / "proposal_proxy.stl")
@@ -889,6 +939,14 @@ def main() -> None:
         point_cloud,
         best_mesh,
     )
+    measured_planar_cut, measured_planar_cut_candidates = _fit_best_planar_profile_cut(
+        point_cloud,
+        best_mesh,
+    )
+    measured_planar_add, measured_planar_add_candidates = _fit_best_planar_profile_add(
+        point_cloud,
+        best_mesh,
+    )
     measured_feature_report: dict[str, object] = {
         "iteration_limit": 2,
         "axial_revolved_cut": {
@@ -903,6 +961,18 @@ def main() -> None:
             "selected_fit": measured_axial_add.as_dict() if measured_axial_add else None,
             "role": "source-view-gated-constructive-hypothesis",
         },
+        "planar_profile_cut": {
+            "attempted_axes": [0, 1, 2],
+            "candidates": [value.as_dict() for value in measured_planar_cut_candidates],
+            "selected_fit": measured_planar_cut.as_dict() if measured_planar_cut else None,
+            "role": "source-view-gated-constructive-hypothesis",
+        },
+        "planar_profile_add": {
+            "attempted_axes": [0, 1, 2],
+            "candidates": [value.as_dict() for value in measured_planar_add_candidates],
+            "selected_fit": measured_planar_add.as_dict() if measured_planar_add else None,
+            "role": "source-view-gated-constructive-hypothesis",
+        },
     }
 
     simplification_rows: list[dict[str, object]] = []
@@ -911,7 +981,7 @@ def main() -> None:
     ] = []
     for tolerance in (0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0):
         simplification = simplify_revolve_profiles(best_source, tolerance)
-        if simplification.profiles == 0:
+        if simplification.profiles == 0 and tolerance > 0.0:
             break
         if any(value[2] == simplification.source for value in simplified_candidates):
             continue
@@ -1010,11 +1080,22 @@ def main() -> None:
             ) in feature_frontier:
                 round_cut, _ = _fit_best_axial_revolved_cut(point_cloud, parent_mesh)
                 round_add, _ = _fit_best_axial_revolved_add(point_cloud, parent_mesh)
-                measured_feature_options: list[tuple[str, AxialRevolvedCut | AxialRevolvedAdd]] = []
+                round_planar_cut, _ = _fit_best_planar_profile_cut(point_cloud, parent_mesh)
+                round_planar_add, _ = _fit_best_planar_profile_add(point_cloud, parent_mesh)
+                measured_feature_options: list[
+                    tuple[
+                        str,
+                        AxialRevolvedCut | AxialRevolvedAdd | PlanarProfileCut | PlanarProfileAdd,
+                    ]
+                ] = []
                 if round_cut is not None:
                     measured_feature_options.append(("axial-revolved-cut", round_cut))
                 if round_add is not None:
                     measured_feature_options.append(("axial-revolved-add", round_add))
+                if round_planar_cut is not None:
+                    measured_feature_options.append(("planar-profile-cut", round_planar_cut))
+                if round_planar_add is not None:
+                    measured_feature_options.append(("planar-profile-add", round_planar_add))
                 for feature_kind, measured_feature in measured_feature_options:
                     axis_extent = float(parent_mesh.extents[measured_feature.axis])
                     if isinstance(measured_feature, AxialRevolvedCut):
@@ -1026,28 +1107,50 @@ def main() -> None:
                                 measured_feature.side * 0.015 * axis_extent,
                             ),
                         )
-                    else:
+                    elif isinstance(measured_feature, AxialRevolvedAdd):
                         feature_variants = (
                             ("measured", 1.0, 1.0),
                             ("conservative", 0.85, 0.95),
                         )
-                    for variant, radial_scale, secondary_scale in feature_variants:
+                    elif isinstance(measured_feature, PlanarProfileCut):
+                        feature_variants = (
+                            ("measured", 1.0, 1.0),
+                            ("conservative", 0.90, 1.0),
+                        )
+                    else:
+                        feature_variants = (
+                            ("measured", 1.0, 1.0),
+                            ("conservative", 0.90, 0.95),
+                        )
+                    for variant, primary_scale, secondary_scale in feature_variants:
                         if isinstance(measured_feature, AxialRevolvedCut):
                             feature_step = measured_feature.step(
-                                radial_scale=radial_scale,
+                                radial_scale=primary_scale,
                                 floor_offset=secondary_scale,
                             )
                             feature_parameters = {
-                                "radial_scale": radial_scale,
+                                "radial_scale": primary_scale,
                                 "floor_offset": secondary_scale,
                             }
-                        else:
+                        elif isinstance(measured_feature, AxialRevolvedAdd):
                             feature_step = measured_feature.step(
-                                radial_scale=radial_scale,
+                                radial_scale=primary_scale,
                                 axial_scale=secondary_scale,
                             )
                             feature_parameters = {
-                                "radial_scale": radial_scale,
+                                "radial_scale": primary_scale,
+                                "axial_scale": secondary_scale,
+                            }
+                        elif isinstance(measured_feature, PlanarProfileCut):
+                            feature_step = measured_feature.step(profile_scale=primary_scale)
+                            feature_parameters = {"profile_scale": primary_scale}
+                        else:
+                            feature_step = measured_feature.step(
+                                profile_scale=primary_scale,
+                                axial_scale=secondary_scale,
+                            )
+                            feature_parameters = {
+                                "profile_scale": primary_scale,
                                 "axial_scale": secondary_scale,
                             }
                         feature_source = parent_source.rstrip() + "\n" + feature_step
@@ -1330,7 +1433,7 @@ def main() -> None:
     best_mesh.export(preview_path)
     kernel_validation = _execute_final(best_source, step_path)
     report = {
-        "schema_version": "da3-cad-cadena-direct-v6",
+        "schema_version": "da3-cad-cadena-direct-v7",
         "upstream_checkout": str(args.checkout.resolve()),
         "checkpoint": str(args.checkpoint.resolve()),
         "target_mesh": str(args.mesh.resolve()),
@@ -1341,7 +1444,9 @@ def main() -> None:
         "proxy_quantization_step": CADENA_PROXY_RENDER_QUANTIZATION_STEP,
         "renderer_canonicalization": {
             "method": "optional-lanczos-downsample-then-nearest-channel-quantization",
-            "downsample_factor": CADENA_RENDER_DOWNSAMPLE_FACTOR,
+            "measured_downsample_factor": CADENA_RENDER_DOWNSAMPLE_FACTOR,
+            "proposal_downsample_factor": CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
+            "proposal_spur_filter_size": CADENA_PROXY_SPUR_FILTER_SIZE,
             "quantization_step": CADENA_RENDER_QUANTIZATION_STEP,
             "reason": "remove sub-pixel off-screen raster jitter before policy inference",
         },
@@ -1359,7 +1464,8 @@ def main() -> None:
         "search_policy": (
             "condition the first proposal on an evidence-fitted primitive proxy, bind "
             "decoded operations to signed residual patches, then iteratively fit bounded "
-            "additive or subtractive axial profiles from measured target evidence; retain "
+            "additive or subtractive axial or planar profiles from measured target "
+            "evidence; retain "
             "only kernel-valid source-view-non-regressing candidates and backtrack"
         ),
         "selection_metric": (
@@ -1404,8 +1510,10 @@ def main() -> None:
         "safety": (
             "each model response is restricted to one assignment calling a published CADENA "
             "DSL operation with literal arguments; trusted measured add/cut operations are "
-            "not in that allowlist; every measured feature requires circumferential signed-"
-            "distance support, a valid single-solid B-Rep, and source-view non-regression; "
+            "not in that allowlist; axial features require circumferential signed-distance "
+            "support, while planar features require 75% axial coverage and a constant-section "
+            "residual at most 0.15; all require a valid single-solid B-Rep and source-view "
+            "non-regression; "
             "arbitrary residual-component unions are not part of the direct runner"
         ),
         "mesh_contract": (

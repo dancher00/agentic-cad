@@ -1,9 +1,9 @@
 # Results and claim boundaries
 
-## Controlled real-RGB iterative measured grammar v5
+## Controlled real-RGB measured grammar v6
 
 The current path is calibrated RGB → masked PatchMatch → cross-view fusion →
-measured surface → restricted CADENA root → iterative trusted add/cut →
+measured surface → restricted CADENA root → bounded trusted grammar →
 source-view and kernel gates. It was run on 32 real T-LESS views each of
 objects 2 and 4 on an RTX 5080. Reference geometry remained inaccessible until
 the CAD programs and product decisions were frozen.
@@ -11,45 +11,59 @@ the CAD programs and product decisions were frozen.
 | Check | Object 2 | Object 4 |
 |---|---:|---:|
 | Selected construction | proxy root + axial cut | measured root + axial add |
-| Source-view silhouette IoU | 0.90789 | 0.90821 |
-| Source-view depth inliers at 3% | 0.98326 | 0.96290 |
-| Smooth B-Rep edge precision | 0.54747 | 0.33292 |
-| Smooth B-Rep edge recall | 0.88503 | 0.71515 |
+| Source-view silhouette IoU | 0.91015 | 0.90821 |
+| Source-view depth inliers at 3% | 0.98317 | 0.96290 |
+| Smooth B-Rep edge precision | 0.56748 | 0.33292 |
+| Smooth B-Rep edge recall | 0.87314 | 0.71515 |
 | Kernel-valid single solid | yes | yes |
-| Product decision v5 | **ACCEPT** | **ABSTAIN** |
-| Post-hoc v4 → v5 IoU | 0.49390 → 0.49232 | 0.55849 → 0.74001 |
-| Post-hoc v4 → v5 CD²×1000 | 3.37427 → 3.36054 | 6.50123 → 2.16176 |
+| Product decision v6 | **ACCEPT** | **ABSTAIN** |
+| Post-hoc v5 → v6 IoU | 0.49232 → 0.53492 | 0.74001 → 0.74001 |
+| Post-hoc v5 → v6 CD²×1000 | 3.36054 → 3.78244 | 2.16176 → 2.16176 |
 
-V5 generalizes the trusted measured operation to both signed residual sides.
-Target points inside the current solid may support a subtraction; points
-outside may support an addition. Axial location and span, at least 75% angular
-coverage and normalized profile residual must pass before a full and a
-conservative variant enter the beam. After every accepted operation the
-residual is refitted, for at most two rounds. The learned policy cannot call
-these operations.
+V6 computes signed target-surface residuals after each valid root or rewrite.
+Outside and inside residuals may support axial revolved add/cut or arbitrary
+axis-aligned, constant-section planar-profile add/cut. The planar fitter
+searches all three axes, requires at least 75% axial-bin coverage, at most 0.15
+normalized section variation and at least 0.78 profile occupancy IoU, then
+reduces the supported raster component to a closed polyline of at most 32
+vertices. The learned policy cannot call any trusted measured operation.
 
-Every candidate is executed by CadQuery/OpenCascade and must remain exactly one
-valid solid. The accepted construction graph records the learned root, the
-exact selected profile rewrite and every measured boolean with full per-prefix
-kernel counts. Source-view score and smooth-face topology may not regress.
+Every full and conservative candidate is executed by OpenCascade and must
+remain exactly one valid solid. It is retained only if its calibrated
+source-view score and smooth-face topology do not regress. The residual is
+recomputed after the retained operation, for at most two measured rounds.
 
-Object 2 retains its observed cavity and provisional `ACCEPT`; its small IoU
-change (-0.00158) accompanies slightly better Chamfer and one fewer analytic
-face. Object 4 gains the missing lower axial extension without reference access:
-post-hoc IoU rises by 0.18152. It still returns `ABSTAIN`, correctly, because
-the top pin, lower terminal flange and associated source-image edges are not
-explained.
+Object 2 retains its observed cavity and provisional `ACCEPT`. Its post-hoc
+volume IoU rises 0.04260 while CD²×1000 worsens 0.42190, so v6 is a real but
+mixed geometry change rather than an unqualified improvement. Object 4 is
+unchanged and remains `ABSTAIN` because visible edges are unexplained.
+Independent final runs produced identical programs and STEP files. Object 4
+still had two pixel-channel differences in a rejected proposal trace, with no
+effect on the final candidate or decision.
 
-The source-view verifier groups adjacent tessellation triangles into smooth
-faces, so STL tessellation and analytic seams do not masquerade as CAD
-features. Independent reruns produced byte-identical programs and STEP files
-for both cases.
+### Planar grammar capability test
 
-This is one controlled real-object acceptance and one substantially improved
-but rejected candidate—not exact reverse engineering, category-level
-generalization or SOTA. Exact evidence, deltas and SHA-256 values are in
-[`real-rgb-mvs-cadena-v5.json`](results/real-rgb-mvs-cadena-v5.json). The
-ignored local three-page visual report is generated with
+A deterministic CPU test isolates the new grammar from camera, MVS and learned
+proposal failures. Each case supplies 32,000 sampled target-surface points and
+a known root B-Rep; reference CAD is opened only after fitting for exact volume
+IoU.
+
+| Case | Expected operation | Selected axis | Exact volume IoU |
+|---|---|---:|---:|
+| L-like add | planar add | correct | 0.98514 |
+| T-like add | planar add | correct | 0.98674 |
+| U-like channel | planar cut | correct | 0.96403 |
+| hexagonal channel | planar cut | correct | 0.98619 |
+
+All 4/4 results are valid one-solid STEP files and mean exact volume IoU is
+0.98053. The non-constant frustum negative control produces zero candidates.
+This establishes the fitter's capability and a false-positive boundary, not
+end-to-end real-photo accuracy.
+
+Exact data and hashes are in
+[`real-rgb-mvs-cadena-v6.json`](results/real-rgb-mvs-cadena-v6.json) and
+[`measured-planar-grammar-v6.json`](results/measured-planar-grammar-v6.json).
+The ignored four-page visual report is generated with
 `python scripts/build_real_rgb_cadena_report.py`.
 
 ## Archived deterministic DA3 grammar benchmark v2

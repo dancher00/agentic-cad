@@ -142,44 +142,60 @@ Exit code `0` means `model.step` exists and passed both the B-Rep kernel and
 source-view gates. Exit code `3` means honest `ABSTAIN`; the rejected
 `candidate.py`, `candidate.step`, preview and full evidence remain for inspection.
 
-## Controlled real-RGB audit
+## Controlled real-RGB and grammar audit
 
-The path was run end to end on 32 real T-LESS RGB views each of objects 2 and
-4. Reference geometry was inaccessible during reconstruction and was opened
-only for the later diagnostic.
+The path was rerun on 32 real T-LESS RGB views each of objects 2 and 4.
+Reference geometry was inaccessible during reconstruction and was opened only
+for the post-hoc diagnostic.
 
 | Check | Object 2 | Object 4 |
 |---|---:|---:|
 | CAD root | revolve proxy | measured surface |
 | Measured feature | axial revolved cut | axial revolved add |
-| Silhouette / depth | 0.908 / 0.983 | 0.908 / 0.963 |
-| Smooth B-Rep edge precision / recall | 0.547 / 0.885 | 0.333 / 0.715 |
+| Silhouette / depth | 0.910 / 0.983 | 0.908 / 0.963 |
+| Smooth B-Rep edge precision / recall | 0.567 / 0.873 | 0.333 / 0.715 |
 | Kernel-valid single-solid STEP | yes | yes |
 | Product decision | **ACCEPT** | **ABSTAIN** |
-| Post-hoc v4 → v5 IoU | 0.494 → 0.492 | 0.558 → 0.740 |
-| Post-hoc v4 → v5 CD²×1000 | 3.374 → 3.361 | 6.501 → 2.162 |
+| Post-hoc v5 → v6 IoU | 0.492 → 0.535 | 0.740 → 0.740 |
+| Post-hoc v5 → v6 CD²×1000 | 3.361 → 3.782 | 2.162 → 2.162 |
 
-V5 keeps CADENA as a restricted root proposer and moves residual feature
-recovery into trusted geometry. Signed target-surface points can support a
-bounded axial revolved addition or subtraction. After every kernel-valid
-operation the residual is recomputed; at most two measured rounds are explored.
-The policy cannot invoke either trusted operation. Every prefix must remain one
-valid solid and must not regress across the original 32 calibrated views.
+V6 keeps CADENA as a restricted root proposer. Trusted code then recomputes
+the signed measured-surface residual and may fit one of four general
+operations: axial revolved add/cut or arbitrary constant-section planar-profile
+add/cut. At most two operations are explored. CADENA cannot invoke these
+trusted operations, and every accepted prefix must remain one valid solid
+without regressing across the original calibrated views.
 
-Object 2 retains the observed internal cavity and provisional `ACCEPT`. Object
-4 now recovers the previously missing lower axial extension, but unexplained
-source-image edges preserve `ABSTAIN`; the top pin and terminal flange are not
-claimed as recovered. Independent reruns produced byte-identical programs and
-STEP files for both cases. Exact evidence is in
-[`real-rgb-mvs-cadena-v5.json`](docs/results/real-rgb-mvs-cadena-v5.json).
+Object 2 retains the measured cavity and improves post-hoc volume IoU by 0.043,
+but its surface Chamfer becomes worse by 0.422; both sides of that trade-off
+are reported. Object 4 is unchanged and remains `ABSTAIN` because its edge
+precision is below the frozen gate. Independent final runs produced identical
+programs and STEP files for both controls; object 4 still had a two-channel-pixel
+difference in a rejected proposal trace, with no product effect. Exact evidence
+is in [`real-rgb-mvs-cadena-v6.json`](docs/results/real-rgb-mvs-cadena-v6.json).
 
-This validates a repaired mechanism on two controlled objects—not exact reverse
-engineering, category-level validation or SOTA. Fine thread, knurl, scallops
-and small terminals are still outside the demonstrated capability.
+The new planar grammar has a separate deterministic CPU capability test. It
+starts from target-surface samples and a known root B-Rep, not photographs:
 
-`model.stl` is only a tessellated preview. Its triangles are not B-Rep edges;
-CAD validity and topology are defined by `model.step`. The source verifier
-groups coplanar/smooth triangles and scores only smooth-face boundaries.
+| Case | Operation | Exact volume IoU | Valid one-solid STEP |
+|---|---|---:|---:|
+| L-like feature | add | 0.985 | yes |
+| T-like feature | add | 0.987 | yes |
+| U-like channel | cut | 0.964 | yes |
+| hexagonal channel | cut | 0.986 | yes |
+
+All four case axes are selected correctly; mean exact volume IoU is 0.981. A
+non-constant frustum is rejected, preventing a constant-section fit from
+overclaiming tapered geometry. Reproduce it with
+`python scripts/run_measured_planar_grammar_benchmark.py`; the portable ledger
+is [`measured-planar-grammar-v6.json`](docs/results/measured-planar-grammar-v6.json).
+Generate the ignored four-page visual audit with
+`python scripts/build_real_rgb_cadena_report.py`.
+
+This validates a grammar mechanism and preserves two real controls. It does not
+establish universal photo-to-CAD, real-photo planar-feature accuracy, arbitrary
+feature orientation or SOTA. `model.stl` remains only a tessellated preview;
+CAD topology is defined by `model.step`.
 
 ## CPU smoke and benchmark
 

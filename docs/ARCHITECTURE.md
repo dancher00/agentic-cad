@@ -11,9 +11,10 @@ RGB views + target masks + calibrated cameras
   → cross-view-confirmed depth fusion
   → measured surface
   → raw-surface proposals + evidence-fitted primitive proxy proposals
-  → restricted CAD operation candidates scored on the original views
+  → restricted CAD root candidates scored on the original views
   → evidence-preserving profile simplification
-  → render CAD into every source camera
+  → signed residual → bounded axial/planar measured feature grammar
+  → render every accepted prefix into every source camera
   → source-mask and measured-depth gates
   → OpenCascade validation
   → model.py + model.step, or ABSTAIN
@@ -122,22 +123,38 @@ must continue to explain the source evidence.
 
 ## Iterative measured feature grammar
 
-After profile simplification, trusted code computes signed distances from the
-measured target surface to the current kernel-valid CAD. An outside, end-local,
-angularly supported residual can propose `axial_revolved_add`; an inside
-residual can propose `axial_revolved_cut`. The learned CADENA policy cannot call
-either operation.
+After root selection and profile simplification, trusted code computes signed
+distances from the measured target surface to the current watertight B-Rep.
+Positive and negative residuals are handled separately:
 
-Full and conservative profiles are executed by OpenCascade and re-rendered in
+- `axial_revolved_add` and `axial_revolved_cut` recover
+  circumferentially supported axisymmetric features;
+- `planar_profile_add` and `planar_profile_cut` recover an arbitrary
+  closed 2D polyline with a constant extrusion section.
+
+The planar fitter searches the three canonical axes. It rasterizes the
+transverse residual, keeps the largest connected component, fills supported
+holes, traces its external contour and simplifies it to at most 32 vertices.
+A hypothesis requires at least 75% occupied axial bins, normalized
+constant-section residual at most 0.15 and raster occupancy IoU at least 0.78.
+An addition is extended 2% into the nearest root face so the exact union stays
+attached; a cut crosses the measured near face. Non-constant frusta are rejected
+rather than mislabeled as an extrusion.
+
+Full and conservative variants are executed by OpenCascade and re-rendered in
 all source views. A candidate is retained only when it remains one valid solid
 and does not regress the parent source-view score or smooth-face topology. The
-residual is then recomputed from the new solid for at most one additional round.
-This is a bounded construction grammar, not a dictionary of part classes.
+signed residual is then recomputed from the new solid for at most one
+additional round.
 
-The audit graph records three distinct relations: the learned proposal, an exact
-profile rewrite, and measured boolean operations applied after that rewrite.
-Every accepted node stores its actual per-prefix solid, face, edge and volume
-validation; rejected learned branches remain visible in the ledger.
+These operations are trusted measurement code, not part of the learned CADENA
+allowlist. The policy may propose only a restricted root. The audit graph
+records three distinct relations: learned proposal, exact profile rewrite and
+measured boolean operation. Every accepted node stores its actual per-prefix
+solid, face, edge and volume validation; rejected learned branches remain
+visible in the ledger. This is a construction grammar, not a dictionary of
+part classes.
+
 ## Acceptance
 
 The final candidate must pass independent source and kernel boundaries.
