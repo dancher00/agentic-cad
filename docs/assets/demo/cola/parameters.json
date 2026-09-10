@@ -17,98 +17,147 @@
     },
     {
       "name": "body_diameter",
-      "value": 74.9,
+      "value": 75.6,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "neck_diameter",
-      "value": 65.8,
+      "name": "lower_chime_height",
+      "value": 9.7,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "shoulder_start_height",
-      "value": 99.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "neck_start_height",
-      "value": 116.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "base_chime_height",
-      "value": 6.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "base_contact_diameter",
-      "value": 63.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "base_recess_depth",
-      "value": 2.8,
+      "name": "base_recess_height",
+      "value": 3.3,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
       "name": "base_recess_flat_diameter",
-      "value": 40.0,
+      "value": 43.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "lid_top_height",
-      "value": 118.6,
+      "name": "base_contact_inner_diameter",
+      "value": 52.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_contact_outer_diameter",
+      "value": 57.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_contact_lip_diameter",
+      "value": 61.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_chime_broad_diameter",
+      "value": 73.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_chime_broad_height",
+      "value": 6.1,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_start_height",
+      "value": 100.5,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_mid_diameter",
+      "value": 74.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_mid_height",
+      "value": 106.8,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_upper_diameter",
+      "value": 70.6,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_upper_height",
+      "value": 111.7,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "neck_diameter",
+      "value": 65.2,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "neck_start_height",
+      "value": 114.6,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "rim_axial_height",
+      "value": 4.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
       "name": "rim_outer_diameter",
-      "value": 68.0,
+      "value": 68.6,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "rim_roll_diameter",
-      "value": 2.2,
+      "name": "rim_inner_diameter",
+      "value": 63.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "rim_flange_outer_diameter",
-      "value": 66.2,
+      "name": "rim_outer_top_round_drop",
+      "value": 1.2,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "rim_flange_bottom_height",
-      "value": 118.35,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "rim_flange_thickness",
-      "value": 0.45,
+      "name": "lid_recess_below_top",
+      "value": 2.3,
       "unit": "mm",
       "source": "estimated",
       "editable": true
@@ -116,8 +165,11 @@
   ],
   "implementation_parameters": [],
   "assumptions": [
-    "GPT-generated starting geometry was manually refined against the source photograph.",
-    "Height and wall thickness are modeling inputs, not measured dimensions.",
-    "Hidden geometry and handle depth remain estimates."
+    "The body diameter and transition proportions are estimated from the single photograph after allowing for camera elevation and perspective; they are not measured dimensions.",
+    "The can is modeled as rotationally symmetric, excluding label graphics, condensation and other appearance-only details.",
+    "The upper shoulder was localized more strongly beneath a narrower neck to match the supplied silhouette comparison.",
+    "The hidden underside is represented by an estimated annular contact foot and a 3.3 mm recessed center with smooth tangent transitions.",
+    "The rolled rim uses enlarged smooth outer and inner roundovers rather than a square flange, while the unseen lid is kept as a simple recessed closed panel.",
+    "A uniform 0.2 mm inward shell forms the complete closed hollow can, including the lid, rim and recessed base."
   ]
 }

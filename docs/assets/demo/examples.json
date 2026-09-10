@@ -11,22 +11,37 @@
     "license": "CC BY-SA 4.0",
     "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
     "original_photo_sha256": "2b5c599388867c01616b9b7188fab16464237a68f6c07db780ab399454aeb6d5",
-    "submitted_photo_sha256": "12e975f80e122ff8323065999a5fab0465c27a0412aafc1a2ad03a9fad38104f",
+    "submitted_photo_sha256": "8d9fb2cb06f7dd371e14a5bc4b31118b86e3b037c6bba0d0aff83573d22edb3f",
     "extents": [
-      74.90000020000001,
-      74.90000020000001,
+      75.6000002,
+      75.6000002,
       120.00000019999999
     ],
     "generated_at": "2026-09-10",
     "exports": {
-      "model.step": "3cae4ebdd98b52f64dbd9f677f38ba500f96d6136a032c36eca021b38be5afcb",
-      "model.stl": "6485a5ddb3f6d54afbc0fb3bc3ac4d50aea80881e29bd7b206511f37761c0d21",
-      "model.py": "6ad486828ee6c3d912cddf808ccef68b51811470e1da75ad9c59390bac0fe09d"
+      "model.step": "ff6ff2f452e01a56a08763d4a7dc7eb02eb0916296e9360df799989bb4a8d457",
+      "model.stl": "57499cc729fcc3f22cd42634cf4080abc3e4b56f6d64ccdb3d6b27b9a778b56c",
+      "model.py": "90a36091b9220837df039544c17c6f5fc39504e459ccf7fc8b2ad4768d38c073"
     },
-    "postprocessing": "Manual photo-guided geometry correction",
-    "corrections": [
-      "Body aspect ratio and shoulder/rim proportions; 120 mm reference height."
-    ]
+    "postprocessing": "Automatic SAM2/DA3 fitting and GPT photo-feature review; no manual geometry edits",
+    "selected_attempt": 3,
+    "reconstruction": "hybrid",
+    "input_photo_sha256": "12e975f80e122ff8323065999a5fab0465c27a0412aafc1a2ad03a9fad38104f",
+    "generation_config": {
+      "model": "gpt-5.6-sol",
+      "provider": "llm-proxy",
+      "reasoning_effort": "xhigh",
+      "max_output_tokens": 32768,
+      "max_repairs": 2,
+      "timeout_seconds": 900.0,
+      "sandbox": {
+        "memory_limit_mb": 8192,
+        "cpu_seconds": 90,
+        "wall_seconds": 120
+      }
+    },
+    "code_revision": "c13c11f924f0138d86ece7f6c9f6b75884cb97e0",
+    "profile_helper_sha256": "2e32c5d4de782b678ce368ad90c7e5fa65c59c2ca269135d942b66dc3c910537"
   },
   "mug": {
     "title": "Ceramic mug",
