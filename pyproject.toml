@@ -145,7 +145,7 @@ pretty = true
 packages = ["da3_cad"]
 
 [[tool.mypy.overrides]]
-module = ["cadquery.*", "open3d.*", "scipy.*", "trimesh.*", "yaml.*"]
+module = ["cadquery.*", "OCP.*", "open3d.*", "scipy.*", "trimesh.*", "yaml.*"]
 ignore_missing_imports = true
 
 # Optional integrations are absent from the minimal CPU environment.

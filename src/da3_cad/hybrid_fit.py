@@ -133,7 +133,35 @@ class GeometryObjective:
             "contract": "shared similarity in DA3 camera frame; relative scale; depth prior",
         }
 
-    def register(self) -> dict[str, Any]:
+    def register(self, seed: Any = None) -> dict[str, Any]:
+        if seed is not None:
+            origin = np.asarray(seed, dtype=float)
+            if origin.shape == (7,) and np.isfinite(origin).all():
+                best = self.evaluate(origin)
+
+                def loss(pose: Any) -> float:
+                    nonlocal best
+                    trial = self.evaluate(pose)
+                    if trial["loss"] < best["loss"]:
+                        best = trial
+                    return float(trial["loss"])
+
+                # Reuse an already strong alignment of the same views. All scoring
+                # still uses the full exported mesh; poor seeds fall back to search.
+                if min(best["view_ious"]) >= 0.95:
+                    delta = np.asarray([0.15, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1])
+                    minimize(
+                        loss,
+                        origin,
+                        method="Powell",
+                        bounds=list(zip(origin - delta, origin + delta, strict=True)),
+                        options={"maxfev": 80, "xtol": 0.005, "ftol": 0.001},
+                    )
+                    if min(best["view_ious"]) >= 0.95:
+                        return {**best, "registration_method": "warm-start"}
+        return {**self._register_global(), "registration_method": "global"}
+
+    def _register_global(self) -> dict[str, Any]:
         _, _, basis = np.linalg.svd(self.cloud - self.center, full_matrices=False)
         rotations = []
         for order in itertools.permutations(range(3)):
@@ -200,7 +228,12 @@ class GeometryObjective:
 
 
 def fit_candidate(
-    candidate: Any, attempt_dir: Path, evidence: Path, settings: Any, max_parameters: int
+    candidate: Any,
+    attempt_dir: Path,
+    evidence: Path,
+    settings: Any,
+    max_parameters: int,
+    registration_seed: Any = None,
 ) -> tuple[Any, Any, dict[str, Any]]:
     from da3_cad.cad.sandbox import validate_and_export
     from da3_cad.gpt_cad import parameterize
@@ -208,7 +241,11 @@ def fit_candidate(
     objective = GeometryObjective(evidence)
     objective.load_mesh(attempt_dir / "model.stl")
     normalization = (objective.mesh_center.copy(), objective.mesh_radius)
-    initial = objective.register()
+    initial = (
+        objective.register(registration_seed)
+        if registration_seed is not None
+        else objective.register()
+    )
     verification = GeometryObjective(evidence, resolution=192)
     verification.load_mesh(attempt_dir / "model.stl", normalization)
     verified_initial = verification.evaluate(initial["pose"])
@@ -316,6 +353,7 @@ def fit_candidate(
         "search_before": initial,
         "search_after": final,
         "verification_resolution": 192,
+        "registration_method": initial.get("registration_method", "global"),
         "trials": trials,
         "specified_dimensions_modified": False,
         "limitation": "Observation consistency only; hidden geometry and material are not measured",

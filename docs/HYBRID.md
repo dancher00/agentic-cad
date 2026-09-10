@@ -50,10 +50,11 @@ available; CUDA is recommended.
 Closed thin-wall containers use an inward offset of a complete exterior solid,
 avoiding independently drawn inner profiles that can cross and detach the base.
 Photo-derived profiles can use `da3_cad.cad.profiles.curve`: a shape-preserving
-cubic Hermite interpolator with derivatives computed from coordinate-wise PCHIP
-on chord-length parameters. GPT supplies the stations; the helper connects them
-without interpolation overshoot. Optional endpoint tangent directions are bounded
-against adjacent secants. Stations and dimensions remain editable; no object-specific
+quintic Bezier construction with initial tangent estimates from coordinate-wise PCHIP
+on chord-length parameters. GPT supplies the stations; ordered control polygons
+prevent interpolation overshoot. Zero second derivatives at stations provide C2
+joins and smooth curvature transitions into tangent straight walls. Optional endpoint
+tangent directions are bounded against adjacent secants. Stations and dimensions remain editable; no object-specific
 dimensions or templates are built into this helper. Python exports using it require
 Agentic CAD installed; STEP and STL remain independent of the application.
 The kernel also samples non-periodic profile splines at 257 positions. Along axes
@@ -68,7 +69,11 @@ deflection and 0.2 radians angular deflection; the STEP export retains analytic 
 
 Registration uses one shared similarity transform across the DA3 cameras, rather
 than independently moving the CAD in each image. Fitting freezes that transform
-and adjusts up to four positive estimated length parameters. User-specified
+after registration. A later candidate or resumed run can reuse a previous pose
+only when it scores at least 0.95 silhouette IoU in every view, then refine it
+locally on the full exported mesh. Otherwise the full pose search runs again.
+The registration method is recorded in `geometry-review.json`. Numerical fitting
+adjusts up to four positive estimated length parameters. User-specified
 parameters and parameters named as wall thickness, clearance or tolerance are
 excluded from numerical fitting. Use `--fit-parameters 0` for evaluation without
 parameter updates. Local fitting preserves the ordering of named body-profile radii

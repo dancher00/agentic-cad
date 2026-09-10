@@ -72,3 +72,20 @@ def test_api_allows_only_the_trusted_profile_import():
     ):
         with pytest.raises(AstPolicyError):
             validate_generated_program(candidate.model_copy(update={"code": bad}))
+
+
+def test_profile_has_c2_joins_and_zero_endpoint_curvature():
+    from OCP.gp import gp_Pnt, gp_Vec
+
+    edge = curve(
+        cq.Workplane("XZ").moveTo(0, 0),
+        [(1, 1), (2, 1.01), (3, 2)],
+        start_tangent=(1, 0),
+        end_tangent=(0, 1),
+    ).val()
+    native = edge._geomAdaptor().BSpline()
+    assert native.IsCN(2)
+    for index in range(1, native.NbKnots() + 1):
+        point, first, second = gp_Pnt(), gp_Vec(), gp_Vec()
+        native.D2(native.Knot(index), point, first, second)
+        assert second.Magnitude() < 1e-7

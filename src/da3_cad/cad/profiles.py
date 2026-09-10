@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+import cadquery as cq
 import numpy as np
+from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+from OCP.Geom import Geom_BezierCurve
+from OCP.GeomConvert import GeomConvert_CompCurveToBSplineCurve
+from OCP.TColgp import TColgp_Array1OfPnt
 from scipy.interpolate import PchipInterpolator
 
 
@@ -17,10 +22,10 @@ def curve(
 ) -> Any:
     """Continue a wire through absolute local XY stations without interpolation overshoot.
 
-    Includes the workplane's current point. Cubic Hermite derivatives come from
-    coordinate-wise PCHIP on chord-length parameters. Optional endpoint tangent
-    directions are limited to retain monotonicity in each coordinate. Dimensions
-    and stations are supplied by the caller; this function contains no object template.
+    Includes the current point. PCHIP supplies initial tangent estimates, then
+    bounded quintic Bezier segments preserve coordinate-wise station ordering.
+    Zero second derivatives at stations provide C2 joins, including tangent joins
+    to straight walls. Dimensions/stations come from the caller, not object templates.
     """
     world = workplane._toVectors(points, True)
     local = np.asarray([workplane.plane.toLocalCoords(p).toTuple() for p in world])
@@ -51,10 +56,32 @@ def curve(
             float(np.min(3.0 * np.abs(secant[active] / vector[active]))),
         )
         derivatives[index] = vector * speed
-    return workplane.spline(
-        points,
-        tangents=[tuple(v) for v in derivatives],
-        parameters=parameters.tolist(),
-        scale=False,
-        includeCurrent=True,
-    )
+    # Quintic control polygons stay ordered if 2h/5*(d0+d1) <= |p1-p0|.
+    # One scale per station preserves any requested tangent direction.
+    scales = np.ones(len(local))
+    for i, length in enumerate(lengths):
+        demand = 0.4 * length * (np.abs(derivatives[i]) + np.abs(derivatives[i + 1]))
+        active = demand > 1e-12
+        if active.any():
+            factor = min(
+                1.0, float(np.min(np.abs(local[i + 1] - local[i])[active] / demand[active]))
+            )
+            scales[i : i + 2] = np.minimum(scales[i : i + 2], factor)
+    derivatives *= scales[:, None]
+    joined = None
+    for i, length in enumerate(lengths):
+        start, end = local[i], local[i + 1]
+        left, right = length * derivatives[i] / 5, length * derivatives[i + 1] / 5
+        controls = [start, start + left, start + 2 * left, end - 2 * right, end - right, end]
+        poles = TColgp_Array1OfPnt(1, 6)
+        for index, point in enumerate(controls, 1):
+            poles.SetValue(index, workplane.plane.toWorldCoords(tuple(point)).toPnt())
+        segment = Geom_BezierCurve(poles)
+        if joined is None:
+            joined = GeomConvert_CompCurveToBSplineCurve(segment)
+        elif not joined.Add(segment, 1e-9, True, True, 3):
+            raise ValueError("Cannot join adjacent shape-preserving profile segments")
+    assert joined is not None
+    edge = cq.Edge(BRepBuilderAPI_MakeEdge(joined.BSplineCurve()).Edge())
+    workplane._addPendingEdge(edge)
+    return workplane.newObject([edge])

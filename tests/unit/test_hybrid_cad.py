@@ -354,3 +354,34 @@ def test_candidate_selection_prefers_all_view_target_over_better_average() -> No
     misleading_average = {"loss": 0.09, "mean_silhouette_iou": 0.91, "view_ious": [0.99, 0.83]}
     all_views = {"loss": 0.12, "mean_silhouette_iou": 0.88, "view_ious": [0.88, 0.88]}
     assert candidate_rank(all_views, 0.85) < candidate_rank(misleading_average, 0.85)
+
+
+def test_registration_reuses_strong_seed_without_accepting_a_worse_optimizer_point(monkeypatch):
+    import da3_cad.hybrid_fit as fitting
+
+    objective = object.__new__(fitting.GeometryObjective)
+    objective.evaluate = lambda p: {
+        "loss": 0.02 if p[0] == 0 else 0.4,
+        "view_ious": [0.98] if p[0] == 0 else [0.6],
+        "pose": list(p),
+    }
+    objective._register_global = lambda: pytest.fail("Good seed should not repeat global search")
+    monkeypatch.setattr(fitting, "minimize", lambda loss, *args, **kwargs: loss(np.ones(7)))
+    result = objective.register(np.zeros(7))
+    assert result["pose"] == [0] * 7
+    assert result["registration_method"] == "warm-start"
+
+
+@pytest.mark.parametrize("seed", [np.zeros(7), np.zeros(3), np.full(7, np.nan)])
+def test_registration_falls_back_if_seed_is_invalid_or_a_view_is_poor(seed, monkeypatch):
+    import da3_cad.hybrid_fit as fitting
+
+    objective = object.__new__(fitting.GeometryObjective)
+    objective.evaluate = lambda p: {"loss": 0.1, "view_ious": [0.99, 0.8], "pose": list(p)}
+    objective._register_global = lambda: {"loss": 0.01, "view_ious": [0.99, 0.99], "pose": [1] * 7}
+    monkeypatch.setattr(
+        fitting, "minimize", lambda *args, **kwargs: pytest.fail("Poor seed must use global search")
+    )
+    result = objective.register(seed)
+    assert result["registration_method"] == "global"
+    assert result["pose"] == [1] * 7

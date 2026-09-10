@@ -171,7 +171,8 @@ shape-preserving helper instead of unconstrained interpolating splines:
 It includes the current point and uses absolute local XY coordinates (radius/height
 on XZ). Do not repeat the current point. Endpoint tangent arguments are optional
 DIRECTIONS; they must agree with adjacent stations. The helper computes bounded
-cubic Hermite derivatives, preventing interpolation overshoot without moving stations.
+quintic Bezier curves with C2 joins, preventing interpolation overshoot without moving
+stations. Curvature goes smoothly to zero at stations and tangent joins to straight walls.
 Use few meaningful stations and explicit neck/foot transitions. Follow the curve
 with normal CadQuery lineTo/close/revolve/extrude operations. Closed containers still
 use the exterior.shell(-wall_thickness) construction described above.
@@ -398,6 +399,7 @@ def run_gpt_cad(
     image_content, manifest = prepare_images(paths)
     saved_response = None
     saved_feedback = ""
+    registration_seed = None
     if resume_from is not None:
         from types import SimpleNamespace
 
@@ -407,6 +409,14 @@ def run_gpt_cad(
         ] != [v["sha256"] for v in manifest]:
             raise ValueError("Resume requires the exact same prompt and ordered photos")
         previous_report = json.loads((resume_from / "report.json").read_text())
+        for previous_geometry in sorted(
+            (resume_from / "attempts").glob("*/geometry-review.json"), reverse=True
+        ):
+            registration_seed = (
+                json.loads(previous_geometry.read_text()).get("after", {}).get("pose")
+            )
+            if registration_seed is not None:
+                break
         candidates = sorted((resume_from / "attempts").glob("*/response.json"))
         if not candidates:
             raise ValueError("Previous run has no saved CAD response")
@@ -651,8 +661,14 @@ def run_gpt_cad(
 
                 stage(f"Checking and fitting CAD: attempt {index + 1}")
                 candidate, fitted_validation, geometry = fit_candidate(
-                    candidate, attempt_dir, output / "evidence", settings, hybrid.fit_parameters
+                    candidate,
+                    attempt_dir,
+                    output / "evidence",
+                    settings,
+                    hybrid.fit_parameters,
+                    registration_seed,
                 )
+                registration_seed = geometry["after"].get("pose")
                 if fitted_validation is not None:
                     validation = fitted_validation
                 attempt["geometry"] = geometry
