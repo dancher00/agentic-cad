@@ -17,7 +17,7 @@ import random
 import sys
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -546,7 +546,7 @@ def main() -> None:
         else None
     )
 
-    processor = AutoProcessor.from_pretrained(  # type: ignore[no-untyped-call]
+    processor = cast(Any, AutoProcessor).from_pretrained(
         args.checkpoint.resolve(),
         local_files_only=True,
         trust_remote_code=True,

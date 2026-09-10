@@ -171,7 +171,7 @@ def _detect_features(
     views: tuple[int, ...],
     maximum_features: int,
 ) -> tuple[dict[int, _FeatureView], list[dict[str, object]]]:
-    sift_create = cast(Any, cv2.SIFT_create)  # type: ignore[attr-defined]
+    sift_create = cast(Any, cv2).SIFT_create
     detector = sift_create(
         nfeatures=maximum_features,
         contrastThreshold=0.01,

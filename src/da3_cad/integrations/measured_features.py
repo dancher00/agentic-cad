@@ -437,7 +437,7 @@ def _signed_target_distances(
     measurement_mesh.remove_unreferenced_vertices()
     if measurement_mesh.is_empty or not measurement_mesh.is_watertight:
         return None
-    import point_cloud_utils as pcu  # type: ignore[import-untyped]
+    import point_cloud_utils as pcu
 
     signed, _, _ = pcu.signed_distance_to_mesh(
         np.asarray(target_points, dtype=np.float64),
