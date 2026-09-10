@@ -142,7 +142,9 @@ No loops, functions, comprehensions, other imports,
 filesystem/network access, exporters/importers, eval, or introspection. Assign final
 Workplane to `r`. Put editable dimensions in top-level numeric variables. Each parameter
 entry must match a literal numeric assignment in code; its source is `specified` only
-if supplied by the user, otherwise `estimated`. Avoid fragile decorative fillets.
+if supplied by the user, otherwise `estimated`. Use robust small fillets where the
+photo shows rounded manufactured edges, including ceramic handle edges. Omit purely
+decorative fillets, but do not leave a visibly rounded handle as a sharp extruded plate.
 In CadQuery 2.4, spline() does not include the current point by default. When
 extending a wire with a spline, use includeCurrent=True and do not duplicate that
 point in the point list. Keep revolve profiles closed and connected.
@@ -758,6 +760,7 @@ def run_gpt_cad(
                 *attempt_dir.glob("comparison-*.png"),
                 *attempt_dir.glob("sections.png"),
                 *attempt_dir.glob("material-chords.json"),
+                *attempt_dir.glob("silhouettes.npz"),
                 *attempt_dir.glob("feature-review.json"),
                 *attempt_dir.glob("cad-views.png"),
             ]:

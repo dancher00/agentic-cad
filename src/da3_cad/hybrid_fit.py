@@ -105,12 +105,15 @@ class GeometryObjective:
     def evaluate(self, pose: Any, *, panels: Path | None = None) -> dict[str, Any]:
         world = self.world_vertices(pose)
         ious = []
+        silhouettes = {}
         for i, (target, intrinsics, extrinsics) in enumerate(
             zip(self.targets, self.intrinsics, self.extrinsics, strict=True)
         ):
             predicted = rasterize(world, self.faces, intrinsics, extrinsics, target.shape)
             ious.append(silhouette_iou(predicted, target))
             if panels is not None:
+                silhouettes[f"target_{i:02d}"] = target
+                silhouettes[f"cad_{i:02d}"] = predicted
                 # Gray overlap, blue missing material, red excess material.
                 rgb = np.full((*target.shape, 3), 245, dtype=np.uint8)
                 rgb[target & predicted] = [100, 100, 100]
@@ -119,6 +122,8 @@ class GeometryObjective:
                 Image.fromarray(rgb).resize((rgb.shape[1] * 4, rgb.shape[0] * 4)).save(
                     panels / f"comparison-{i:02d}.png"
                 )
+        if panels is not None:
+            np.savez_compressed(panels / "silhouettes.npz", **silhouettes)
         rotation = Rotation.from_rotvec(pose[:3]).as_matrix()
         local = ((self.cloud - self.center) / self.radius - pose[4:7]) @ rotation / np.exp(pose[3])
         distances = self.surface_tree.query(local)[0]
@@ -214,6 +219,18 @@ class GeometryObjective:
             key=lambda item: item["loss"],
         )
         starts_to_refine = pca_ranked[:3] + diverse
+        # An initially off-center front view must not disappear from the search
+        # simply because hiding a handle gives a better unregistered silhouette.
+        for yaw in (0.0, np.pi):
+            camera_rotation = (
+                Rotation.from_rotvec([0.3, 0, 0]).as_matrix()
+                @ camera_basis
+                @ Rotation.from_rotvec([0, 0, yaw]).as_matrix()
+            )
+            rotation = Rotation.from_matrix(self.extrinsics[0, :3, :3].T @ camera_rotation)
+            starts_to_refine.append(
+                {"pose": np.r_[rotation.as_rotvec(), 0.0, forward], "forced_front": True}
+            )
         for start in starts_to_refine:
             origin = np.asarray(start["pose"])
             delta = np.asarray([0.6, 0.6, 0.6, 0.5, 0.6, 0.6, 0.6])
@@ -222,7 +239,11 @@ class GeometryObjective:
                 origin,
                 method="Powell",
                 bounds=list(zip(origin - delta, origin + delta, strict=True)),
-                options={"maxfev": 280, "xtol": 0.005, "ftol": 0.001},
+                options={
+                    "maxfev": 400 if start.get("forced_front") else 280,
+                    "xtol": 0.005,
+                    "ftol": 0.001,
+                },
             )
         return best
 

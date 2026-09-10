@@ -72,6 +72,8 @@ than independently moving the CAD in each image. Fitting freezes that transform
 after registration. A later candidate or resumed run can reuse a previous pose
 only when it scores at least 0.95 silhouette IoU in every view, then refine it
 locally on the full exported mesh. Otherwise the full pose search runs again.
+The global search retains front/back camera hypotheses even when their initial
+alignment scores poorly, so hiding a handle cannot discard its visible orientation.
 The registration method is recorded in `geometry-review.json`. Numerical fitting
 adjusts up to four positive estimated length parameters. User-specified
 parameters and parameters named as wall thickness, clearance or tolerance are
@@ -97,8 +99,9 @@ has no clear local errors according to that review; it is a model judgment, not
 ground-truth validation. The reviewer receives measured STL extents and horizontal
 section spans as well as depth-buffered renders, so CAD dimensions need not be
 guessed from pixels. The review also receives the measured lowest contact footprint,
-near-base sections, source SAM silhouette bands and registered silhouette overlays.
-Projected photo bands remain distinct from axial CAD dimensions. Reviews carry a
+near-base sections, paired source/CAD silhouette bands and registered overlays.
+Both masks are measured at the same image rows; projected bands are never treated
+as axial CAD cross-sections. Reviews carry a
 protocol version; resume reassesses older
 protocols before using them as correction instructions. The reviewer uses `high` reasoning independently of the
 generator's configured effort. Each valid candidate costs an additional provider call.
@@ -146,6 +149,7 @@ resume sends that saved program and critique directly to the next generation.
   `geometry.npz` with depth, confidence and cameras.
 - `geometry-review.json`: before/after objective values and every parameter trial.
 - `comparison-*.png`: gray overlap, blue missing silhouette, red excess silhouette.
+- `silhouettes.npz`: source and projected CAD masks in the same verification image frames.
 - `sections.png` and `material-chords.json`: central CAD sections and sampled
   inward surface distances, including thick features; not certified wall thickness.
 - `quality.json`: CAD kernel checks and geometric comparison.
