@@ -46,10 +46,33 @@ def test_build_viewer_embeds_geometry_parameters_and_downloads(tmp_path: Path) -
     html = output.read_text(encoding="utf-8")
 
     assert output == run / "viewer.html"
-    assert "DA3-CAD Viewer" in html
+    assert "Datumfold — Model workspace" in html
+    assert '"decision":"CANDIDATE"' in html
+    assert "model.py" in html
     assert '"name":"width"' in html
     assert '"original_points":8' in html
     assert "model.step" in html
     assert "triangle edges hidden" in html
     assert "ctx.stroke()" not in html
     assert "__DA3_CAD_VIEWER_PAYLOAD__" not in html
+
+
+def test_viewer_keeps_source_view_rejection_despite_valid_kernel(tmp_path: Path) -> None:
+    from da3_cad.viewer.build import viewer_payload
+
+    run = tmp_path / "book" / "cad"
+    run.mkdir(parents=True)
+    (run / "model.py").write_text(
+        "import cadquery as cq\nPARAMETERS = {'width': 1}\nr = cq.Workplane('XY').box(1, 1, 1)\n",
+        encoding="utf-8",
+    )
+    for name, payload in (
+        ("parameters.json", {}),
+        ("quality.json", {"status": "valid"}),
+        ("provenance.json", {}),
+    ):
+        (run / name).write_text(json.dumps(payload), encoding="utf-8")
+    (run.parent / "report.json").write_text(json.dumps({"status": "ABSTAIN"}), encoding="utf-8")
+    payload = viewer_payload(run, output=run / "viewer.html")
+    assert payload["decision"] == "ABSTAIN"
+    assert payload["display_name"] == "book"

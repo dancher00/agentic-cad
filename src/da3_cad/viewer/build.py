@@ -140,9 +140,22 @@ def viewer_payload(
         None,
     )
     metadata = cast(dict[str, Any], inspection["parameter_metadata"])
+    report_path = run_dir / "report.json"
+    if not report_path.is_file() and run_dir.name == "cad":
+        report_path = run_dir.parent / "report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else {}
+    decision = report.get("status", "CANDIDATE")
+    if decision not in {"ACCEPT", "ABSTAIN", "CANDIDATE", "FAILED"}:
+        decision = "CANDIDATE"
+    fallback_name = run_dir.parent.name if run_dir.name == "cad" else run_dir.name
+    vlm = report.get("vlm") or {}
+    display_name = vlm.get("description") or report.get("object") or fallback_name
     return {
         "schema_version": "1.0",
         "run": str(run_dir.resolve()),
+        "display_name": display_name,
+        "decision": decision,
+        "report": report,
         "quality": inspection["quality"],
         "provenance": inspection["provenance"],
         "parameters": {
@@ -157,6 +170,7 @@ def viewer_payload(
         "downloads": {
             "step": _relative_download(output, run_dir / "model.step"),
             "stl": _relative_download(output, run_dir / "model.stl"),
+            "python": _relative_download(output, run_dir / "model.py"),
             "parameters": _relative_download(output, run_dir / "parameters.json"),
             "provenance": _relative_download(output, run_dir / "provenance.json"),
         },

@@ -1,4 +1,6 @@
-# DA3-CAD
+# Datumfold
+
+Previously DA3-CAD.
 
 **Turn photos of an object into editable CAD.** Describe the object, provide overlapping photos, and export STEP, STL and a CadQuery Python program.
 
@@ -20,7 +22,7 @@ git clone https://github.com/dancher00/DA3-CAD.git
 cd DA3-CAD
 ```
 
-Follow the **[one-time setup](docs/PHOTO_CAD.md#installation)** to install the environment and models. Weights download separately.
+Follow the **[one-time setup](docs/PHOTO_CAD.md#installation)** to install the environment and models. Weights download separately. The original `da3-cad` command also works.
 
 ## 2. Add photos and describe the object
 
@@ -28,11 +30,11 @@ Put **20–40 sharp, overlapping photos of the same stationary object** in `phot
 
 ```bash
 # Preview the object selection before reconstructing.
-da3-cad photo-cad photos/ --object "black book" \
+datumfold photo-cad photos/ --object "black book" \
   --output work/selection --stop-after-masks --device cuda
 
 # Generate a faster, unverified CAD draft.
-da3-cad photo-cad photos/ --object "black book" \
+datumfold photo-cad photos/ --object "black book" \
   --output work/book --geometry da3 --device cuda
 ```
 
@@ -43,12 +45,12 @@ Use a **new output folder** for each run. Selection masks are in `work/selection
 Open `work/book/candidate.step` in your CAD editor, or create a local browser preview:
 
 ```bash
-da3-cad viewer work/book/cad --output work/book/viewer.html
+datumfold viewer work/book/cad --output work/book/viewer.html
 ```
 
-Open `work/book/viewer.html`, drag to rotate and scroll to zoom.
+Open `work/book/viewer.html`. Drag to rotate, scroll to zoom, or select **Front**, **Top** and **3D**. Use **Export STEP** to open the model in your CAD editor.
 
-![Actual browser viewer showing the reconstructed book CAD draft](docs/assets/quickstart/viewer.png)
+![Datumfold workspace showing the reconstructed book CAD draft](docs/assets/quickstart/viewer.png)
 
 *Browser preview of a separate DA3 book draft. This is an unverified candidate, not the accepted reconstruction of the source object.*
 
