@@ -1,5 +1,14 @@
 # Results and claim boundaries
 
+> Metric audit, 10 September 2026: the historical v9 evaluator independently
+> centers/scales prediction and reference but leaves their arbitrary relative
+> rotation unresolved. Its direct IoU/Chamfer numbers below are retained for
+> traceability and must not be used as reliable claims of shape improvement.
+> Kernel and source-view results remain separate measurements. The ray-section
+> study uses a shared observation coordinate frame for controlled geometry
+> metrics; its real-photo audit reports source-view agreement without reference
+> geometry. See [protocol](research/ray_section_protocol.md).
+
 ## Five-object real-RGB photo-to-CAD audit v9
 
 The current product path is RGB-only exhaustive COLMAP -> target-masked

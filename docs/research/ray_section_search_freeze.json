@@ -1,0 +1,11 @@
+{
+  "stage": "executable budget search v2; no change to grid, carving, frame or penalty",
+  "reason": "real exploratory CAD validity failures motivated enumeration of best partitions at smaller budgets",
+  "comparison": "same generated instances; internal ablation, not a claim of unseen-category generalization",
+  "source_hashes": {
+    "src/da3_cad/ray_sections.py": "554c424d13493de6eb91a44663c2ce5c5f421fd9e71cbe80c6a87f3f828fcd7d",
+    "src/da3_cad/ray_section_search.py": "af0b78bc33a12250c250068f628dc770288b97788b337f1caeba2bc871576c93",
+    "scripts/run_ray_section_study.py": "c7b91ee67ebdc7fa10842d48bdeca4122064ca3dc5f70b56d1ca911fe1a4bdc3",
+    "scripts/run_ray_section_search_study.py": "165c0bfe4d73855141c8a46a2c8abba103130df2304497e0d3270df8a69cca24"
+  }
+}

@@ -5,6 +5,18 @@ while it remains an alpha research system.
 
 ## [Unreleased]
 
+### RaySection research preview (2026-09-10)
+
+- Add CPU/CUDA calibrated-ray-to-CAD compilation with adaptive interval profiles,
+  budget enumeration, bounded CAD-kernel execution and editable STEP/program output.
+- Add `ray-sections` and `pack-rays` commands, a redistributable simulated-depth
+  demo, per-instance ablations and a seven-page technical report.
+- Audit historical shape evaluation: independently normalized reference metrics
+  leave relative rotation unresolved and must not support aligned accuracy claims.
+- Controlled 30-instance result: mean shared-frame IoU 0.8366, 30 valid outputs,
+  mean 1.50 extrusions. Five real cases yield valid candidates but all remain
+  source-view ABSTAIN; simulated-depth and real-RGB evidence are reported separately.
+
 ### Added
 
 - Five-object real-RGB v9 audit with 32 registered views per object, a portable

@@ -1,5 +1,9 @@
 # DA3-CAD paper
 
+The September revival manuscript and reproducibility package are in
+[revival/](revival/README.md). The draft below is retained as historical work;
+its DA3-first framing is not the claim of the new RaySection study.
+
 Working title: **DA3-CAD: Deterministic Multi-View RGB-to-B-Rep
 Reconstruction with Depth Anything 3**.
 

@@ -1,0 +1,40 @@
+name: ray-sections
+
+on:
+  push:
+    paths:
+      - "src/da3_cad/ray_section*.py"
+      - "tests/unit/test_ray_sections.py"
+      - "pyproject.toml"
+      - ".github/workflows/ray-sections.yml"
+  pull_request:
+    paths:
+      - "src/da3_cad/ray_section*.py"
+      - "tests/unit/test_ray_sections.py"
+      - "pyproject.toml"
+      - ".github/workflows/ray-sections.yml"
+
+jobs:
+  ray-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install CPU environment and ray dependencies
+        run: |
+          python -m pip install -r constraints/cpu-py312.txt
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.6,<3'
+          python -m pip install -e '.[ray]'
+          python -m pip check
+      - name: Ray geometry and executable search contracts
+        env:
+          DA3_CAD_TEST_NO_NETWORK: "1"
+          OPENBLAS_NUM_THREADS: "2"
+          OMP_NUM_THREADS: "2"
+        run: |
+          pytest -q tests/unit/test_ray_sections.py
+          da3-cad ray-sections sample_data/ray_sections/observations.npz --output /tmp/ray-ci --device cpu

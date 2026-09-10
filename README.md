@@ -1,5 +1,43 @@
 # DA3-CAD
 
+## Ray-section CAD: new experimental tool
+
+A training-free compiler from calibrated depth and masks to editable
+sketch-extrusion programs is now available. It runs on CPU or CUDA and needs no
+learned weights. See the [quickstart and input format](docs/RAY_SECTIONS.md).
+
+```bash
+python -m pip install -e '.[ray]'
+da3-cad ray-sections sample_data/ray_sections/observations.npz \
+  --output outputs/ray-demo --device auto
+```
+
+The demo uses simulated depth. For RGB photographs, use the calibration/MVS
+workflow below, then `pack-rays` and `ray-sections`. Output is an experimental
+`candidate.step`; kernel validity alone is not an accuracy guarantee.
+
+[Technical report (PDF)](docs/RaySection_technical_report.pdf) ·
+[Paper source](paper/revival/README.md) ·
+[Per-instance results](docs/results/ray-section-study-v2.json) ·
+[Internal review and limitations](docs/research/ray_section_review.md)
+
+| Controlled simulated-depth study | Valid | Mean volume IoU | Mean extrusions |
+|---|---:|---:|---:|
+| Single section | 30/30 | 0.776 | 1.00 |
+| Uniform sections | 27/30 | 0.692 | 8.63 |
+| RaySection | 30/30 | **0.837** | **1.50** |
+
+Thirty perturbed instances from ten procedural families; reference and prediction
+share one coordinate frame. Invalid IoUs count as zero; extrusion means use valid
+outputs. On five exploratory real-RGB cases, budget search raises kernel validity
+from 2/5 to 5/5, but **all five remain ABSTAIN** under the full source-view gates.
+
+**Metric audit (10 September 2026):** historical independently normalized
+reference IoU below does not resolve rotation between reconstruction and
+reference frames. Treat those values as legacy diagnostics, not evidence of
+shape-accuracy improvement. The new controlled study evaluates predictions and
+references in one shared observation frame.
+
 [![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)

@@ -96,6 +96,60 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
+@app.command("ray-sections")
+def ray_sections_command(
+    observations: Annotated[Path, typer.Argument(help="Calibrated ray bundle (.npz).")],
+    output: Annotated[Path, typer.Option("--output", help="New output directory.")],
+    resolution: Annotated[int, typer.Option(min=16, max=256)] = 72,
+    max_sections: Annotated[int, typer.Option(min=1, max=32)] = 8,
+    penalty: Annotated[float, typer.Option(min=0)] = 0.03,
+    device: Annotated[str, typer.Option(help="auto, cpu, cuda, or cuda:N")] = "auto",
+) -> None:
+    """Compile calibrated depth/masks into an editable experimental CAD candidate."""
+    try:
+        from da3_cad.ray_section_search import reconstruct_sections
+        from da3_cad.ray_sections import RayBundle
+
+        report = reconstruct_sections(
+            RayBundle.load(observations),
+            output,
+            resolution=resolution,
+            maximum_sections=max_sections,
+            penalty=penalty,
+            device=device,
+        )
+    except (ImportError, OSError, ValueError, RuntimeError) as error:
+        console.print(f"[red]Ray-section reconstruction failed:[/red] {error}")
+        raise typer.Exit(2) from error
+    console.print_json(data=report)
+    console.print(
+        "Experimental candidate: kernel validity does not establish reconstruction accuracy."
+    )
+    if not report["kernel_valid"]:
+        raise typer.Exit(3)
+
+
+@app.command("pack-rays")
+def pack_rays_command(
+    workspace: Annotated[Path, typer.Argument(help="COLMAP MVS workspace.")],
+    cameras: Annotated[Path, typer.Option("--cameras", help="Matching camera bundle (.npz).")],
+    output: Annotated[Path, typer.Option("--output", help="Output ray bundle (.npz).")],
+) -> None:
+    """Package existing RGB-derived MVS depth and masks for ray-sections."""
+    from da3_cad.ray_sections import bundle_from_mvs
+
+    if output.exists():
+        console.print(f"[red]Output already exists:[/red] {output}")
+        raise typer.Exit(2)
+    try:
+        bundle = bundle_from_mvs(workspace, cameras)
+        bundle.save(output)
+    except (OSError, ValueError) as error:
+        console.print(f"[red]Could not package rays:[/red] {error}")
+        raise typer.Exit(2) from error
+    console.print(f"Saved {len(bundle.names)} calibrated views to {output}")
+
+
 @contextmanager
 def _cpu_smoke_fixture() -> Iterator[Path]:
     """Yield the checked-in fixture or reproduce it for an installed wheel."""
