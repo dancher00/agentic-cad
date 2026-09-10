@@ -445,6 +445,16 @@ def run_gpt_cad(
         if not candidates:
             raise ValueError("Previous run has no saved CAD response")
         saved_path = candidates[-1]
+        valid_indices = {a["index"] for a in previous_report["attempts"] if a["status"] == "valid"}
+        valid_paths = [p for p in candidates if int(p.parent.name) in valid_indices]
+        if valid_paths:
+            selected = previous_report.get("selected_attempt")
+            saved_path = next(
+                (p for p in valid_paths if int(p.parent.name) == selected), valid_paths[-1]
+            )
+            fitted_path = saved_path.parent / "fitted-response.json"
+            if fitted_path.is_file():
+                saved_path = fitted_path
         previous_attempt = previous_report["attempts"][int(saved_path.parent.name) - 1]
         saved_response = SimpleNamespace(
             id=previous_attempt["response_id"],

@@ -85,6 +85,37 @@ def test_invalid_feature_edit_returns_to_the_valid_baseline(tmp_path, monkeypatc
     assert "unrelated_rewrite=99" not in repair
     assert result["attempts"][1]["repair_strategy"] == "return_to_valid_baseline"
     assert result["feature_review_passed"]
+    # A later rejected edit must not replace the selected valid resume baseline.
+    previous = tmp_path / "run"
+    rejected = previous / "attempts/04"
+    rejected.mkdir()
+    (rejected / "response.json").write_text(
+        CADResponse(
+            name="bad",
+            code=bad,
+            parameters=[
+                Parameter(name="unrelated_rewrite", value=99, unit="mm", source="estimated")
+            ],
+            assumptions=[],
+        ).model_dump_json()
+    )
+    result["attempts"].append(
+        {"index": 4, "status": "invalid", "response_id": "bad", "model": "test"}
+    )
+    (previous / "report.json").write_text(json.dumps(result))
+    monkeypatch.setattr(review, "review_features", lambda *args: {"findings": [{"severity": 0}]})
+    resumed = run_gpt_cad(
+        "block",
+        tmp_path / "resumed",
+        images=[photo],
+        hybrid=HybridConfig(),
+        config=GPTConfig(max_repairs=0),
+        create_viewer=False,
+        resume_from=previous,
+        client=SimpleNamespace(responses=SimpleNamespace(parse=parse)),
+    )
+    assert len(calls) == 3  # Revalidated saved geometry; no fourth model call.
+    assert resumed["attempts"][0]["status"] == "valid"
 
 
 def test_wrong_local_feature_forces_retry_despite_high_global_iou(tmp_path, monkeypatch):
