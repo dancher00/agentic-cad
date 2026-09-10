@@ -61,6 +61,10 @@ For a single convex transition, `profiles.roundover` uses endpoints and tangent
 directions instead of intermediate stations. Its quintic Bezier control polygon
 has no inflection and zero endpoint second derivatives. The same construction
 works at any scale; GPT still estimates the endpoints from the photographs.
+For estimated edge rounding, `profiles.rounded_edges` tries a maximum fillet
+radius, half and quarter, and returns only a valid connected solid. It raises an
+error when all three fail, so regeneration must change the construction. Use exact
+kernel fillets for user-specified radii; adaptive rounding is for estimates.
 Photo review and the website interpolate surface normals across smooth triangle
 joins while retaining sharp creases. This changes lighting only, preserving the
 exported vertices, dimensions and topology.

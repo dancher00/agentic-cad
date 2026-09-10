@@ -60,6 +60,7 @@ GEOMETRY_ATTRIBUTES = frozenset(
         "spline",
         "curve",
         "roundover",
+        "rounded_edges",
         "close",
         "wire",
         "extrude",
@@ -151,6 +152,12 @@ fillet fails, rebuild its contour with tangent joins or sweep a rounded section
 along a smooth path; do not repeatedly shrink the same failing fillet. Workplane
 has no fillet2D method in CadQuery 2.4; draw rounded sketch corners with tangent
 arcs or the provided profile helpers before extrusion.
+For estimated edge roundings, use
+  handle = profiles.rounded_edges(handle.faces('>Y or <Y').edges(), maximum_radius)
+The helper tries the supplied maximum radius, half and quarter, returning only a
+valid connected solid. Name this editable parameter as a maximum fillet radius;
+do not use adaptive rounding for an exact user-specified fillet dimension. If all
+three radii fail, change the construction rather than retrying the same contour.
 In CadQuery 2.4, spline() does not include the current point by default. When
 extending a wire with a spline, use includeCurrent=True and do not duplicate that
 point in the point list. Keep revolve profiles closed and connected.

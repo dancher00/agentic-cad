@@ -128,3 +128,28 @@ def roundover(
     edge = cq.Edge(BRepBuilderAPI_MakeEdge(Geom_BezierCurve(poles)).Edge())
     workplane._addPendingEdge(edge)
     return workplane.newObject([edge])
+
+
+def rounded_edges(selection: Any, maximum_radius: float) -> Any:
+    """Apply the largest valid fillet among R, R/2 and R/4 to selected edges.
+
+    Each candidate must be a valid connected solid. Failure remains explicit:
+    this helper never substitutes an unrounded shape or accepts a broken solid.
+    The caller's radius is a maximum, not a guaranteed manufactured dimension.
+    """
+    radius = float(maximum_radius)
+    if not np.isfinite(radius) or radius <= 0:
+        raise ValueError("Maximum fillet radius must be finite and positive")
+    for fraction in (1.0, 0.5, 0.25):
+        try:
+            result = selection.fillet(radius * fraction)
+            solid = result.val()
+            if solid.isValid() and len(solid.Solids()) == 1 and solid.Volume() > 0:
+                return result
+        except Exception:
+            # OCCT can throw or return an invalid B-rep for the same failure.
+            continue
+    raise ValueError(
+        f"No valid edge fillet between {radius / 4:g} and {radius:g} mm; "
+        "rebuild the contour with tangent joins or sweep a rounded section"
+    )

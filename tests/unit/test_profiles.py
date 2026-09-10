@@ -3,9 +3,32 @@ import numpy as np
 import pytest
 
 from da3_cad.cad.profile_guard import guard_spline_profiles
-from da3_cad.cad.profiles import curve
+from da3_cad.cad.profiles import curve, rounded_edges
 from da3_cad.cad.sandbox import validate_and_export
 from da3_cad.config import SandboxConfig
+
+
+def test_adaptive_rounding_builds_a_valid_solid_when_requested_radius_is_too_large(tmp_path):
+    source = """import cadquery as cq
+import da3_cad.cad.profiles as profiles
+r=profiles.rounded_edges(cq.Workplane('XY').box(1,1,10).edges(),1)
+"""
+    result = validate_and_export(source, tmp_path, SandboxConfig())
+    assert result.valid, result.error
+    assert result.details["solid_count"] == 1
+    assert 0 < result.volume < 10
+    assert (tmp_path / "model.step").is_file()
+
+
+def test_adaptive_rounding_does_not_silently_return_an_unrounded_solid():
+    with pytest.raises(ValueError, match="rebuild the contour"):
+        rounded_edges(cq.Workplane("XY").box(1, 1, 10).edges(), 10)
+
+
+@pytest.mark.parametrize("radius", [0, -1, float("inf"), float("nan")])
+def test_adaptive_rounding_requires_a_finite_positive_radius(radius):
+    with pytest.raises(ValueError, match="finite and positive"):
+        rounded_edges(cq.Workplane("XY").box(1, 1, 10).edges(), radius)
 
 
 def test_monotone_profile_passes_stations_without_hidden_reversal():
