@@ -112,11 +112,8 @@ related to the development fixtures; this is not unseen-category evaluation.
 The optional real-photo study needs the local T-LESS workspace; it is not
 redistributed. See [benchmark setup](BENCHMARKS.md).
 
-## Scope
+## Output geometry
 
-`CANDIDATE` means a model was compiled, not that the object was recovered correctly.
-The tool does not infer physical scale, tolerances, design intent, feature
-constraints, or unobserved topology. It does not guarantee an operation budget
-on arbitrary disconnected sketch components: the section cap and the number of
-emitted extrusion solids are different quantities. It is intended as an
-inspectable research baseline and a candidate generator for downstream checking.
+The generated program contains planar sketches and extrusions. Depth values,
+camera translations and STEP coordinates use the same units. `report.json`
+records the selected frame, section count and export details.

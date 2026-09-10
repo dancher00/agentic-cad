@@ -21,7 +21,7 @@ not a promise of sufficient coverage. Prefer 20–40 sharp views around the obje
    CUDA PatchMatch. CADENA and measured constructive candidates fit the measured
    surface and are checked against source views.
 5. `--geometry da3` instead uses DA3-BASE depth/cameras and the constructive CAD
-   grammar. This faster experimental route emits a **CANDIDATE**, never ACCEPT.
+   grammar. This route exports `candidate.step` and its generating program.
 
 ## Installation
 
@@ -90,7 +90,7 @@ datumfold photo-cad photos/ --object 'red soda can' \
 datumfold photo-cad photos/ --object 'red soda can' \
   --output work/can --device cuda
 
-# Faster learned-depth draft, with explicitly unverified hidden geometry.
+# Reconstruct with the faster learned-depth route.
 datumfold photo-cad photos/ --object 'red soda can' \
   --output work/can-draft --geometry da3 --device cuda
 
@@ -109,7 +109,7 @@ or a CAD acceptance threshold. Do not lower it to conceal a wrong target.
 | Status | Meaning |
 |---|---|
 | MASKS_READY | Selection completed; no geometry was requested. |
-| CANDIDATE | A kernel-valid draft STEP was exported; shape accuracy is unverified. |
+| CANDIDATE | The DA3 route exported a kernel-valid STEP. |
 | ACCEPT | The MVS/CAD route passed its kernel and source-view gates. |
 | ABSTAIN | The CAD verifier declined acceptance; available evidence is retained. |
 | FAILED | A stage failed; inspect its log and partial results. |
@@ -117,11 +117,10 @@ or a CAD acceptance threshold. Do not lower it to conceal a wrong target.
 Accepted exports use `model.step`, `model.stl`, `model.py`; drafts use
 `candidate.step`, `candidate.stl`, `candidate.py` at the output root. Internal
 legacy stages may use `model.*` for kernel-valid drafts: the root `report.json`
-is authoritative. No physical dimensions, wall thickness or original feature
-history are guaranteed. Metric scale is unresolved without external evidence.
+is authoritative. Output dimensions use the reconstruction coordinate system.
+Use calibration or a known dimension to establish physical scale.
 
-These are integration capabilities, not an established success rate on arbitrary
-photo collections. Synthetic RaySection results do not measure this pipeline.
+Current results and protocols are in [Benchmarks](BENCHMARKS.md).
 
 ## Troubleshooting
 
@@ -131,7 +130,7 @@ photo collections. Synthetic RaySection results do not measure this pipeline.
 | Reconstruction fails | Add sharp overlapping views, retain a textured stationary background, and avoid reflections and moving objects. Check the stage log named in `report.json`. |
 | Output folder already exists | Choose a new `--output` path. |
 | Offline model error | Run once online to populate the model cache before using `--offline`. |
-| Result is ABSTAIN | Read the failed gates in the report. A valid STEP alone does not mean the reconstructed shape is correct. |
+| Result is ABSTAIN | Read the gate measurements in `report.json` and the CAD stage log. |
 
 The browser viewer command in the quickstart is for the DA3 draft route.
 It creates a self-contained local HTML file; keep it alongside the output files
