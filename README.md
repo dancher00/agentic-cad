@@ -1,5 +1,12 @@
 # DA3-CAD
 
+## Photos + object description
+
+`da3-cad photo-cad photos/ --object "red soda can" --output work/can` runs
+local VLM target interpretation, Grounding DINO, SAM2, calibrated reconstruction
+and CAD fitting. A faster `--geometry da3` route emits unverified CAD drafts.
+See [installation, examples and limitations](docs/PHOTO_CAD.md).
+
 ## Ray-section CAD: new experimental tool
 
 A training-free compiler from calibrated depth and masks to editable

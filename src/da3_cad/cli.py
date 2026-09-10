@@ -96,6 +96,86 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
+@app.command("photo-cad")
+def photo_cad_command(
+    images: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    object_query: Annotated[
+        str,
+        typer.Option(
+            "--object", help="Unique object description; VLM interprets it against the first photo."
+        ),
+    ],
+    vlm: Annotated[
+        bool,
+        typer.Option(
+            "--vlm/--no-vlm",
+            help="Use local Qwen VLM; --no-vlm expects an English detector phrase.",
+        ),
+    ] = True,
+    vlm_model: Annotated[
+        Literal["qwen2-2b", "qwen2.5-3b"],
+        typer.Option(help="3B uses Qwen's non-commercial research license."),
+    ] = "qwen2-2b",
+    geometry: Annotated[
+        Literal["mvs", "da3"], typer.Option(help="Calibrated MVS + CADENA, or faster DA3 draft.")
+    ] = "mvs",
+    stop_after_masks: Annotated[
+        bool, typer.Option(help="Run only text selection and SAM2 masks.")
+    ] = False,
+    device: Annotated[str, typer.Option()] = "auto",
+    offline: Annotated[bool, typer.Option(help="Use cached model files only.")] = False,
+    detector_threshold: Annotated[float, typer.Option(min=0.01, max=0.99)] = 0.3,
+    cameras: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True, dir_okay=False, help="Optional calibrated, undistorted input cameras."
+        ),
+    ] = None,
+    mvs_python: Annotated[Path, typer.Option()] = Path(".venv-mvs/bin/python"),
+    cache_dir: Annotated[Path, typer.Option()] = Path("data/hf"),
+    sam2_source: Annotated[Path, typer.Option()] = Path("data/upstream/SAM2"),
+    sam2_checkpoint: Annotated[Path, typer.Option()] = Path(
+        "data/checkpoints/sam2.1_hiera_small.pt"
+    ),
+    da3_source: Annotated[Path, typer.Option()] = Path("data/upstream/Depth-Anything-3"),
+    cadena_source: Annotated[Path, typer.Option()] = Path("data/upstream/cadena"),
+    cadena_checkpoint: Annotated[Path, typer.Option()] = Path("data/checkpoints/cadena/rl"),
+) -> None:
+    """Find a requested object across photos, segment it, and reconstruct editable CAD."""
+    from da3_cad.photo_cad import run_photo_cad
+
+    try:
+        report = run_photo_cad(
+            images,
+            output,
+            object_query,
+            use_vlm=vlm,
+            vlm_model=vlm_model,
+            geometry=geometry,
+            stop_after_masks=stop_after_masks,
+            device=device,
+            local_files_only=offline,
+            detector_threshold=detector_threshold,
+            cameras=cameras,
+            mvs_python=mvs_python,
+            cache_dir=cache_dir,
+            sam2_source=sam2_source,
+            sam2_checkpoint=sam2_checkpoint,
+            da3_source=da3_source,
+            cadena_source=cadena_source,
+            cadena_checkpoint=cadena_checkpoint,
+        )
+    except (ImportError, OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+        console.print(f"[red]photo-cad failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(f"{report['status']}: {output / 'report.json'}")
+    if report.get("step"):
+        console.print(f"STEP: {output / report['step']}")
+    if report["status"] == "ABSTAIN":
+        raise typer.Exit(3)
+
+
 @app.command("ray-sections")
 def ray_sections_command(
     observations: Annotated[Path, typer.Argument(help="Calibrated ray bundle (.npz).")],
@@ -248,7 +328,7 @@ def prepare_target_command(
             "[red]Target preparation failed:[/red] provide exactly one of --masks or --boxes"
         )
         raise typer.Exit(2)
-    allowed_mask_sources = {"user-mask", "robot-mask", "dataset-mask-oracle"}
+    allowed_mask_sources = {"user-mask", "robot-mask", "dataset-mask-oracle", "text-sam2"}
     if masks is not None and selection_source not in allowed_mask_sources:
         console.print(
             "[red]Target preparation failed:[/red] invalid --selection-source for explicit masks"
