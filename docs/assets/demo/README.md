@@ -1,52 +1,37 @@
-# Real-photo demos
+# Real-photo demo
 
-The project site shows two real photographs and CAD from GPT-5.6 Sol through
-the configured LLM proxy. The can uses automatic SAM2/DA3 fitting and photo-feature
-feedback without manual geometry edits. The mug is currently a manually refined example. Each example uses one photo. The
-visible prompt is the exact user prompt sent to the model; target dimensions
-are modeling inputs, not measurements taken from the photograph.
+One real photograph reconstructed with GPT-5.6 Sol, SAM2.1 Small and DA3 Base.
+The CAD comes from automatic generation, parameter fitting and photo-feature
+feedback, with no manual geometry edits. The displayed prompt is the user prompt;
+the 120 mm height and 0.2 mm wall are modeling inputs, not photo measurements.
 
-| Example | Photographer | Original photograph | License |
-|---|---|---|---|
-| Cola can | 些細な日常 / Nagahitoyuki | [Coca-cola.jpg](https://commons.wikimedia.org/wiki/File:Coca-cola.jpg) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
-| Ceramic mug | Tangerineduel | [Bovril mug.jpg](https://commons.wikimedia.org/wiki/File:Bovril_mug.jpg) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+Photo: 些細な日常 / Nagahitoyuki, [Coca-cola.jpg](https://commons.wikimedia.org/wiki/File:Coca-cola.jpg),
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+The published JPEG is the reconstruction input. The API pipeline re-encodes it;
+`examples.json` distinguishes the original, input and submitted image hashes.
+Photos, demo CAD and previews are provided under CC BY-SA 4.0. Application source
+remains Apache-2.0. Brand marks belong to their owners; no endorsement is implied.
 
-Photos were EXIF-oriented, resized to a maximum side of 1536 px and encoded as
-JPEGs by the reconstruction input pipeline. The published JPEGs are reconstruction inputs. The API pipeline may re-encode
-them; the manifest distinguishes input and submitted image hashes. They retain CC BY-SA 4.0. This directory's demo
-assets, including the generated CAD and previews, are provided under CC BY-SA
-4.0; the application source remains Apache-2.0. Brand marks belong to their
-respective owners; no endorsement is implied.
+The interactive site draws the same STL offered for download. `preview.png` is a
+screenshot of that STL. The manifest records export hashes, CAD extents, generation
+settings, the application revision and the profile helper hash.
 
-`examples.json` records the exact prompts, source attribution, model/provider,
-original and submitted image hashes, export hashes and CAD extents. `model.step`,
-`model.stl`, `model.py` and `parameters.json` contain the displayed CAD.
-The can is automatic; the mug includes manual photo-guided corrections.
-The 120 mm can and 100 mm mug heights remain reference scales. Generation and postprocessing are recorded per example in the manifest. The interactive site reads the
-same STL offered for download. `preview.png` is a screenshot of that STL in the
-site's viewer.
+## Run on your photos
 
-## Reproduce
-
-From an installed checkout, with the provider key configured and the
-[hybrid dependencies](../../HYBRID.md#setup) installed for the can:
+Complete the [hybrid setup](../../HYBRID.md#setup), then run:
 
 ```bash
 agentic-cad reconstruct docs/assets/demo/cola/photo.jpg \
-  --prompt "$(cat docs/assets/demo/cola/prompt.txt)" --reconstruction hybrid --max-repairs 3 \
-  --timeout 600 --output work/demo-cola
-
-agentic-cad reconstruct docs/assets/demo/mug/photo.jpg \
-  --prompt "$(cat docs/assets/demo/mug/prompt.txt)" --max-repairs 2 \
-  --timeout 600 --output work/demo-mug
+  --prompt "$(cat docs/assets/demo/cola/prompt.txt)" --reconstruction hybrid \
+  --max-repairs 3 --timeout 900 --max-output-tokens 32768 --output work/demo-cola
 ```
 
-These commands generate a new reconstruction; they do not replay the manual edits.
-For the published geometry, use `model.py` in an installed Agentic CAD checkout.
-The automatic can uses the profile helper at `code_revision` in the manifest.
-STEP and STL need no application dependencies. `validation.json` records solid validity
-and empty cavity/aperture checks, not dimensional accuracy against a measured object.
+Generation can vary. This example was refined through multiple automatic rounds.
+Continue a saved run with `--resume-from previous-run --evidence-cache previous-run/evidence`
+and a new output directory. See the [hybrid workflow](../../HYBRID.md).
 
-Generation can vary between calls. These are usage examples, not an accuracy
-benchmark. Only completed demo assets are published; credentials and raw local
-run directories are excluded.
+For the published geometry, execute `model.py` in an installed Agentic CAD checkout
+at the `code_revision` recorded in the manifest, including its profile helper and
+CadQuery dependencies. STEP and STL need no application dependencies.
+`validation.json` records solid validity and declared cavity checks. This is a usage
+example, not an accuracy benchmark or FEM validation. Raw runs and credentials stay local.

@@ -42,34 +42,5 @@
     },
     "code_revision": "c13c11f924f0138d86ece7f6c9f6b75884cb97e0",
     "profile_helper_sha256": "2e32c5d4de782b678ce368ad90c7e5fa65c59c2ca269135d942b66dc3c910537"
-  },
-  "mug": {
-    "title": "Ceramic mug",
-    "photo_alt": "A white Bovril ceramic mug with an open bowl, handle and raised foot",
-    "prompt": "Reconstruct the white ceramic mug in this photo, including its open bowl, curved handle and raised foot. Ignore the drink, printed logo, decorative gold lines and background. Use a target height of 100 mm and a wall thickness of 3 mm for modeling; infer the other proportions from the photo. Keep the handle opening and join both ends of the handle to the cup.",
-    "model": "gpt-5.6-sol",
-    "provider": "llm-proxy",
-    "reasoning": "xhigh",
-    "source": "https://commons.wikimedia.org/wiki/File:Bovril_mug.jpg",
-    "author": "Tangerineduel",
-    "license": "CC BY-SA 4.0",
-    "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "original_photo_sha256": "fa9274c6c3805bb9e108dc9ddc18ace452dadffc84989c573121fee5ce73eae8",
-    "submitted_photo_sha256": "3e462c88a7151714266268cf9a8349d70672162ca4ed51eb8e539a2e4b6d6f8c",
-    "extents": [
-      137.45151913994522,
-      106.00000019999999,
-      100.00000019999999
-    ],
-    "generated_at": "2026-09-10",
-    "exports": {
-      "model.step": "05fc8c6e4eda7c4cb64cc64e671bb8b4e0dcd1203335c92519c98a6a12690abb",
-      "model.stl": "78659bee9089d46a6c26b4eadb054fd168a6bc6e606882c649835be8a1d503ad",
-      "model.py": "81f8bae10b990f5522c787d8be575e538ae0103d14851ac7dfd597f920f8939d"
-    },
-    "postprocessing": "Manual photo-guided geometry correction",
-    "corrections": [
-      "Asymmetric handle contour, opening, rounded outer edges and attachments; cavity cut after unions."
-    ]
   }
 }
