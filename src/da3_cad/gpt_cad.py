@@ -156,6 +156,10 @@ This exact offset construction is mandatory for closed containers: do not draw a
 independent inner/base profile, and do not cut the base recess after shelling.
 Use exterior curvature radii larger than the wall thickness so the offset is feasible.
 This closed-shell construction does not apply to an open bowl or mug.
+The kernel checks that spline axes with monotone input stations do not reverse
+between stations. Dense interpolation and poorly scaled endpoint tangents can
+create unwanted lips even with ordered points. Prefer simple tangent circular arcs
+for manufactured roundovers; represent intended necks explicitly in the stations.
 """
 
 

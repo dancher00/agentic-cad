@@ -11,6 +11,7 @@ from types import MappingProxyType
 from typing import Any
 
 from da3_cad.cad.ast_policy import ALLOWED_BUILTINS, validate_source
+from da3_cad.cad.profile_guard import guard_spline_profiles
 
 
 def _safe_import(
@@ -47,7 +48,8 @@ def run(source_path: Path, output_dir: Path) -> int:
             "__builtins__": MappingProxyType(safe_builtins),
             "cq": cq,
         }
-        exec(compile(tree, str(source_path), "exec"), namespace, namespace)
+        with guard_spline_profiles(cq):
+            exec(compile(tree, str(source_path), "exec"), namespace, namespace)
         result = namespace.get("r")
         if result is None:
             raise ValueError("program did not produce 'r'")

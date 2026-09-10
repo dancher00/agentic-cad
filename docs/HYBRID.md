@@ -49,6 +49,11 @@ available; CUDA is recommended.
 
 Closed thin-wall containers use an inward offset of a complete exterior solid,
 avoiding independently drawn inner profiles that can cross and detach the base.
+The kernel also samples non-periodic profile splines at 257 positions. Along axes
+with monotone input stations, a reversal exceeding the larger of 0.02 mm or 0.2%
+of the axis span triggers regeneration. This catches interpolation overshoot without
+moving geometry; explicitly specified necks and periodic curves remain allowed.
+It is a sampled diagnostic, not a proof of curve monotonicity.
 The hybrid kernel budget defaults to 90 CPU seconds and 120 wall seconds per build;
 an explicitly supplied `SandboxConfig` takes precedence. Resource-limit failures
 are reported separately from geometry failures. STL export requests 0.05 mm absolute
