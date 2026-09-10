@@ -73,6 +73,9 @@ with monotone input stations, a reversal exceeding the larger of 0.02 mm or 0.2%
 of the axis span triggers regeneration. This catches interpolation overshoot without
 moving geometry; explicitly specified necks and periodic curves remain allowed.
 It is a sampled diagnostic, not a proof of curve monotonicity.
+Feature corrections retain a valid CAD baseline. If a proposed local edit fails
+the kernel checks, regeneration returns to that baseline and its photo feedback,
+instead of carrying unrelated changes from the rejected program into the next try.
 The hybrid kernel budget defaults to 90 CPU seconds and 120 wall seconds per build;
 an explicitly supplied `SandboxConfig` takes precedence. Resource-limit failures
 are reported separately from geometry failures. STL export requests 0.05 mm absolute

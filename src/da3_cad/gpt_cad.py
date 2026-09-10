@@ -422,6 +422,7 @@ def run_gpt_cad(
     image_content, manifest = prepare_images(paths)
     saved_response = None
     saved_feedback = ""
+    repair_anchor_text = ""
     registration_seed = None
     if resume_from is not None:
         from types import SimpleNamespace
@@ -464,11 +465,15 @@ def run_gpt_cad(
                 saved_feedback = (
                     "Continue the automatic reconstruction from this saved CAD response. "
                     "Correct the feature differences identified by the previous photo review. "
-                    "Preserve the specified dimensions and cavity clearances.\n"
+                    "Make local edits to features with severity 2 or 3. Preserve accepted "
+                    "sub-shapes and their construction, specified dimensions and cavity "
+                    "clearances; do not rewrite unrelated parts of the model.\n"
                     + saved_response.output_parsed.code
                     + "\nAutomatic photo review:\n"
                     + json.dumps(previous_review)
                 )
+                if previous_attempt["status"] == "valid":
+                    repair_anchor_text = saved_feedback
                 saved_response = None
     if client is None:
         key, base_url = provider_credentials(settings.provider)
@@ -670,6 +675,17 @@ def run_gpt_cad(
                     + "\nValidation error:\n"
                     + error_text[:2000]
                 )
+                if repair_anchor_text:
+                    repair_text = (
+                        "The proposed edit failed CAD validation. Return to the valid baseline "
+                        "below and apply a local correction to the mismatching feature. Keep "
+                        "accepted sub-shapes and their construction unchanged; do not propagate "
+                        "unrelated edits from the rejected program.\n"
+                        + repair_anchor_text
+                        + "\nRejected edit's validation error:\n"
+                        + error_text[:2000]
+                    )
+                    attempt["repair_strategy"] = "return_to_valid_baseline"
                 if index == settings.max_repairs:
                     if best_geometry is not None:
                         report["repair_budget_exhausted"] = True
@@ -754,12 +770,15 @@ def run_gpt_cad(
                         "overlap, blue is missing silhouette, red is excess silhouette. "
                         "Section panels show CAD interiors. Camera registration is estimated "
                         "and may also explain silhouette mismatch. Preserve "
-                        "specified dimensions and all required clearance checks.\n"
+                        "specified dimensions and all required clearance checks. Make local "
+                        "edits to features with severity 2 or 3; preserve accepted sub-shapes "
+                        "and their construction rather than rewriting the entire model.\n"
                         + candidate.code
                         + "\nMeasured observation consistency:\n"
                         + json.dumps(geometry["after"])
                         + feature_feedback
                     )
+                    repair_anchor_text = repair_text
                     continue
             break
         if hybrid is not None:

@@ -8,6 +8,85 @@ from da3_cad.gpt_cad import CADResponse, GPTConfig, Parameter, run_gpt_cad
 from da3_cad.hybrid_evidence import HybridConfig
 
 
+def test_invalid_feature_edit_returns_to_the_valid_baseline(tmp_path, monkeypatch):
+    import da3_cad.feature_review as review
+    import da3_cad.hybrid_evidence as evidence
+    import da3_cad.hybrid_fit as fitting
+
+    def prepare(paths, prompt, output, *args):
+        output.mkdir()
+        return {
+            "contract": {
+                "visible_features": ["base"],
+                "has_cavity": False,
+                "has_handle_aperture": False,
+            },
+            "views": [],
+            "panels": [],
+        }
+
+    monkeypatch.setattr(evidence, "prepare_evidence", prepare)
+    monkeypatch.setattr(
+        fitting,
+        "fit_candidate",
+        lambda candidate, *args: (
+            candidate,
+            None,
+            {"after": {"loss": 0.01, "mean_silhouette_iou": 0.99}},
+        ),
+    )
+    severities = iter([2, 0])
+    monkeypatch.setattr(
+        review,
+        "review_features",
+        lambda *args: {
+            "findings": [
+                {"feature": "base", "severity": next(severities), "correction": "round the base"}
+            ]
+        },
+    )
+    baseline = 'import cadquery as cq\nbody_width=20\nr=cq.Workplane("XY").box(body_width,10,5)'
+    bad = 'import cadquery as cq\nunrelated_rewrite=99\nr=cq.Workplane("XY")'
+    codes = iter([baseline, bad, baseline])
+    calls = []
+
+    def parse(**kwargs):
+        calls.append(kwargs)
+        code = next(codes)
+        parameter = Parameter(
+            name="body_width" if code == baseline else "unrelated_rewrite",
+            value=20 if code == baseline else 99,
+            unit="mm",
+            source="estimated",
+        )
+        return SimpleNamespace(
+            id="test",
+            model="test",
+            status="completed",
+            usage=None,
+            output_parsed=CADResponse(
+                name="block", code=code, parameters=[parameter], assumptions=[]
+            ),
+        )
+
+    photo = tmp_path / "photo.png"
+    Image.new("RGB", (32, 32)).save(photo)
+    result = run_gpt_cad(
+        "block",
+        tmp_path / "run",
+        images=[photo],
+        hybrid=HybridConfig(),
+        config=GPTConfig(max_repairs=2),
+        create_viewer=False,
+        client=SimpleNamespace(responses=SimpleNamespace(parse=parse)),
+    )
+    repair = str(calls[2]["input"])
+    assert "body_width=20" in repair and "round the base" in repair
+    assert "unrelated_rewrite=99" not in repair
+    assert result["attempts"][1]["repair_strategy"] == "return_to_valid_baseline"
+    assert result["feature_review_passed"]
+
+
 def test_wrong_local_feature_forces_retry_despite_high_global_iou(tmp_path, monkeypatch):
     import da3_cad.feature_review as review
     import da3_cad.hybrid_evidence as evidence
