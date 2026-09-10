@@ -20,10 +20,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
-import torch
 import trimesh
 from PIL import Image
-from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
 from da3_cad.cad_program import simplify_revolve_profiles
 from da3_cad.cad_validation import validate_and_export_cadquery, validate_cadquery
@@ -218,6 +216,8 @@ def _generate_steps(
     expansions: int,
     temperature: float,
 ) -> tuple[str, ...]:
+    import torch
+
     messages = [
         {
             "role": "user",
@@ -436,6 +436,9 @@ def _candidate_in_observation_frame(
 
 
 def main() -> None:
+    import torch
+    from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+
     args = _parser().parse_args()
     if args.output_dir.exists():
         raise ValueError(f"refusing to overwrite output: {args.output_dir}")
