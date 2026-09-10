@@ -534,6 +534,15 @@ def run_gpt_cad(
                 paths, prompt, output / "evidence", client, settings, hybrid
             )
             instructions += evidence_instructions(evidence_report)
+            instructions += (
+                f"\nNumerical fitting explores the first {hybrid.fit_parameters} eligible "
+                "parameters in your parameters array: positive estimated millimeter dimensions, "
+                "excluding wall thicknesses and clearances. Order those parameters by their "
+                "influence on the currently mismatching visible features, before already "
+                "matching dimensions. Expose independent dimensions for the features being "
+                "corrected so the fitter can refine them against the photo masks. "
+                "Specified dimensions stay fixed.\n"
+            )
             panels, _ = prepare_images(
                 [output / "evidence" / name for name in evidence_report["panels"]]
             )
