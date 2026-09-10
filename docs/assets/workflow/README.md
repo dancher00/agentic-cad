@@ -17,5 +17,5 @@ It is an actual export, not a hand-drawn reconstruction or accuracy comparison.
 
 The PNG files are browser renderings of self-contained SVGs. To edit either
 figure, open its `.excalidraw` file in [Excalidraw](https://excalidraw.com/).
-The generation diagram has 45 elements; the usage diagram has 26. Both include
+The generation diagram has 45 elements; the usage diagram has 27. Both include
 their image assets and use Excalifont text with straight connectors.
