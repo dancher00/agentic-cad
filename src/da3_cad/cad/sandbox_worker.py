@@ -151,8 +151,8 @@ def run(source_path: Path, output_dir: Path) -> int:
         # absolute millimeter tolerance so large faces keep curved outlines.
         shape.exportStl(
             str(output_dir / "model.stl"),
-            tolerance=0.03,
-            angularTolerance=0.08,
+            tolerance=0.05,
+            angularTolerance=0.2,
             relative=False,
         )
         _write(

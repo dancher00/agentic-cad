@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import time
+import tokenize
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
@@ -148,6 +149,13 @@ through the base and shoulder. Independent interpolating splines can cross betwe
 their control points, sever a floor disk, or cut a circumferential gap in the wall.
 Prefer an offset shell or matched profile stations with simple arcs. Every union
 must have positive-volume overlap, not merely tangent or coincident contact.
+For a CLOSED hollow container, build one complete exterior blank including its
+closed lid, base recess and connected rim first. Use hollow = exterior.shell(-wall_thickness)
+with no faces removed, then NON_PENETRATION_CAVITY = exterior.cut(hollow) and r = hollow.
+This exact offset construction is mandatory for closed containers: do not draw an
+independent inner/base profile, and do not cut the base recess after shelling.
+Use exterior curvature radii larger than the wall thickness so the offset is feasible.
+This closed-shell construction does not apply to an open bowl or mug.
 """
 
 
@@ -307,6 +315,30 @@ def parameterize(candidate: CADResponse) -> str:
     return ast.unparse(ast.fix_missing_locations(tree)) + "\n"
 
 
+def repair_program_indentation(candidate: CADResponse) -> CADResponse:
+    """Repair stray top-level indentation without changing tokens or accepting new syntax."""
+    try:
+        ast.parse(candidate.code)
+        return candidate
+    except SyntaxError as error:
+        if error.msg != "unexpected indent":
+            raise
+    tokens = tokenize.generate_tokens(io.StringIO(candidate.code).readline)
+    try:
+        normalized = tokenize.untokenize(
+            [
+                (token.type, token.string)
+                for token in tokens
+                if token.type not in (tokenize.INDENT, tokenize.DEDENT)
+            ]
+        )
+    except (tokenize.TokenError, IndentationError) as error:
+        raise ValueError("Cannot safely normalize generated indentation") from error
+    repaired = candidate.model_copy(update={"code": normalized})
+    validate_generated_program(repaired)
+    return repaired
+
+
 def _write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8")
 
@@ -325,6 +357,14 @@ def run_gpt_cad(
 ) -> dict[str, Any]:
     """Generate CAD, optionally with SAM2/DA3 evidence and bounded geometric feedback."""
     settings = config or GPTConfig()
+    if hybrid is not None and "sandbox" not in settings.model_fields_set:
+        settings = settings.model_copy(
+            update={
+                "sandbox": settings.sandbox.model_copy(
+                    update={"cpu_seconds": 90, "wall_seconds": 120}
+                )
+            }
+        )
     prompt = prompt.strip()
     if not prompt or len(prompt) > 20000:
         raise ValueError("Provide a description between 1 and 20000 characters.")
@@ -360,10 +400,13 @@ def run_gpt_cad(
         )
         review_path = saved_path.parent / "feature-review.json"
         if hybrid is not None and hybrid.feature_review and review_path.is_file():
-            from da3_cad.feature_review import feature_rank
+            from da3_cad.feature_review import REVIEW_PROTOCOL_VERSION, feature_rank
 
             previous_review = json.loads(review_path.read_text())
-            if feature_rank(previous_review)[0] >= 2:
+            if (
+                previous_review.get("protocol_version") == REVIEW_PROTOCOL_VERSION
+                and feature_rank(previous_review)[0] >= 2
+            ):
                 saved_feedback = (
                     "Continue the automatic reconstruction from this saved CAD response. "
                     "Correct the feature differences identified by the previous photo review. "
@@ -532,6 +575,10 @@ def run_gpt_cad(
             (attempt_dir / "model.py").write_text(candidate.code, encoding="utf-8")
             error_text = ""
             try:
+                repaired = repair_program_indentation(candidate)
+                if repaired.code != candidate.code:
+                    attempt["format_repair"] = "Removed accidental top-level indentation"
+                candidate = repaired
                 source = parameterize(candidate)
                 assigned = {
                     node.targets[0].id

@@ -47,6 +47,13 @@ available; CUDA is recommended.
 | A separate GPT review compares source photos with four renders of the exported STL | Feature-specific corrections for proportions, base, rim, handles and openings |
 | Geometric feedback, if needed | Another CAD candidate, retaining the best valid candidate by the observation objective |
 
+Closed thin-wall containers use an inward offset of a complete exterior solid,
+avoiding independently drawn inner profiles that can cross and detach the base.
+The hybrid kernel budget defaults to 90 CPU seconds and 120 wall seconds per build;
+an explicitly supplied `SandboxConfig` takes precedence. Resource-limit failures
+are reported separately from geometry failures. STL export requests 0.05 mm absolute
+deflection and 0.2 radians angular deflection; the STEP export retains analytic surfaces.
+
 Registration uses one shared similarity transform across the DA3 cameras, rather
 than independently moving the CAD in each image. Fitting freezes that transform
 and adjusts up to four positive estimated length parameters. User-specified
@@ -70,7 +77,10 @@ shape error triggers another attempt even when the silhouette target is met.
 Candidates are ranked first by worst and total feature severity, then by the
 observation objective. `feature_review_passed` records whether the selected candidate
 has no clear local errors according to that review; it is a model judgment, not
-ground-truth validation. The reviewer uses `high` reasoning independently of the
+ground-truth validation. The reviewer receives measured STL extents and horizontal
+section spans as well as depth-buffered renders, so CAD dimensions need not be
+guessed from pixels. Reviews carry a protocol version; resume reassesses older
+protocols before using them as correction instructions. The reviewer uses `high` reasoning independently of the
 generator's configured effort. Each valid candidate costs an additional provider call.
 `--no-feature-review` disables this stage for controlled comparisons.
 `--max-repairs` bounds extra CAD requests for both execution and geometry errors.

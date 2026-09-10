@@ -91,9 +91,15 @@ def validate_and_export(
 
         manifest_path = temp_dir / "validation.json"
         if not manifest_path.is_file():
+            resource_error = (
+                f"CAD kernel exceeded the CPU budget of {config.cpu_seconds}s; "
+                "simplify expensive operations or increase the sandbox CPU budget"
+                if process.returncode == -signal.SIGXCPU
+                else f"sandbox worker exited {process.returncode} without a validation manifest"
+            )
             return ValidationResult(
                 valid=False,
-                error=f"sandbox worker exited {process.returncode} without a validation manifest",
+                error=resource_error,
                 volume=None,
                 bbox=None,
                 execution_seconds=time.monotonic() - started,

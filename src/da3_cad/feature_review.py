@@ -11,6 +11,8 @@ import trimesh
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, ConfigDict, Field
 
+REVIEW_PROTOCOL_VERSION = 2
+
 
 class FeatureFinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -157,6 +159,7 @@ def review_features(
         raise RuntimeError("Feature review incomplete; no visual acceptance decision is available")
     result = FeatureReview.model_validate(response.output_parsed).model_dump()
     result.update(
+        protocol_version=REVIEW_PROTOCOL_VERSION,
         response_id=response.id,
         model=response.model,
         reasoning_effort="high",

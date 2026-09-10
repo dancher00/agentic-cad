@@ -48,6 +48,8 @@ All selected photos go into the same model request. The model writes a CAD progr
 For local segmentation, depth and geometric feedback, add `--reconstruction hybrid`.
 The [hybrid setup](docs/HYBRID.md) uses SAM2 + DA3 on your GPU, fits estimated CAD
 parameters and checks declared cavities against the final solid.
+It also compares CAD renders and measured sections with the photos, then
+automatically revises features that its review flags as incorrect.
 
 ## Use it from your software
 

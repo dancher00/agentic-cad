@@ -81,7 +81,10 @@ def test_wrong_local_feature_forces_retry_despite_high_global_iou(tmp_path, monk
     assert result["feature_review_passed"]
     assert "narrow the foot" in str(calls[1]["input"])
     previous = tmp_path / "run"
-    rejected = {"findings": [{"feature": "base", "severity": 2, "correction": "narrow the foot"}]}
+    rejected = {
+        "protocol_version": 2,
+        "findings": [{"feature": "base", "severity": 2, "correction": "narrow the foot"}],
+    }
     (previous / "attempts/02/feature-review.json").write_text(json.dumps(rejected))
     monkeypatch.setattr(
         review,
@@ -104,6 +107,22 @@ def test_wrong_local_feature_forces_retry_despite_high_global_iou(tmp_path, monk
     assert len(calls) == 3  # Generate from saved critique without reviewing the old mesh again.
     assert "narrow the foot" in str(calls[2]["input"])
     assert resumed["resume"]["uses_saved_feature_feedback"]
+    rejected["protocol_version"] = 1
+    (previous / "attempts/02/feature-review.json").write_text(json.dumps(rejected))
+    refreshed = run_gpt_cad(
+        "block",
+        tmp_path / "refreshed",
+        images=[photo],
+        hybrid=HybridConfig(),
+        config=GPTConfig(max_repairs=0),
+        create_viewer=False,
+        resume_from=previous,
+        client=SimpleNamespace(responses=SimpleNamespace(parse=parse)),
+    )
+    assert (
+        len(calls) == 3
+    )  # Old review protocol must be reassessed, not sent as repair instructions.
+    assert not refreshed["resume"]["uses_saved_feature_feedback"]
 
 
 def test_render_preserves_vertical_axis_and_aspect(tmp_path: Path):
@@ -245,3 +264,46 @@ def test_reviewer_receives_measured_sections_and_rejects_incomplete_response(tmp
     )
     with pytest.raises(RuntimeError, match="Feature review incomplete"):
         review_features(client, GPTConfig(), [photo], tmp_path, "box", ["body"])
+
+
+def test_indentation_repair_preserves_parameters_and_does_not_relax_policy():
+    import pytest
+
+    from da3_cad.cad.ast_policy import AstPolicyError
+    from da3_cad.gpt_cad import parameterize, repair_program_indentation
+
+    candidate = CADResponse(
+        name="box",
+        code='import cadquery as cq\n width = 2.5\nr=cq.Workplane("XY").box(width,3,4)\n',
+        parameters=[Parameter(name="width", value=2.5, unit="mm", source="specified")],
+        assumptions=[],
+    )
+    repaired = repair_program_indentation(candidate)
+    assert repaired.parameters == candidate.parameters
+    assert "2.5" in parameterize(repaired)
+    with pytest.raises(AstPolicyError):
+        repair_program_indentation(
+            candidate.model_copy(update={"code": " import os\nwidth=2.5\nr=width\n"})
+        )
+
+
+def test_cpu_budget_failure_is_reported_as_resource_limit(tmp_path, monkeypatch):
+    import signal
+
+    import da3_cad.cad.sandbox as sandbox
+    from da3_cad.config import SandboxConfig
+
+    monkeypatch.setattr(
+        sandbox.subprocess,
+        "Popen",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=-signal.SIGXCPU, communicate=lambda **kw: ("", "")
+        ),
+    )
+    result = sandbox.validate_and_export(
+        'import cadquery as cq\nr=cq.Workplane("XY").box(1,1,1)',
+        tmp_path,
+        SandboxConfig(cpu_seconds=5),
+    )
+    assert not result.valid
+    assert "CPU budget of 5s" in result.error
