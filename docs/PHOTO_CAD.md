@@ -65,7 +65,9 @@ execution failures; they do not perform image-based shape optimization.
 
 A successful run contains `model.step`, `model.stl`, `model.py`, `parameters.json`,
 `quality.json`, `provenance.json`, `report.json` and, by default, `viewer.html`.
-Original reference images are copied into the run for its offline preview.
+The viewer’s **Provenance** download is `provenance.json`; `report.json` and
+`quality.json` remain separate files in the run folder. Original reference images
+are copied into the run for its offline preview.
 API responses and intermediate programs stay under the local `attempts/` folder.
 Requests use `store=false`; provider retention policies still apply.
 

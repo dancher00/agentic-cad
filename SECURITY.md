@@ -14,16 +14,20 @@ known.
 
 ## Relevant threat boundaries
 
-Agentic CAD processes untrusted images, videos, camera bundles, masks, YAML, meshes,
-and generated CadQuery source. The project:
+The product accepts text and JPEG, PNG or WebP photos, receives generated
+CadQuery source from a remote provider, and builds CAD and viewer meshes locally.
+It:
 
-- validates paths, arrays, transforms, finite values, and mesh topology;
-- applies an AST allow-list to generated source;
-- executes CAD generation in an isolated subprocess with memory, CPU, and wall
-  limits;
-- refuses existing output directories and divergent external artifacts;
-- hashes external source, weights, captures, and inputs;
+- checks input paths, file sizes and image formats;
+- applies a geometric AST allow-list to model-generated source;
+- executes CAD in a subprocess with memory, CPU and wall-time limits;
+- checks that the result is one valid, positive-volume solid;
+- refuses existing output directories and records input image hashes;
 - reads provider credentials locally and sends text and photos to the selected API.
+
+Optional research commands additionally process video, calibrated camera/depth
+bundles, masks, YAML and external weights. They are separate from the product
+reconstruction path.
 
 The CAD subprocess removes environment variables whose names contain KEY, TOKEN,
 SECRET or PASSWORD. This filter is not a complete credential isolation boundary.

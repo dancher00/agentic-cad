@@ -52,6 +52,7 @@ A CLI and Python function are available today. There is no hosted HTTP API or MC
 | `model.step` / `model.stl` | CAD and mesh tools |
 | `model.py` / `parameters.json` | Edit dimensions |
 | `viewer.html` | Offline preview and downloads |
+| `report.json` | Run result and provider usage |
 
 [Usage](docs/PHOTO_CAD.md) · [Integration & Claude Code](docs/INTEGRATION.md) · [Validation](docs/BENCHMARKS.md) · [Editable diagrams](docs/assets/workflow/README.md) · [Apache-2.0](LICENSE)
 
