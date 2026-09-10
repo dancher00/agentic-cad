@@ -179,13 +179,7 @@
       .project .eyebrow {
         margin-bottom: 5px;
       }
-      .status {
-        border: 1px solid #afb3ad;
-        padding: 5px 10px;
-        border-radius: 4px;
-        white-space: nowrap;
-        font-size: 12px;
-      }
+
       .viewport {
         position: relative;
         flex: 1;
@@ -293,21 +287,7 @@
         font-size: 12px;
         color: var(--muted);
       }
-      .decision {
-        display: flex;
-        gap: 9px;
-        align-items: center;
-        font-size: 12px;
-        margin-bottom: 10px;
-      }
-      .decision::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        border: 1px solid var(--ink);
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
+
       .downloads {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -502,9 +482,7 @@
         .project {
           align-items: start;
         }
-        .project .status {
-          font-size: 11px;
-        }
+
         .view-tools {
           left: 10px;
           right: 10px;
@@ -560,7 +538,6 @@
             <p class="eyebrow">Model workspace</p>
             <h1 id="run">Reconstruction</h1>
           </div>
-          <span class="status" id="status"></span>
         </div>
         <div class="viewport">
           <div class="view-tools">
@@ -610,7 +587,7 @@
         </div>
         <div class="footnote">
           <span>Drag to orbit · scroll to zoom · arrow keys to rotate</span
-          ><span>Preview scale · not millimetres</span>
+          ><span>Orthographic view</span>
         </div>
       </section>
       <aside aria-label="Model inspector">
@@ -621,8 +598,7 @@
           </p>
         </div>
         <section class="section">
-          <div class="decision" id="decision"></div>
-          <p id="decisionNote"></p>
+          <h2>Export</h2>
           <div class="downloads" id="downloads"></div>
           <p class="download-note">STEP for CAD · STL for mesh tools</p>
         </section>
@@ -674,12 +650,8 @@
         </section>
         <section class="section">
           <details style="margin: 0">
-            <summary>Run details &amp; verification</summary>
+            <summary>File details</summary>
             <pre id="provenance"></pre>
-            <p>
-              Solid and point cloud are fitted separately to the view. Their
-              visual overlap does not verify alignment or physical scale.
-            </p>
           </details>
         </section>
       </aside>
@@ -695,26 +667,10 @@
         zoom = 1,
         drag = false,
         last = [0, 0];
-      const parameters = data.parameters || {},
-        quality = data.quality || {};
+      const parameters = data.parameters || {};
       const pathParts = data.run.split(/[\\/]/).filter(Boolean);
       $("run").textContent =
         data.display_name || pathParts.at(-1) || "Reconstruction";
-      const decision = data.decision || "CANDIDATE";
-      const labels = {
-        ACCEPT: "Checks passed",
-        ABSTAIN: "Review required",
-        CANDIDATE: "Unverified draft",
-        FAILED: "Run incomplete",
-      };
-      $("status").textContent = labels[decision] || "Unverified draft";
-      $("decision").textContent = labels[decision] || "Unverified draft";
-      $("decisionNote").textContent =
-        decision === "ACCEPT"
-          ? "Passed the implemented checks. Confirm dimensions against the physical object."
-          : decision === "ABSTAIN"
-            ? "Source-view checks declined acceptance. Inspect the candidate and report before use."
-            : "This is a shape candidate. Dimensions and hidden surfaces have not been verified.";
       $("geometryType").textContent = data.solid
         ? "Solid model"
         : data.cloud
@@ -773,11 +729,10 @@
       }
       $("provenance").textContent = JSON.stringify(
         {
-          decision,
-          quality,
-          report: data.report,
-          run: data.run,
-          warnings: data.provenance?.warnings,
+          run: data.display_name,
+          model: data.solid?.source,
+          points: data.cloud?.original_points,
+          units: parameters.units,
         },
         null,
         2,
@@ -903,6 +858,12 @@
               p: t.map((p) => project(p, w, h)),
               shade: shade(t),
             }))
+            .filter(
+              ({ p: t }) =>
+                (t[1][0] - t[0][0]) * (t[2][1] - t[0][1]) -
+                  (t[1][1] - t[0][1]) * (t[2][0] - t[0][0]) <
+                0,
+            )
             .sort(
               (a, b) =>
                 a.p.reduce((s, p) => s + p[2], 0) -

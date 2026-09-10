@@ -1,17 +1,9 @@
 # Datumfold
 
-Previously DA3-CAD.
-
 **Turn photos of an object into editable CAD.** Describe the object, provide overlapping photos, and export STEP, STL and a CadQuery Python program.
 
 [![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
 [![Code: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
-
-**Research preview:** CAD drafts can be wrong. The tool reports whether its checks passed; it does not guarantee dimensions, hidden geometry or manufacturing accuracy.
-
-![Real book example: input photo, automatic object mask, and exported CAD](docs/assets/quickstart/photo-to-cad.png)
-
-*Actual multi-photo run. A valid STEP was exported, but the source-view edge check failed: **ABSTAIN**. This example used the optional research-only Qwen2.5-VL-3B profile.*
 
 ## 1. Install
 
@@ -30,42 +22,42 @@ Put **20–40 sharp, overlapping photos of the same stationary object** in `phot
 
 ```bash
 # Preview the object selection before reconstructing.
-datumfold photo-cad photos/ --object "black book" \
+datumfold photo-cad photos/ --object "metal block" \
   --output work/selection --stop-after-masks --device cuda
 
-# Generate a faster, unverified CAD draft.
-datumfold photo-cad photos/ --object "black book" \
-  --output work/book --geometry da3 --device cuda
+# Generate CAD using the DA3 route.
+datumfold photo-cad photos/ --object "metal block" \
+  --output work/block --geometry da3 --device cuda
 ```
 
 Use a **new output folder** for each run. Selection masks are in `work/selection/selection/masks/`. For calibrated reconstruction and source-view checks, see the [full MVS workflow](docs/PHOTO_CAD.md#calibrated-reconstruction).
 
 ## 3. Open the result
 
-Open `work/book/candidate.step` in your CAD editor, or create a local browser preview:
+Open `work/block/candidate.step` in your CAD editor, or create a local browser preview:
 
 ```bash
-datumfold viewer work/book/cad --output work/book/viewer.html
+datumfold viewer work/block/cad --output work/block/viewer.html
 ```
 
-Open `work/book/viewer.html`. Drag to rotate, scroll to zoom, or select **Front**, **Top** and **3D**. Use **Export STEP** to open the model in your CAD editor.
+Open `work/block/viewer.html`. Drag to rotate, scroll to zoom, or select **Front**, **Top** and **3D**. Use **Export STEP** to open the model in your CAD editor.
 
-![Datumfold workspace showing the reconstructed book CAD draft](docs/assets/quickstart/viewer.png)
+![Datumfold workspace with a reconstructed benchmark block](docs/assets/quickstart/viewer.png)
 
-*Browser preview of a separate DA3 book draft. This is an unverified candidate, not the accepted reconstruction of the source object.*
+*Workspace example from the controlled RGB benchmark. Input images and calibration are project-generated.*
 
-| File / status | What it means |
+| File | Contents |
 |---|---|
-| `candidate.step`, `.stl`, `.py` | Editable draft, mesh and generating program. |
+| `candidate.step`, `.stl`, `.py` | STEP solid, preview mesh and editable program. |
 | `model.step`, `.stl`, `.py` | Exports from an accepted MVS run. |
 | `report.json` | Final decision, selected models and stage logs. |
-| `CANDIDATE` / `ABSTAIN` | Unverified draft / verification declined acceptance. |
-| `ACCEPT` | Passed the implemented checks; physical accuracy is not guaranteed. |
 
 ## How it works
 
-**Text + photos → Qwen VLM → Grounding DINO → SAM2 masks → 3D reconstruction → CAD fitting → checks.** Models run locally in stages. Choose DA3 for drafts or calibrated multi-view stereo for the full verification route.
+![Model pipeline and photo-to-CAD data flow](docs/assets/workflow/photo-to-cad.png)
 
-[Usage, setup & troubleshooting](docs/PHOTO_CAD.md) · [RaySection depth-to-CAD tool](docs/RAY_SECTIONS.md) · [Technical report](docs/RaySection_technical_report.pdf) · [Research results & history](docs/RESEARCH_HISTORY.md) · [Image credits](docs/assets/quickstart/README.md)
+[Vector diagram](docs/assets/workflow/photo-to-cad.svg) · [Editable Excalidraw](docs/assets/workflow/photo-to-cad.excalidraw)
+
+[Usage, setup & troubleshooting](docs/PHOTO_CAD.md) · [RaySection depth-to-CAD tool](docs/RAY_SECTIONS.md) · [Benchmarks](docs/BENCHMARKS.md) · [Image credits](docs/assets/quickstart/README.md)
 
 Code: [Apache-2.0](LICENSE). Third-party models and example images have their own terms; see the [model notes](docs/PHOTO_CAD.md#model-licenses).

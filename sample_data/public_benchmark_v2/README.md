@@ -27,8 +27,6 @@ Regenerate and run all cases from the repository root:
 ```bash
 python scripts/build_public_benchmark_cases.py
 python scripts/run_public_benchmark.py
-python scripts/build_public_release_assets.py
 ```
 
-See the [result ledger](../../docs/results/public-benchmark-v2.json) and
-[illustrated report](../../docs/PUBLIC_BENCHMARK.md).
+See [benchmark setup and results](../../docs/BENCHMARKS.md).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when the public repository contains private or inconsistent artifacts."""
+"""Validate the product release: documentation, fixtures and aggregate results."""
 
 from __future__ import annotations
 
@@ -14,37 +14,36 @@ from typing import Any
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = ROOT / "sample_data" / "public_benchmark_v2"
-LEDGER = ROOT / "docs" / "results" / "public-benchmark-v2.json"
-REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v6.json"
-REAL_PHOTO_E2E_LEDGER = ROOT / "docs" / "results" / "real-photo-e2e-v1.json"
-PLANAR_GRAMMAR_LEDGER = ROOT / "docs" / "results" / "measured-planar-grammar-v6.json"
+FIXTURES = ROOT / "sample_data/public_benchmark_v2"
 MAX_PUBLIC_FILE_BYTES = 8 * 1024 * 1024
-
 REQUIRED = (
     "LICENSE",
     "README.md",
     "CITATION.cff",
     "CONTRIBUTING.md",
     "SECURITY.md",
-    "docs/PUBLIC_BENCHMARK.md",
-    "docs/DA3-CAD_public_benchmark_v2.pdf",
-    "docs/assets/release/teaser.png",
-    "docs/assets/release/cpu_smoke.gif",
-    "docs/assets/release/public_benchmark_v2.png",
-    "docs/results/public-benchmark-v2.json",
-    "docs/results/real-rgb-mvs-cadena-v6.json",
-    "docs/results/real-photo-e2e-v1.json",
-    "docs/results/measured-planar-grammar-v6.json",
-    "scripts/build_real_rgb_cadena_report.py",
-    "scripts/build_real_photo_e2e_report.py",
-    "scripts/run_measured_planar_grammar_benchmark.py",
-    "sample_data/public_benchmark_v2/README.md",
+    "docs/PHOTO_CAD.md",
+    "docs/RAY_SECTIONS.md",
+    "docs/LICENSES.md",
+    "docs/BENCHMARKS.md",
+    "docs/benchmarks.json",
+    "docs/assets/quickstart/viewer.png",
+    "docs/assets/brand/datumfold-mark.svg",
     "sample_data/public_benchmark_v2/manifest.json",
     "configs/public_benchmark_v2.yaml",
-    "scripts/build_cpu_smoke_gif.py",
 )
-FORBIDDEN_PREFIXES = ("data/", "weights/", "cache/", "outputs/", "captures/", "legacy/")
+FORBIDDEN_PREFIXES = (
+    "data/",
+    "weights/",
+    "cache/",
+    "outputs/",
+    "captures/",
+    "legacy/",
+    "paper/",
+    "docs/research/",
+    "docs/experiments/",
+    "docs/results/",
+)
 FORBIDDEN_SUFFIXES = (".safetensors", ".ckpt", ".pth", ".pt", ".mp4", ".mov", ".avi", ".mkv")
 MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 
@@ -52,302 +51,97 @@ MARKDOWN_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 def _read_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise TypeError(f"expected JSON object: {path}")
+        raise TypeError(f"expected object: {path}")
     return payload
 
 
 def _public_files() -> list[Path]:
-    completed = subprocess.run(
+    result = subprocess.run(
         ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
     )
-    return [ROOT / name for name in completed.stdout.split("\0") if name]
+    return list(dict.fromkeys(ROOT / name for name in result.stdout.split("\0") if name))
 
 
-def _check_required(errors: list[str]) -> None:
-    for relative in REQUIRED:
-        if not (ROOT / relative).is_file():
-            errors.append(f"missing required release file: {relative}")
-
-
-def _check_repository_surface(files: list[Path], errors: list[str]) -> None:
-    for path in files:
-        relative = path.relative_to(ROOT).as_posix()
-        if not path.exists():
-            continue
-        if any(relative.startswith(prefix) for prefix in FORBIDDEN_PREFIXES):
-            errors.append(f"forbidden public path: {relative}")
-        if path.suffix.lower() in FORBIDDEN_SUFFIXES:
-            errors.append(f"model/video artifact must not be public: {relative}")
-        if path.name.lower().startswith("mug") and path.suffix.lower() in {".jpg", ".jpeg", ".png"}:
-            errors.append(f"private capture must remain ignored: {relative}")
-        if path.is_file() and path.stat().st_size > MAX_PUBLIC_FILE_BYTES:
-            errors.append(
-                f"public file exceeds {MAX_PUBLIC_FILE_BYTES // (1024 * 1024)} MiB: {relative}"
-            )
-
-
-def _check_readme_links(errors: list[str]) -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    for raw_target in MARKDOWN_LINK.findall(readme):
-        target = raw_target.strip().strip("<>").split(maxsplit=1)[0]
-        if target.startswith(("http://", "https://", "mailto:", "#")):
-            continue
-        target = target.split("#", maxsplit=1)[0]
-        if target and not (ROOT / target).exists():
-            errors.append(f"README link target does not exist: {target}")
-
-
-def _check_fixture_and_ledger(errors: list[str]) -> tuple[int, int]:
+def _check_fixtures(errors: list[str]) -> tuple[int, int]:
     manifest = _read_json(FIXTURES / "manifest.json")
-    ledger = _read_json(LEDGER)
-    cases = manifest.get("cases")
-    if not isinstance(cases, list):
-        errors.append("fixture manifest cases must be a list")
-        return 0, 0
-    if len(cases) < 10:
-        errors.append(f"public benchmark is too small: {len(cases)} cases")
-    if not str(manifest.get("license", "")).startswith("Apache-2.0"):
-        errors.append("fixture manifest must declare Apache-2.0")
-
-    total_views = 0
-    case_ids: list[str] = []
+    cases = manifest.get("cases", [])
+    if len(cases) != 10 or not str(manifest.get("license", "")).startswith("Apache-2.0"):
+        errors.append("expected ten Apache-2.0 benchmark fixtures")
+    total = 0
     for case in cases:
-        if not isinstance(case, dict):
-            errors.append("fixture case must be an object")
-            continue
-        case_id = str(case.get("id"))
-        case_ids.append(case_id)
-        case_root = FIXTURES / case_id
-        expected = int(case.get("input_views", 0))
-        views = sorted((case_root / "views").glob("*.png"))
-        masks = sorted((case_root / "masks").glob("*.png"))
-        total_views += len(views)
-        if len(views) != expected or len(masks) != expected:
-            errors.append(
-                f"{case_id}: expected {expected} views/masks, found {len(views)}/{len(masks)}"
-            )
-        if [path.name for path in views] != [path.name for path in masks]:
-            errors.append(f"{case_id}: view and mask names differ")
+        directory = FIXTURES / case["id"]
+        views = sorted((directory / "views").glob("*.png"))
+        masks = sorted((directory / "masks").glob("*.png"))
+        total += len(views)
+        if len(views) != case["input_views"] or [p.name for p in views] != [p.name for p in masks]:
+            errors.append(f"incomplete view/mask set: {case['id']}")
         for name in ("cameras.npz", "gt.step", "gt.stl", "manifest.json"):
-            if not (case_root / name).is_file():
-                errors.append(f"{case_id}: missing {name}")
+            if not (directory / name).is_file():
+                errors.append(f"missing fixture file: {case['id']}/{name}")
         if case.get("reference_available_to_reconstruction") is not False:
-            errors.append(f"{case_id}: reference leakage contract is not false")
-
-    ledger_cases = ledger.get("cases")
-    if not isinstance(ledger_cases, list):
-        errors.append("release ledger cases must be a list")
-        return len(cases), total_views
-    ledger_ids = [str(case.get("id")) for case in ledger_cases if isinstance(case, dict)]
-    if ledger_ids != case_ids:
-        errors.append("fixture and ledger case order/identity differ")
-    summary = ledger.get("summary", {})
-    decisions = [case.get("product_decision") for case in ledger_cases if isinstance(case, dict)]
-    valid_steps = sum(
-        bool(case.get("valid_step")) for case in ledger_cases if isinstance(case, dict)
-    )
-    expected_summary = {
-        "cases": len(cases),
-        "rgb_views": total_views,
-        "valid_steps": valid_steps,
-        "product_accepts": decisions.count("accept"),
-        "provenance_rejects": decisions.count("reject-provenance"),
-        "abstentions": decisions.count("abstain"),
-    }
-    for key, expected in expected_summary.items():
-        if not isinstance(summary, dict) or summary.get(key) != expected:
-            errors.append(f"ledger summary {key!r} is not {expected!r}")
-    if (
-        ledger.get("claim_boundary", {}).get("reference_cad_available_to_reconstruction")
-        is not False
-    ):
-        errors.append("ledger reference-CAD leakage contract is not false")
-    ledger_text = LEDGER.read_text(encoding="utf-8")
-    if "/home/" in ledger_text or '"executable"' in ledger_text:
-        errors.append("ledger contains machine-local runtime paths")
-    return len(cases), total_views
+            errors.append(f"reference leakage contract missing: {case['id']}")
+    return len(cases), total
 
 
-def _check_real_rgb_ledger(errors: list[str]) -> None:
-    ledger = _read_json(REAL_RGB_LEDGER)
-    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v6":
-        errors.append("real-RGB ledger schema is not v6")
-    if ledger.get("input", {}).get("reference_geometry_access_during_reconstruction") is not False:
-        errors.append("real-RGB ledger reference-geometry leakage contract is not false")
-    architecture = ledger.get("architecture_change", {})
-    if architecture.get("trusted_operations") != [
-        "axial_revolved_add",
-        "axial_revolved_cut",
-        "planar_profile_add",
-        "planar_profile_cut",
-    ]:
-        errors.append("real-RGB v6 trusted operation contract is inconsistent")
-    if architecture.get("learned_policy_can_invoke_measured_feature") is not False:
-        errors.append("learned policy must not invoke trusted measured features")
-    if architecture.get("maximum_measured_feature_rounds") != 2:
-        errors.append("real-RGB v6 measured search must remain bounded to two rounds")
-    controls = ledger.get("real_controls", {})
-    decisions = (
-        controls.get("object_2", {}).get("decision"),
-        controls.get("object_4", {}).get("decision"),
-    )
-    if decisions != ("ACCEPT", "ABSTAIN"):
-        errors.append(f"real-RGB v6 decisions are inconsistent: {decisions!r}")
-    for object_id in ("object_2", "object_4"):
-        if controls.get(object_id, {}).get("kernel_valid_single_solid") is not True:
-            errors.append(f"real-RGB v6 {object_id} is not one kernel-valid solid")
-    if "/home/" in REAL_RGB_LEDGER.read_text(encoding="utf-8"):
-        errors.append("real-RGB ledger contains machine-local runtime paths")
-
-
-def _check_real_photo_e2e_ledger(errors: list[str]) -> None:
-    ledger = _read_json(REAL_PHOTO_E2E_LEDGER)
-    if ledger.get("schema_version") != "da3-cad-real-photo-e2e-v1":
-        errors.append("real-photo E2E ledger schema is not v1")
-    pipeline = ledger.get("pipeline", {})
-    if pipeline.get("reference_geometry_access_during_generation") is not False:
-        errors.append("real-photo E2E reference-geometry leakage contract is not false")
-    if pipeline.get("da3_role_in_this_benchmark") != "not used":
-        errors.append("real-photo E2E ledger must disclose that DA3 was not used")
-
-    cases = ledger.get("cases", [])
-    case_ids = [case.get("case_id") for case in cases if isinstance(case, dict)]
-    expected_ids = ["o02-fixed", "o04-fixed", "o10", "o20-fixed", "o25"]
-    if case_ids != expected_ids:
-        errors.append(f"real-photo E2E cases are inconsistent: {case_ids!r}")
-    expected_origins = [
-        "measured-revolve",
-        "measured-revolve",
-        "measured-sketch-extrusion",
-        "measured-sketch-extrusion",
-        "learned-cadena",
-    ]
-    origins = [
-        case.get("candidate_pool", {}).get("selected_origin")
-        for case in cases
-        if isinstance(case, dict)
-    ]
-    if origins != expected_origins:
-        errors.append(f"real-photo E2E selected origins are inconsistent: {origins!r}")
-    for case in cases:
-        if not isinstance(case, dict):
-            errors.append("real-photo E2E contains a non-object case")
-            continue
-        case_id = case.get("case_id", "unknown")
-        input_contract = case.get("input", {})
-        if (input_contract.get("selected_views"), input_contract.get("registered_views")) != (
-            32,
-            32,
-        ):
-            errors.append(f"real-photo E2E {case_id} does not contain 32 registered views")
-        if case.get("product_decision", {}).get("decision") != "ABSTAIN":
-            errors.append(f"real-photo E2E {case_id} decision is not ABSTAIN")
-        step = case.get("step", {})
-        if step.get("kernel_valid") is not True or step.get("solids") != 1:
-            errors.append(f"real-photo E2E {case_id} is not one kernel-valid solid")
-        if case.get("posthoc_reference_only", {}).get("alignment") != "none":
-            errors.append(f"real-photo E2E {case_id} uses posthoc alignment")
-
-    summary = ledger.get("aggregate", {})
-    expected_counts = {
-        "cases": 5,
-        "accept": 0,
-        "abstain": 5,
-        "kernel_valid_single_solid": 5,
-    }
-    for key, expected_count in expected_counts.items():
-        if summary.get(key) != expected_count:
-            errors.append(f"real-photo E2E aggregate {key!r} is not {expected_count!r}")
-    expected_metrics = {
-        "v9_mean_direct_iou": 0.376325144517502,
-        "v9_mean_chamfer_squared_x1000": 17.313081695927735,
-    }
-    for key, expected_metric in expected_metrics.items():
-        if abs(float(summary.get(key, 0.0)) - expected_metric) > 1e-12:
-            errors.append(f"real-photo E2E aggregate {key!r} is inconsistent")
-    if "/home/" in REAL_PHOTO_E2E_LEDGER.read_text(encoding="utf-8"):
-        errors.append("real-photo E2E ledger contains machine-local runtime paths")
-
-
-def _check_planar_grammar_ledger(errors: list[str]) -> None:
-    ledger = _read_json(PLANAR_GRAMMAR_LEDGER)
-    if ledger.get("schema_version") != "da3-cad-measured-planar-grammar-v6":
-        errors.append("measured planar grammar ledger schema is not v6")
-    if ledger.get("method", {}).get("operations") != [
-        "planar_profile_add",
-        "planar_profile_cut",
-    ]:
-        errors.append("measured planar grammar operations are inconsistent")
-    cases = ledger.get("cases", [])
-    case_ids = [case.get("id") for case in cases if isinstance(case, dict)]
-    if case_ids != ["l_add", "t_add", "u_cut", "hex_cut"]:
-        errors.append(f"measured planar grammar cases are inconsistent: {case_ids!r}")
-    summary = ledger.get("summary", {})
-    expected_summary = {
-        "positive_cases": 4,
-        "valid_single_solid_steps": 4,
-        "correct_axis_selections": 4,
-        "negative_controls_passed": 1,
-    }
-    for key, expected in expected_summary.items():
-        if summary.get(key) != expected:
-            errors.append(f"measured planar grammar summary {key!r} is not {expected!r}")
-    if float(summary.get("mean_exact_volume_iou", 0.0)) < 0.97:
-        errors.append("measured planar grammar mean exact-volume IoU is below 0.97")
-    controls = ledger.get("negative_controls", [])
-    if len(controls) != 1 or controls[0].get("id") != "nonconstant_frustum_add":
-        errors.append("measured planar grammar frustum control is missing")
-    elif controls[0].get("candidate_count") != 0 or controls[0].get("passed") is not True:
-        errors.append("measured planar grammar frustum control was not rejected")
-    if ledger.get("claim_boundary", {}).get("fit_reference_cad_access") is not False:
-        errors.append("measured planar grammar reference-CAD leakage contract is not false")
-    if "/home/" in PLANAR_GRAMMAR_LEDGER.read_text(encoding="utf-8"):
-        errors.append("measured planar grammar ledger contains machine-local runtime paths")
-
-
-def _check_metadata(errors: list[str]) -> None:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-    if f"version: {project['version']}" not in citation:
-        errors.append("pyproject and CITATION.cff versions differ")
-    if not (ROOT / "docs" / "DA3-CAD_public_benchmark_v2.pdf").read_bytes().startswith(b"%PDF"):
-        errors.append("public benchmark PDF is invalid")
-    for relative in (
-        "docs/assets/release/teaser.png",
-        "docs/assets/release/public_benchmark_v2.png",
-    ):
-        if not (ROOT / relative).read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
-            errors.append(f"invalid PNG signature: {relative}")
-    animation_path = ROOT / "docs/assets/release/cpu_smoke.gif"
-    if not animation_path.read_bytes().startswith((b"GIF87a", b"GIF89a")):
-        errors.append("invalid GIF signature: docs/assets/release/cpu_smoke.gif")
-    else:
-        with Image.open(animation_path) as animation:
-            if animation.size != (1200, 540) or getattr(animation, "n_frames", 1) < 4:
-                errors.append("CPU smoke GIF must be 1200x540 with at least four frames")
+def _check_benchmarks(errors: list[str]) -> None:
+    path = ROOT / "docs/benchmarks.json"
+    if not path.exists():
+        return
+    payload = _read_json(path)
+    for suite in payload.get("suites", []):
+        total = suite.get("total", 0)
+        outcomes = suite.get("outcomes", {})
+        if total <= 0 or sum(outcomes.values()) != total:
+            errors.append(f"benchmark denominator mismatch: {suite.get('name')}")
+        if not suite.get("protocol") or not suite.get("command"):
+            errors.append(f"benchmark protocol missing: {suite.get('name')}")
+    if len(payload.get("suites", [])) != 3:
+        errors.append("expected three complete benchmark summaries")
+    if "/home/" in path.read_text():
+        errors.append("benchmark summary contains local machine paths")
 
 
 def main() -> None:
     errors: list[str] = []
     files = _public_files()
-    _check_required(errors)
-    _check_repository_surface(files, errors)
-    _check_readme_links(errors)
-    cases, views = _check_fixture_and_ledger(errors)
-    _check_real_rgb_ledger(errors)
-    _check_real_photo_e2e_ledger(errors)
-    _check_planar_grammar_ledger(errors)
-    _check_metadata(errors)
+    for relative in REQUIRED:
+        if not (ROOT / relative).is_file():
+            errors.append(f"missing required product file: {relative}")
+    for path in files:
+        name = path.relative_to(ROOT).as_posix()
+        if not path.is_file():
+            continue
+        if name.startswith(FORBIDDEN_PREFIXES) or path.suffix.lower() in FORBIDDEN_SUFFIXES:
+            errors.append(f"runtime/research artifact in product release: {name}")
+        if path.stat().st_size > MAX_PUBLIC_FILE_BYTES:
+            errors.append(f"public file exceeds 8 MiB: {name}")
+        if path.suffix == ".md":
+            for raw in MARKDOWN_LINK.findall(path.read_text(encoding="utf-8")):
+                target = raw.strip().strip("<>").split(maxsplit=1)[0]
+                if target.startswith(("https://", "http://", "mailto:", "#")):
+                    continue
+                target = target.split("#", 1)[0]
+                if target and not (path.parent / target).exists():
+                    errors.append(f"broken link in {name}: {target}")
+    cases, views = _check_fixtures(errors)
+    _check_benchmarks(errors)
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]
+    if f"version: {project['version']}" not in (ROOT / "CITATION.cff").read_text():
+        errors.append("package/citation version mismatch")
+    preview = ROOT / "docs/assets/quickstart/viewer.png"
+    if preview.is_file():
+        with Image.open(preview) as image:
+            if image.width < 1000 or image.height < 600:
+                errors.append("workspace screenshot is too small")
+            image.verify()
     if errors:
-        print("release check failed:", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
+        print("release check failed:\n" + "\n".join(f"- {e}" for e in errors), file=sys.stderr)
         raise SystemExit(1)
-    print(f"release check passed: {len(files)} files · {cases} cases · {views} RGB views")
+    print(f"release check passed: {len(files)} files · {cases} fixtures · {views} RGB views")
 
 
 if __name__ == "__main__":

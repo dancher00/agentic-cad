@@ -1,0 +1,62 @@
+{
+  "schema": "datumfold-benchmarks-v1",
+  "date": "2026-09-10",
+  "hardware": "NVIDIA RTX 5080 16 GB; Linux; Python 3.12",
+  "reconstruction_code_commit": "dd790dc475933f3eca1f0f403aca48450fba296e",
+  "photo_runner_commit": "8436d30cad63f0e6fbecccd92a4087b6dfa3d3d0",
+  "suites": [
+    {
+      "name": "Controlled RGB",
+      "total": 10,
+      "views": 120,
+      "outcomes": {
+        "step": 10,
+        "no_step": 0
+      },
+      "mean_iou": 0.8684939316684541,
+      "metric_scope": "regression diagnostic; independent bounding-box normalization; no rotational registration",
+      "protocol": "Project-generated RGB views with supplied masks and calibrated cameras; DA3-LARGE-1.1 plus constructive CAD grammar.",
+      "reference_access_during_generation": false,
+      "input_manifest_sha256": "9fe63b23a2f21071c9469220bcb71444a56e65f6be8891a3ebc8195d32f9b86c",
+      "command": "python scripts/run_public_benchmark.py --outputs work/benchmarks/public --device cuda"
+    },
+    {
+      "name": "RaySection",
+      "total": 30,
+      "views_per_object": 16,
+      "fitting_views": 12,
+      "heldout_views": 4,
+      "outcomes": {
+        "step": 30,
+        "no_step": 0
+      },
+      "mean_iou": 0.8365735554923185,
+      "mean_heldout_silhouette_iou": 0.9166820594267712,
+      "metric_scope": "volume IoU in the shared observation frame; invalid predictions count as zero",
+      "protocol": "Thirty dimension-perturbed and rotated instances from ten procedural families; noisy simulated calibrated depth/masks; executable-budget search; resolution 72; seed 20260910.",
+      "reference_access_during_generation": false,
+      "input_manifest_sha256": "e878500d5496ab423aced96615f32820db46d36d51aef0870845c0d8f68c4b1e",
+      "command": "python scripts/run_ray_section_search_study.py run --data work/benchmarks/ray-inputs --output work/benchmarks/rays --methods adaptive --resolution 72 --device cuda"
+    },
+    {
+      "name": "Text + real photos",
+      "total": 5,
+      "views": 80,
+      "outcomes": {
+        "step": 0,
+        "no_step": 5
+      },
+      "accepted": 0,
+      "protocol": "Five previously inspected Google Objectron collections; default Qwen2-VL-2B, Grounding DINO, SAM2 and the MVS route; only photos and a text query supplied; all attempts counted.",
+      "reference_access_during_generation": false,
+      "reference_cad_available": false,
+      "stops_by_stage": {
+        "vlm_selection": 2,
+        "instance_selection": 2,
+        "camera_coverage": 1
+      },
+      "input_manifest_sha256": "ce0dc657627f734fac851309dc4245ec9da1a9c161fddf32da3cf29b0c0c350d",
+      "command": "python scripts/run_photo_cad_benchmark.py --images captures/real_objects/prepared_oriented --output work/benchmarks/photos --geometry mvs --offline"
+    }
+  ]
+}

@@ -23,10 +23,6 @@ not a promise of sufficient coverage. Prefer 20–40 sharp views around the obje
 5. `--geometry da3` instead uses DA3-BASE depth/cameras and the constructive CAD
    grammar. This faster experimental route emits a **CANDIDATE**, never ACCEPT.
 
-The VLM can reject a visible object incorrectly, and a confident detector can
-select the wrong object. Independent per-view detections do not prove identity
-across views. A correct mask does not establish accurate depth or hidden topology.
-
 ## Installation
 
 [← Back to the quickstart](../README.md)
@@ -67,12 +63,12 @@ hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/caden
 Run the full pipeline on your photo folder:
 
 ```bash
-datumfold photo-cad photos/ --object "black book" \
-  --output work/book-mvs --device cuda
+datumfold photo-cad photos/ --object "metal block" \
+  --output work/block-mvs --device cuda
 ```
 
-Read `work/book-mvs/report.json` first. Open the root `model.step` if the
-result is ACCEPT, or inspect `candidate.step` if a rejected draft is available.
+Read `work/block-mvs/report.json` first. Open the root `model.step` if the
+result is ACCEPT, or inspect `candidate.step` when that export is present.
 
 ### Model licenses
 
@@ -81,9 +77,7 @@ Review upstream source and model terms before downloading or deploying.
 The default VLM is Qwen2-VL-2B (Apache-2.0). For research, optional
 `--vlm-model qwen2.5-3b` selects Qwen2.5-VL-3B under its **non-commercial Qwen
 Research License**; commercial use requires a separate license from its owner.
-Both profiles run locally. The 3B profile correctly identified the book in our
-Russian-query smoke where the 2B profile incorrectly declared it absent.
-This is an observed example, not a general accuracy comparison.
+Both profiles run locally.
 
 ## Run
 

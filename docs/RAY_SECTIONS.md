@@ -7,8 +7,7 @@ CAD compilation uses OpenCascade in a separate process with a 20-second timeout
 per candidate. CPU execution is also supported. No model weights are required.
 
 The input is **calibrated first-hit depth and masks**, not arbitrary photographs.
-For photographs, first use the existing COLMAP/PatchMatch workflow in the main
-README. Simulated-depth benchmark results must not be read as RGB reconstruction
+For photographs, first use the existing COLMAP/PatchMatch workflow in the [setup guide](PHOTO_CAD.md#calibrated-reconstruction). Simulated-depth benchmark results must not be read as RGB reconstruction
 accuracy. The compiler approximates smooth curves by editable polygonal sketches.
 
 ## Install and try
@@ -111,8 +110,7 @@ each of 30 perturbed instances from ten procedural families. These families are
 related to the development fixtures; this is not unseen-category evaluation.
 
 The optional real-photo study needs the local T-LESS workspace; it is not
-redistributed. See the [protocol](research/ray_section_protocol.md) and
-[frozen settings](research/ray_section_freeze.json).
+redistributed. See [benchmark setup](BENCHMARKS.md).
 
 ## Scope
 
