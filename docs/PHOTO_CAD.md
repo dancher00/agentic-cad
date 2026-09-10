@@ -29,11 +29,17 @@ across views. A correct mask does not establish accurate depth or hidden topolog
 
 ## Installation
 
-Python 3.12, from the repository root. Existing upstream preparation scripts are
-required once; learned weights are not included in the source repository.
+[← Back to the quickstart](../README.md)
+
+Use Linux, Python 3.12 and an NVIDIA GPU. Run these commands from the cloned
+repository. This uses the pinned CUDA 13 environment tested on an RTX 5080
+16 GB; a compatible NVIDIA driver is required. Learned weights are not bundled.
 
 ```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
 python -m pip install -r constraints/cpu-py312.txt
+python -m pip install -r constraints/cu130-py312.txt
 python -m pip install -e '.[photo,da3]'
 python scripts/fetch_sam2_source.py
 python scripts/fetch_sam2_weights.py
@@ -42,9 +48,35 @@ python scripts/fetch_da3_source.py
 
 Qwen and Grounding DINO download pinned snapshots on first use into `data/hf`.
 DA3-BASE downloads on first draft reconstruction. Use `--offline` after caching.
-Review upstream model licenses for your intended deployment. See the main README
-for CADENA checkout/checkpoint and the dedicated CUDA MVS environment required by
-`--geometry mvs`; `--geometry da3` does not require those two components.
+You can now run the DA3 draft and mask-preview commands in the quickstart.
+For the default `mvs` route, complete the additional setup below.
+
+### Calibrated reconstruction
+
+Install CADENA and the isolated CUDA 12 stereo environment:
+
+```bash
+python -m pip install -r constraints/cadena-py312.txt
+python -m pip install "virtualenv>=20,<21"
+scripts/setup_mvs_env.sh .venv/bin/python
+git clone https://github.com/zhemdi/cadena.git data/upstream/cadena
+git -C data/upstream/cadena checkout b636649d1c59e4a4b52f5b683af18d6b136b082b
+hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/cadena
+```
+
+Run the full pipeline on your photo folder:
+
+```bash
+da3-cad photo-cad photos/ --object "black book" \
+  --output work/book-mvs --device cuda
+```
+
+Read `work/book-mvs/report.json` first. Open the root `model.step` if the
+result is ACCEPT, or inspect `candidate.step` if a rejected draft is available.
+
+### Model licenses
+
+Review upstream source and model terms before downloading or deploying.
 
 The default VLM is Qwen2-VL-2B (Apache-2.0). For research, optional
 `--vlm-model qwen2.5-3b` selects Qwen2.5-VL-3B under its **non-commercial Qwen
@@ -57,15 +89,15 @@ This is an observed example, not a general accuracy comparison.
 
 ```bash
 # Inspect automatic selection first, including for a single photo.
-da3-cad photo-cad photos/ --object 'красная банка кока-колы' \
+da3-cad photo-cad photos/ --object 'red soda can' \
   --output work/selection --stop-after-masks --device cuda
 
 # Full calibrated route, including source-view checks.
-da3-cad photo-cad photos/ --object 'красная банка кока-колы' \
+da3-cad photo-cad photos/ --object 'red soda can' \
   --output work/can --device cuda
 
 # Faster learned-depth draft, with explicitly unverified hidden geometry.
-da3-cad photo-cad photos/ --object 'красная банка кока-колы' \
+da3-cad photo-cad photos/ --object 'red soda can' \
   --output work/can-draft --geometry da3 --device cuda
 
 # Skip VLM interpretation when a short English detector phrase is sufficient.
@@ -96,3 +128,17 @@ history are guaranteed. Metric scale is unresolved without external evidence.
 
 These are integration capabilities, not an established success rate on arbitrary
 photo collections. Synthetic RaySection results do not measure this pipeline.
+
+## Troubleshooting
+
+| Problem | What to do |
+|---|---|
+| Object missing or wrong masks | Inspect `selection/grounding.json` and `selection/masks/`. Try a short English object description; `--no-vlm` bypasses VLM interpretation. |
+| Reconstruction fails | Add sharp overlapping views, retain a textured stationary background, and avoid reflections and moving objects. Check the stage log named in `report.json`. |
+| Output folder already exists | Choose a new `--output` path. |
+| Offline model error | Run once online to populate the model cache before using `--offline`. |
+| Result is ABSTAIN | Read the failed gates in the report. A valid STEP alone does not mean the reconstructed shape is correct. |
+
+The browser viewer command in the quickstart is for the DA3 draft route.
+It creates a self-contained local HTML file; keep it alongside the output files
+if you want its relative download links to work.
