@@ -35,7 +35,7 @@ def _reconstruction_command(
         sys.executable,
         "-m",
         "da3_cad",
-        "reconstruct",
+        "research-reconstruct",
         str(source / "views"),
         "--output",
         str(outputs / case_id),

@@ -59,7 +59,11 @@ def validate_and_export(
             str(source_path),
             str(temp_dir),
         ]
-        environment = os.environ.copy()
+        environment = {
+            key: value
+            for key, value in os.environ.items()
+            if not any(word in key.upper() for word in ("KEY", "TOKEN", "SECRET", "PASSWORD"))
+        }
         environment["PYTHONNOUSERSITE"] = "1"
         process = subprocess.Popen(  # noqa: S603 - fixed interpreter/module, no shell
             command,

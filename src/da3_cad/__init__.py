@@ -1,3 +1,3 @@
-"""DA3-CAD: deterministic multi-view RGB to editable CAD."""
+"""Datumfold: text and photos to editable CAD."""
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

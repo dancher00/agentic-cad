@@ -12,7 +12,7 @@ def test_photo_benchmark_supplies_only_images_and_text() -> None:
     runner = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runner)
     args = runner.command(Path("captures/book/frames"), Path("work/book"), "book", "mvs", True)
-    assert "photo-cad" in args
+    assert "research-photo-cad" in args
     assert args[args.index("--object") + 1] == "book"
     assert "--offline" in args
     assert not {"--cameras", "--masks", "--reference"}.intersection(args)

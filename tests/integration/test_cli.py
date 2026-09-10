@@ -20,22 +20,7 @@ def test_cli_lists_product_commands() -> None:
     result = runner.invoke(app, ["--help"])
 
     assert result.exit_code == 0
-    for command in (
-        "prepare-target",
-        "prepare-photos-sfm",
-        "prepare-gaussian-scene",
-        "dense-surface",
-        "fit-cad",
-        "prepare-video",
-        "cpu-smoke",
-        "reconstruct",
-        "inspect",
-        "edit",
-        "viewer",
-        "doctor",
-        "evaluate",
-        "benchmark",
-    ):
+    for command in ("generate", "reconstruct", "inspect", "edit", "viewer", "doctor"):
         assert command in result.stdout
 
 
@@ -233,7 +218,7 @@ def test_reconstruct_dry_run_does_not_create_output(sample_case: Path, tmp_path:
     result = runner.invoke(
         app,
         [
-            "reconstruct",
+            "research-reconstruct",
             str(sample_case / "views"),
             "--output",
             str(output_dir),
@@ -390,7 +375,7 @@ def test_latest_reconstruct_dry_run_displays_da3_nc_terms_without_writes(
     result = runner.invoke(
         app,
         [
-            "reconstruct",
+            "research-reconstruct",
             str(sample_case / "views"),
             "--output",
             str(output_dir),

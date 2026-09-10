@@ -96,7 +96,7 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
-@app.command("photo-cad")
+@app.command("research-photo-cad", hidden=True)
 def photo_cad_command(
     images: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
     output: Annotated[Path, typer.Option("--output", "-o")],
@@ -176,7 +176,7 @@ def photo_cad_command(
         raise typer.Exit(3)
 
 
-@app.command("ray-sections")
+@app.command("ray-sections", hidden=True)
 def ray_sections_command(
     observations: Annotated[Path, typer.Argument(help="Calibrated ray bundle (.npz).")],
     output: Annotated[Path, typer.Option("--output", help="New output directory.")],
@@ -209,7 +209,7 @@ def ray_sections_command(
         raise typer.Exit(3)
 
 
-@app.command("pack-rays")
+@app.command("pack-rays", hidden=True)
 def pack_rays_command(
     workspace: Annotated[Path, typer.Argument(help="COLMAP MVS workspace.")],
     cameras: Annotated[Path, typer.Option("--cameras", help="Matching camera bundle (.npz).")],
@@ -247,7 +247,7 @@ def _cpu_smoke_fixture() -> Iterator[Path]:
         yield root / "views"
 
 
-@app.command("prepare-target")
+@app.command("prepare-target", hidden=True)
 def prepare_target_command(
     input_dir: Annotated[
         Path,
@@ -418,7 +418,7 @@ def prepare_target_command(
     console.print(f"[green]Target manifest:[/green] {result.manifest_path}")
 
 
-@app.command("prepare-gaussian-scene")
+@app.command("prepare-gaussian-scene", hidden=True)
 def prepare_gaussian_scene_command(
     images_dir: Annotated[
         Path,
@@ -515,7 +515,7 @@ def prepare_gaussian_scene_command(
     )
 
 
-@app.command("dense-surface")
+@app.command("dense-surface", hidden=True)
 def dense_surface_command(
     images_dir: Annotated[
         Path,
@@ -630,7 +630,7 @@ def dense_surface_command(
     console.print(f"[green]Pipeline report:[/green] {result.report_path}")
 
 
-@app.command("fit-cad")
+@app.command("fit-cad", hidden=True)
 def fit_cad_command(
     surface: Annotated[
         Path,
@@ -790,7 +790,7 @@ def fit_cad_command(
     console.print(f"[green]Decision report:[/green] {report_path}")
 
 
-@app.command("prepare-photos-sfm")
+@app.command("prepare-photos-sfm", hidden=True)
 def prepare_photos_sfm_command(
     photos_dir: Annotated[
         Path,
@@ -897,7 +897,7 @@ def prepare_photos_sfm_command(
     )
 
 
-@app.command("prepare-video")
+@app.command("prepare-video", hidden=True)
 def prepare_video_command(
     video_path: Annotated[
         Path,
@@ -1011,7 +1011,7 @@ def prepare_video_command(
     )
 
 
-@app.command("cpu-smoke")
+@app.command("cpu-smoke", hidden=True)
 def cpu_smoke_command(
     output_dir: Annotated[
         Path,
@@ -1061,7 +1061,7 @@ def cpu_smoke_command(
     )
 
 
-@app.command("reconstruct")
+@app.command("research-reconstruct", hidden=True)
 def reconstruct_command(
     input_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Option("--output", "-o", help="New output directory.")],
@@ -1171,7 +1171,7 @@ def reconstruct_command(
         )
 
 
-@app.command("geometry")
+@app.command("geometry", hidden=True)
 def geometry_command(
     input_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
     output_dir: Annotated[Path, typer.Option("--output", "-o", help="New output directory.")],
@@ -1369,7 +1369,7 @@ def viewer_command(
     console.print("[yellow]Open the HTML locally; it makes no network requests.[/yellow]")
 
 
-@app.command("doctor")
+@app.command("research-doctor", hidden=True)
 def doctor_command(
     input_dir: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
     output: Annotated[
@@ -1395,7 +1395,7 @@ def doctor_command(
         console.print(Pretty({"config": settings.model_dump(), "writes": False}))
 
 
-@app.command("evaluate")
+@app.command("evaluate", hidden=True)
 def evaluate_command(
     prediction: Annotated[
         Path,
@@ -1446,7 +1446,7 @@ def evaluate_command(
         output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-@app.command("benchmark")
+@app.command("benchmark", hidden=True)
 def benchmark_command(
     input_root: Annotated[Path, typer.Argument(exists=True, file_okay=False, readable=True)],
     output_dir: Annotated[
@@ -1487,3 +1487,14 @@ def benchmark_command(
 
 if __name__ == "__main__":
     app()
+
+
+# All product reconstruction entry points use GPT.
+from da3_cad.gpt_cli import doctor_command as gpt_doctor_command  # noqa: E402
+from da3_cad.gpt_cli import generate_command  # noqa: E402
+
+app.command("generate")(generate_command)
+app.command("reconstruct")(generate_command)
+app.command("photo-cad", hidden=True)(generate_command)
+
+app.command("doctor")(gpt_doctor_command)
