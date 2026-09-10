@@ -91,7 +91,10 @@ observation objective. `feature_review_passed` records whether the selected cand
 has no clear local errors according to that review; it is a model judgment, not
 ground-truth validation. The reviewer receives measured STL extents and horizontal
 section spans as well as depth-buffered renders, so CAD dimensions need not be
-guessed from pixels. Reviews carry a protocol version; resume reassesses older
+guessed from pixels. The review also receives the measured lowest contact footprint,
+near-base sections, source SAM silhouette bands and registered silhouette overlays.
+Projected photo bands remain distinct from axial CAD dimensions. Reviews carry a
+protocol version; resume reassesses older
 protocols before using them as correction instructions. The reviewer uses `high` reasoning independently of the
 generator's configured effort. Each valid candidate costs an additional provider call.
 `--no-feature-review` disables this stage for controlled comparisons.

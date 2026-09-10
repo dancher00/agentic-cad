@@ -82,7 +82,7 @@ def test_wrong_local_feature_forces_retry_despite_high_global_iou(tmp_path, monk
     assert "narrow the foot" in str(calls[1]["input"])
     previous = tmp_path / "run"
     rejected = {
-        "protocol_version": 2,
+        "protocol_version": review.REVIEW_PROTOCOL_VERSION,
         "findings": [{"feature": "base", "severity": 2, "correction": "narrow the foot"}],
     }
     (previous / "attempts/02/feature-review.json").write_text(json.dumps(rejected))
@@ -254,11 +254,21 @@ def test_reviewer_receives_measured_sections_and_rejects_incomplete_response(tmp
     client = SimpleNamespace(responses=SimpleNamespace(parse=parse))
     result = review_features(client, GPTConfig(), [photo], tmp_path, "box", ["body"])
     assert result["cad_measurements"]["extents_xyz_mm"] == pytest.approx([2, 3, 4])
+    assert result["cad_measurements"]["bottom_contact"]["span_xy_mm"] == pytest.approx([2, 3])
     assert all(
         s["span_xy_mm"] == pytest.approx([2, 3])
         for s in result["cad_measurements"]["horizontal_sections"]
     )
     assert "Measured CAD geometry" in str(calls[0]["input"])
+    tapered = trimesh.creation.revolve([[0, 0], [1, 0], [2, 1], [2, 4], [0, 4]])
+    tapered.export(tmp_path / "model.stl")
+    measured = review_features(client, GPTConfig(), [photo], tmp_path, "foot", ["base"])
+    cad = measured["cad_measurements"]
+    assert cad["bottom_contact"]["span_xy_mm"] == pytest.approx([2, 2])
+    assert (
+        next(s for s in cad["horizontal_sections"] if s["height_fraction"] == 0.02)["span_xy_mm"][0]
+        > 2.1
+    )
     client.responses.parse = lambda **kwargs: SimpleNamespace(
         status="incomplete", output_parsed=None
     )
@@ -307,3 +317,23 @@ def test_cpu_budget_failure_is_reported_as_resource_limit(tmp_path, monkeypatch)
     )
     assert not result.valid
     assert "CPU budget of 5s" in result.error
+
+
+def test_photo_mask_profiles_use_object_bounds_and_preserve_view_order(tmp_path):
+    import numpy as np
+
+    from da3_cad.feature_review import photo_mask_profiles
+
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    masks = np.zeros((2, 100, 120), dtype=bool)
+    masks[0, 10:90, 30:90] = True
+    masks[0, 70:90, 30:45] = False
+    masks[0, 70:90, 75:90] = False
+    masks[1, 20:80, 20:100] = True
+    np.savez(evidence / "geometry.npz", masks=masks)
+    profiles = photo_mask_profiles(tmp_path / "attempts/01")
+    assert [p["view"] for p in profiles] == [1, 2]
+    assert profiles[0]["bbox_width_px"] == 60
+    assert profiles[0]["bands"][0]["projected_width_px"] == 30
+    assert profiles[1]["bands"][0]["projected_width_px"] == 80
