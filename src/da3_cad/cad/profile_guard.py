@@ -58,6 +58,8 @@ def guard_spline_profiles(cq: Any) -> Iterator[None]:
                 raise ValueError(
                     f"Spline profile reverses along local {'XYZ'[axis]} by {reversal:.4g} mm "
                     f"despite monotone input stations (limit {tolerance:.4g} mm). "
+                    f"Local endpoints: {local[0].round(4).tolist()} to "
+                    f"{local[-1].round(4).tolist()}. "
                     "This can create an unintended lip or undercut between stations. "
                     "Use tangent circular arcs, simplify the interpolation, or correct tangent "
                     "directions/scaling. Encode intentional reversals explicitly in the stations."
