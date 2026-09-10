@@ -8,13 +8,15 @@ from pathlib import Path
 
 def test_current_public_evidence_and_documents_are_consistent() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
+    history = Path("docs/RESEARCH_HISTORY.md").read_text(encoding="utf-8")
+    assert "(docs/RESEARCH_HISTORY.md)" in readme
     assert (
         "![DA3-CAD: calibrated RGB views to measured geometry to verified B-Rep]"
-        "(docs/assets/release/teaser.png)\n\n"
+        "(../docs/assets/release/teaser.png)\n\n"
         "![Offline CPU smoke: four bundled PNG views to a validated STEP solid]"
-        "(docs/assets/release/cpu_smoke.gif)"
-    ) in readme
-    assert "da3-cad cpu-smoke --output outputs/cpu-demo" in readme
+        "(../docs/assets/release/cpu_smoke.gif)"
+    ) in history
+    assert "da3-cad cpu-smoke --output outputs/cpu-demo" in history
     benchmark_doc = Path("docs/BENCHMARK.md").read_text(encoding="utf-8")
     public_benchmark_doc = Path("docs/PUBLIC_BENCHMARK.md").read_text(encoding="utf-8")
     architecture = Path("docs/ARCHITECTURE.md").read_text(encoding="utf-8")
@@ -241,7 +243,9 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     assert report_cases["block"]["mesh_topology"]["through_holes"] == 0
     assert report_cases["l_bracket"]["mesh_topology"]["through_holes"] == 0
 
-    combined = "\n".join((readme, benchmark_doc, public_benchmark_doc, architecture, paper))
+    combined = "\n".join(
+        (readme, history, benchmark_doc, public_benchmark_doc, architecture, paper)
+    )
     for claim in ("87.99", "91.82", "89.24", "0.3303"):
         assert claim in combined
     assert "object class" in combined
