@@ -123,6 +123,17 @@ def test_single_view_is_an_explicit_identity_noop() -> None:
     assert result.report["depth_changed"] is False
     assert np.array_equal(result.prediction.depth, single.depth)
 
+    hypothesis = select_depth_hypothesis(
+        single,
+        masks[:1],
+        criterion="projected-local-depth",
+        selection="auto",
+        seed=3,
+    )
+    assert hypothesis.selected == "identity"
+    assert hypothesis.prediction is single
+    assert result.report["input_depth_sha256"] == result.report["output_depth_sha256"]
+
 
 def test_auto_hypothesis_accepts_safe_observation_improvement() -> None:
     prediction, masks, _, _ = _sloped_plane_prediction()
