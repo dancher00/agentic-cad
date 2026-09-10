@@ -102,6 +102,7 @@ Repository = "https://github.com/dancher00/DA3-CAD.git"
 Issues = "https://github.com/dancher00/DA3-CAD/issues"
 
 [project.scripts]
+datumfold = "da3_cad.cli:app"
 da3-cad = "da3_cad.cli:app"
 
 [tool.setuptools]

@@ -1,50 +1,1033 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>DA3-CAD Viewer</title>
-  <style>
-    :root{color-scheme:dark;--bg:#0b0e13;--panel:#141923;--line:#283141;--ink:#eef3fa;--muted:#93a4ba;--accent:#69d2b5;--warn:#ffca68}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 ui-sans-serif,system-ui,sans-serif}
-    header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center;justify-content:space-between}
-    h1,h2{margin:0}h1{font-size:20px}h2{font-size:15px;margin-bottom:12px}.muted{color:var(--muted)}
-    main{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);gap:16px;padding:16px;min-height:calc(100vh - 67px)}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}.stack{display:grid;gap:16px;align-content:start}
-    canvas{width:100%;height:66vh;display:block;background:radial-gradient(circle at 50% 40%,#1d2937,#090c11);border-radius:8px;cursor:grab}
-    button,.button{border:1px solid var(--line);background:#202938;color:var(--ink);border-radius:7px;padding:7px 10px;text-decoration:none;cursor:pointer;white-space:nowrap}
-    #downloads{display:flex;gap:8px;flex-wrap:wrap}
-    button.active{border-color:var(--accent);color:var(--accent)}.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-    table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}th{color:var(--muted);font-weight:500}
-    .badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;margin:2px}.ok{color:var(--accent)}.warning{color:var(--warn)}
-    #drop{border:1px dashed #44536b;border-radius:8px;padding:16px;text-align:center}.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.thumbs img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px}
-    pre{white-space:pre-wrap;max-height:180px;overflow:auto;color:var(--muted);font-size:11px}
-    @media(max-width:900px){main{grid-template-columns:1fr}canvas{height:52vh}}
-  </style>
-</head>
-<body>
-<header><div><h1>DA3-CAD Viewer</h1><div class="muted" id="run"></div></div><div id="status"></div></header>
-<main>
-  <section class="panel"><div class="toolbar"><button id="solidBtn">Solid</button><button id="cloudBtn">Cloud</button><button id="resetBtn">Reset view</button><span class="muted" id="geometryInfo"></span></div><canvas id="view"></canvas><p class="muted">Drag to orbit · wheel to zoom. Cloud and solid are normalized independently for inspection; this view does not invent metric scale.</p></section>
-  <aside class="stack">
-    <section class="panel"><h2>Exports</h2><div id="downloads"></div></section>
-    <section class="panel"><h2>Primary engineering parameters</h2><table><thead><tr><th>Name</th><th>Value</th><th>Role</th></tr></thead><tbody id="params"></tbody></table><details><summary>Implementation literals</summary><table><tbody id="implementation"></tbody></table></details></section>
-    <section class="panel"><h2>Capture images</h2><div id="drop"><input id="folder" type="file" accept="image/*" multiple webkitdirectory><div class="muted">Drop/select any image folder for a local preview. Reconstruction still runs explicitly through <code>da3-cad reconstruct</code>.</div></div><div class="thumbs" id="thumbs"></div></section>
-    <section class="panel"><h2>Provenance</h2><pre id="provenance"></pre></section>
-  </aside>
-</main>
-<script>
-const data=__DA3_CAD_VIEWER_PAYLOAD__; const canvas=document.getElementById('view'),ctx=canvas.getContext('2d'); let mode=data.solid?'solid':'cloud',rx=-.35,ry=.55,zoom=1,drag=false,last=[0,0];
-const esc=s=>String(s??''); document.getElementById('run').textContent=data.run; const quality=data.quality||{},statusNode=document.getElementById('status');[quality.status||'unknown',quality.backend||'backend unknown'].forEach((value,index)=>{const span=document.createElement('span');span.className=`badge ${index===0?(quality.status==='valid'?'ok':'warning'):''}`;span.textContent=esc(value);statusNode.appendChild(span)});
-function rows(target,items){const node=document.getElementById(target),records=items||[];if(target==='params'&&!records.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.className='muted';td.textContent='No primary engineering parameters were inferred.';tr.appendChild(td);node.appendChild(tr)}records.forEach(p=>{const tr=document.createElement('tr');[p.name,`${esc(p.value)} ${esc(p.unit||data.parameters.units||'')}`,p.semantic_role||p.role||''].forEach(value=>{const td=document.createElement('td');td.textContent=esc(value);tr.appendChild(td)});node.appendChild(tr)})} rows('params',data.parameters.primary); rows('implementation',data.parameters.implementation);
-const dl=document.getElementById('downloads');Object.entries(data.downloads).forEach(([name,url])=>{if(url){const a=document.createElement('a');a.className='button';a.href=url;a.download='';a.textContent=`Download ${name.toUpperCase()}`;dl.appendChild(a);dl.append(' ')}});
-document.getElementById('provenance').textContent=JSON.stringify({schema:data.provenance?.schema_version,run_id:data.provenance?.run_id,command:data.provenance?.command,warnings:data.provenance?.warnings},null,2);
-const thumbs=document.getElementById('thumbs');function addThumb(url,name){const img=document.createElement('img');img.src=url;img.title=name;thumbs.appendChild(img)};(data.images||[]).forEach(x=>addThumb(x.data_url,x.name));document.getElementById('folder').addEventListener('change',e=>{thumbs.innerHTML='';[...e.target.files].filter(f=>f.type.startsWith('image/')).slice(0,16).forEach(f=>addThumb(URL.createObjectURL(f),f.name))});
-function normalize(points){let lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];points.forEach(p=>p.forEach((v,i)=>{lo[i]=Math.min(lo[i],v);hi[i]=Math.max(hi[i],v)}));const c=lo.map((v,i)=>(v+hi[i])/2),s=Math.max(...hi.map((v,i)=>v-lo[i]))||1;return points.map(p=>p.map((v,i)=>(v-c[i])/s))}
-let cloud=data.cloud?normalize(data.cloud.points):[];let rawTriangles=data.solid?data.solid.triangles.map(t=>[t.slice(0,3),t.slice(3,6),t.slice(6,9)]):[],solidPoints=rawTriangles.flat(),normalizedSolid=solidPoints.length?normalize(solidPoints):[],triangles=rawTriangles.map((_,index)=>normalizedSolid.slice(index*3,index*3+3));
-function project(p,w,h){let [x,y,z]=p,cy=Math.cos(ry),sy=Math.sin(ry),cx=Math.cos(rx),sx=Math.sin(rx);let x1=cy*x+sy*z,z1=-sy*x+cy*z,y1=cx*y-sx*z,z2=sx*y+cx*z;return [w/2+x1*w*.78*zoom,h/2-y1*w*.78*zoom,z2]}
-function draw(){const dpr=devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);if(mode==='cloud'&&cloud.length){cloud.forEach((p,i)=>{const q=project(p,w,h),c=data.cloud.colors?.[i]||[105,210,181];ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fillRect(q[0],q[1],1.4,1.4)});document.getElementById('geometryInfo').textContent=`${data.cloud.displayed_points.toLocaleString()} / ${data.cloud.original_points.toLocaleString()} points`}else if(triangles.length){let projected=triangles.map(t=>t.map(p=>project(p,w,h))).sort((a,b)=>a.reduce((s,p)=>s+p[2],0)-b.reduce((s,p)=>s+p[2],0));projected.forEach(t=>{ctx.beginPath();ctx.moveTo(t[0][0],t[0][1]);ctx.lineTo(t[1][0],t[1][1]);ctx.lineTo(t[2][0],t[2][1]);ctx.closePath();ctx.fillStyle='rgb(105,210,181)';ctx.fill()});document.getElementById('geometryInfo').textContent=`${data.solid.displayed_faces.toLocaleString()} / ${data.solid.original_faces.toLocaleString()} faces · triangle edges hidden`}else{ctx.fillStyle='#93a4ba';ctx.fillText('No geometry artifact in this run',20,30)}document.getElementById('solidBtn').classList.toggle('active',mode==='solid');document.getElementById('cloudBtn').classList.toggle('active',mode==='cloud')}
-canvas.addEventListener('pointerdown',e=>{drag=true;last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-last[0])*.01;rx+=(e.clientY-last[1])*.01;last=[e.clientX,e.clientY];draw()});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.25,Math.min(4,zoom*Math.exp(-e.deltaY*.001)));draw()},{passive:false});document.getElementById('solidBtn').onclick=()=>{mode='solid';draw()};document.getElementById('cloudBtn').onclick=()=>{mode='cloud';draw()};document.getElementById('resetBtn').onclick=()=>{rx=-.35;ry=.55;zoom=1;draw()};addEventListener('resize',draw);draw();
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Datumfold — Model workspace</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+PHRpdGxlPkRhdHVtZm9sZDwvdGl0bGU+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiNmN2Y3ZjYiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNiAxNCkiIHN0cm9rZT0iIzI5MmMyYiIgc3Ryb2tlLXdpZHRoPSIxLjciPjxwYXRoIGQ9Ik01IDVoMTNsOSA5djE3SDE0bC05LTlWNVoiLz48cGF0aCBkPSJtNSA1IDkgOWgxM00xNCAxNHYxN00xOCA1djkiLz48L2c+PC9zdmc+Cg=="
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f7f7f6;
+        --canvas: #e8e9e7;
+        --surface: #fff;
+        --line: #d7d9d6;
+        --ink: #292c2b;
+        --muted: #646964;
+        --soft: #eef0ed;
+        --display: "Bahnschrift", "DIN Alternate", "Arial Narrow", sans-serif;
+        --body: "Segoe UI", Arial, sans-serif;
+        --mono: "SFMono-Regular", Consolas, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 14px/1.5 var(--body);
+      }
+      button,
+      a,
+      input,
+      summary,
+      canvas {
+        -webkit-tap-highlight-color: transparent;
+      }
+      button,
+      a,
+      summary {
+        touch-action: manipulation;
+      }
+      button {
+        font: inherit;
+      }
+      button,
+      a.button {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      summary:focus-visible,
+      canvas:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 4px;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      a {
+        color: inherit;
+      }
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+      h2 {
+        font: 500 19px var(--display);
+        letter-spacing: -0.4px;
+      }
+      button,
+      .button {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: var(--surface);
+        color: var(--ink);
+        padding: 8px 12px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      button:hover:not(:disabled),
+      .button:hover {
+        background: var(--soft);
+      }
+      .primary {
+        background: var(--ink);
+        color: white;
+        border-color: var(--ink);
+      }
+      .primary:hover {
+        background: #454a46;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .eyebrow {
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      header {
+        height: 76px;
+        padding: 0 30px;
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        background: var(--paper);
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font: 500 25px var(--display);
+        letter-spacing: -1px;
+      }
+      .brand svg {
+        width: 30px;
+        height: 32px;
+      }
+      .header-label {
+        border-left: 1px solid var(--line);
+        padding-left: 28px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .local {
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .local::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        background: var(--muted);
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 332px;
+        height: calc(100dvh - 76px);
+        min-height: 650px;
+      }
+      .workspace {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 28px 30px 18px;
+      }
+      .project {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .project h1 {
+        font: 500 25px var(--display);
+        letter-spacing: -0.7px;
+        overflow-wrap: anywhere;
+      }
+      .project .eyebrow {
+        margin-bottom: 5px;
+      }
+      .status {
+        border: 1px solid #afb3ad;
+        padding: 5px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      .viewport {
+        position: relative;
+        flex: 1;
+        min-height: 360px;
+        background: var(--canvas);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .view-tools {
+        position: absolute;
+        z-index: 2;
+        left: 18px;
+        right: 18px;
+        top: 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .segmented {
+        display: flex;
+        padding: 3px;
+        gap: 2px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+      .segmented button {
+        background: transparent;
+        border-color: transparent;
+        font-size: 12px;
+        padding: 5px 12px;
+      }
+      .segmented button.active {
+        background: var(--surface);
+        border-color: var(--line);
+        box-shadow: 0 1px 2px #0000000a;
+      }
+      .reset {
+        background: var(--paper);
+        font-size: 12px;
+      }
+      .view-bottom {
+        position: absolute;
+        left: 20px;
+        right: 20px;
+        bottom: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 10px;
+        pointer-events: none;
+      }
+      .view-bottom button {
+        pointer-events: auto;
+      }
+      .view-label {
+        font: 11px var(--mono);
+        color: var(--muted);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+        cursor: grab;
+        touch-action: none;
+      }
+      canvas:active {
+        cursor: grabbing;
+      }
+      .axis {
+        width: 52px;
+        height: 52px;
+      }
+      .footnote {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 13px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      aside {
+        background: var(--paper);
+        border-left: 1px solid var(--line);
+        overflow: auto;
+      }
+      .inspector-head {
+        padding: 30px 24px 22px;
+        border-bottom: 1px solid var(--line);
+      }
+      .inspector-head h2 {
+        margin-bottom: 7px;
+      }
+      .section {
+        padding: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      .section h2 {
+        margin-bottom: 14px;
+      }
+      .section p {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .decision {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+      .decision::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border: 1px solid var(--ink);
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .downloads {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 16px 0 10px;
+      }
+      .downloads a {
+        font-size: 12px;
+      }
+      .downloads a:first-child {
+        grid-column: 1/-1;
+      }
+      .download-note {
+        font-size: 11px !important;
+      }
+      .property {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 15px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .property:last-child {
+        border: 0;
+      }
+      .property dt {
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .property dd {
+        margin: 0;
+        font: 12px var(--mono);
+        text-align: right;
+        max-width: 140px;
+        overflow-wrap: anywhere;
+      }
+      dl {
+        margin: 0;
+      }
+      .params {
+        max-height: 260px;
+        overflow: auto;
+        margin-top: 12px;
+      }
+      details {
+        margin-top: 15px;
+      }
+      summary {
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 4px 0;
+      }
+      pre {
+        font: 11px/1.6 var(--mono);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 240px;
+        overflow: auto;
+        color: var(--muted);
+      }
+      .drop {
+        margin-top: 16px;
+        padding: 18px 12px;
+        border: 1px dashed #adb2ac;
+        border-radius: 5px;
+        text-align: center;
+      }
+      .drop.over {
+        background: var(--soft);
+        border-color: var(--ink);
+      }
+      .drop label {
+        display: block;
+        cursor: pointer;
+        font-size: 12px;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .drop p {
+        font-size: 11px;
+        margin-top: 6px;
+      }
+      .file-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+      .drop:focus-within {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+      }
+      .thumbs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .thumbs img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 3px;
+      }
+      .photos-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      .photos-heading h2 {
+        margin: 0;
+      }
+      .reference-note {
+        margin-top: 12px;
+      }
+      .view-presets {
+        display: flex;
+        gap: 4px;
+      }
+      .view-presets button {
+        padding: 5px 8px;
+        font-size: 11px;
+        background: var(--paper);
+      }
+      @media (min-width: 1500px) {
+        main {
+          grid-template-columns: minmax(0, 1fr) 370px;
+        }
+        .workspace {
+          padding: 34px 40px 22px;
+        }
+        .section {
+          padding: 26px 28px;
+        }
+      }
+      @media (max-width: 900px) {
+        header {
+          padding: 0 20px;
+          height: 65px;
+        }
+        .header-label {
+          display: none;
+        }
+        main {
+          height: auto;
+          min-height: 0;
+          grid-template-columns: 1fr;
+        }
+        .workspace {
+          padding: 22px 16px;
+        }
+        .viewport {
+          height: 62vh;
+          flex: none;
+        }
+        aside {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+          overflow: visible;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .inspector-head {
+          grid-column: 1/-1;
+        }
+        .project h1 {
+          font-size: 22px;
+        }
+        .section {
+          padding: 20px;
+        }
+        .footnote {
+          flex-direction: column;
+          gap: 3px;
+        }
+      }
+      @media (max-width: 540px) {
+        aside {
+          display: block;
+        }
+        .brand {
+          font-size: 23px;
+        }
+        .local {
+          font-size: 11px;
+        }
+        .project {
+          align-items: start;
+        }
+        .project .status {
+          font-size: 11px;
+        }
+        .view-tools {
+          left: 10px;
+          right: 10px;
+          top: 10px;
+        }
+        .segmented button {
+          padding: 5px 9px;
+        }
+        .view-bottom {
+          left: 12px;
+          right: 12px;
+        }
+        .viewport {
+          height: 480px;
+        }
+        .axis {
+          width: 40px;
+        }
+        .view-label {
+          font-size: 10px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <svg viewBox="0 0 32 36" fill="none" aria-hidden="true">
+          <path
+            d="M5 5h13l9 9v17H14l-9-9V5Z"
+            stroke="currentColor"
+            stroke-width="1.7"
+          />
+          <path
+            d="m5 5 9 9h13M14 14v17M18 5v9"
+            stroke="currentColor"
+            stroke-width="1.7"
+          /></svg
+        >datumfold
+      </div>
+      <span class="header-label">Photos into editable form</span
+      ><span class="local">Local workspace</span>
+    </header>
+    <main>
+      <section class="workspace" aria-label="Model workspace">
+        <div class="project">
+          <div>
+            <p class="eyebrow">Model workspace</p>
+            <h1 id="run">Reconstruction</h1>
+          </div>
+          <span class="status" id="status"></span>
+        </div>
+        <div class="viewport">
+          <div class="view-tools">
+            <div class="segmented" aria-label="Geometry display">
+              <button id="solidBtn">Solid</button
+              ><button id="cloudBtn">Point cloud</button>
+            </div>
+            <button
+              class="reset"
+              id="resetBtn"
+              title="Reset orientation and zoom (0)"
+            >
+              Reset view
+            </button>
+          </div>
+          <canvas
+            id="view"
+            tabindex="0"
+            aria-label="3D model. Drag or use arrow keys to rotate. Scroll or press plus and minus to zoom. Press zero to reset."
+          ></canvas>
+          <div class="view-bottom">
+            <div>
+              <div class="view-presets" aria-label="Standard views">
+                <button data-view="iso">3D</button
+                ><button data-view="front">Front</button
+                ><button data-view="top">Top</button>
+              </div>
+              <p
+                class="view-label"
+                id="geometryInfo"
+                style="margin-top: 10px"
+              ></p>
+            </div>
+            <svg class="axis" viewBox="0 0 60 60" aria-label="View orientation">
+              <g stroke="#747b73" stroke-width="1">
+                <path id="axisX" />
+                <path id="axisY" />
+                <path id="axisZ" />
+              </g>
+              <g fill="#50564f" font-family="monospace" font-size="9">
+                <text id="labelX">X</text>
+                <text id="labelY">Y</text>
+                <text id="labelZ">Z</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div class="footnote">
+          <span>Drag to orbit · scroll to zoom · arrow keys to rotate</span
+          ><span>Preview scale · not millimetres</span>
+        </div>
+      </section>
+      <aside aria-label="Model inspector">
+        <div class="inspector-head">
+          <h2>Model inspector</h2>
+          <p class="muted" style="font-size: 12px">
+            Inspect the form before exporting.
+          </p>
+        </div>
+        <section class="section">
+          <div class="decision" id="decision"></div>
+          <p id="decisionNote"></p>
+          <div class="downloads" id="downloads"></div>
+          <p class="download-note">STEP for CAD · STL for mesh tools</p>
+        </section>
+        <section class="section">
+          <h2>Properties</h2>
+          <dl>
+            <div class="property">
+              <dt>Geometry</dt>
+              <dd id="geometryType"></dd>
+            </div>
+            <div class="property">
+              <dt>Scale</dt>
+              <dd id="units"></dd>
+            </div>
+          </dl>
+          <details>
+            <summary>Construction parameters</summary>
+            <dl class="params" id="params"></dl>
+            <details>
+              <summary>Additional values</summary>
+              <dl class="params" id="implementation"></dl>
+            </details>
+          </details>
+        </section>
+        <section class="section">
+          <div class="photos-heading">
+            <h2>Reference photos</h2>
+            <span class="mono muted" id="photoCount">0 images</span>
+          </div>
+          <div class="thumbs" id="thumbs"></div>
+          <div class="drop" id="drop">
+            <label for="folder">Choose a photo folder</label>
+            <p>or drop images here</p>
+            <input
+              class="file-input"
+              id="folder"
+              type="file"
+              accept="image/*"
+              multiple
+              webkitdirectory
+              aria-label="Choose reference photo folder"
+            />
+          </div>
+          <p class="reference-note">
+            Photos stay on this device. Adding references does not rerun
+            reconstruction.
+          </p>
+          <p id="photoMessage" role="status" class="reference-note"></p>
+        </section>
+        <section class="section">
+          <details style="margin: 0">
+            <summary>Run details &amp; verification</summary>
+            <pre id="provenance"></pre>
+            <p>
+              Solid and point cloud are fitted separately to the view. Their
+              visual overlap does not verify alignment or physical scale.
+            </p>
+          </details>
+        </section>
+      </aside>
+    </main>
+    <script>
+      const data = __DA3_CAD_VIEWER_PAYLOAD__;
+      const $ = (id) => document.getElementById(id),
+        canvas = $("view"),
+        ctx = canvas.getContext("2d");
+      let mode = data.solid ? "solid" : "cloud",
+        rx = -0.35,
+        ry = -0.55,
+        zoom = 1,
+        drag = false,
+        last = [0, 0];
+      const parameters = data.parameters || {},
+        quality = data.quality || {};
+      const pathParts = data.run.split(/[\\/]/).filter(Boolean);
+      $("run").textContent =
+        data.display_name || pathParts.at(-1) || "Reconstruction";
+      const decision = data.decision || "CANDIDATE";
+      const labels = {
+        ACCEPT: "Checks passed",
+        ABSTAIN: "Review required",
+        CANDIDATE: "Unverified draft",
+        FAILED: "Run incomplete",
+      };
+      $("status").textContent = labels[decision] || "Unverified draft";
+      $("decision").textContent = labels[decision] || "Unverified draft";
+      $("decisionNote").textContent =
+        decision === "ACCEPT"
+          ? "Passed the implemented checks. Confirm dimensions against the physical object."
+          : decision === "ABSTAIN"
+            ? "Source-view checks declined acceptance. Inspect the candidate and report before use."
+            : "This is a shape candidate. Dimensions and hidden surfaces have not been verified.";
+      $("geometryType").textContent = data.solid
+        ? "Solid model"
+        : data.cloud
+          ? "Point cloud"
+          : "No geometry";
+      $("units").textContent =
+        parameters.units === "canonical-model-unit"
+          ? "Normalized"
+          : parameters.units || "Unspecified";
+      function rows(target, items) {
+        const node = $(target);
+        if (!items?.length) {
+          const p = document.createElement("p");
+          p.className = "muted";
+          p.textContent = "No parameters available.";
+          node.append(p);
+          return;
+        }
+        items.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "property";
+          const key = document.createElement("dt"),
+            val = document.createElement("dd");
+          key.textContent = p.name.replaceAll("_", " ");
+          val.textContent =
+            typeof p.value === "number"
+              ? Number(p.value.toPrecision(6)).toString()
+              : String(p.value ?? "—");
+          val.title = [p.unit || parameters.units, p.semantic_role || p.role]
+            .filter(Boolean)
+            .join(" · ");
+          row.append(key, val);
+          node.append(row);
+        });
+      }
+      rows("params", parameters.primary);
+      rows("implementation", parameters.implementation);
+      Object.entries(data.downloads).forEach(([name, url]) => {
+        if (!url) return;
+        const a = document.createElement("a");
+        a.className = "button" + (name === "step" ? " primary" : "");
+        a.href = url;
+        a.download = "";
+        a.textContent =
+          {
+            step: "Export STEP ↗",
+            stl: "STL",
+            python: "Python source",
+            parameters: "Parameters",
+            provenance: "Run metadata",
+          }[name] || name;
+        $("downloads").append(a);
+      });
+      if (!$("downloads").children.length) {
+        $("downloads").textContent = "No exports available.";
+      }
+      $("provenance").textContent = JSON.stringify(
+        {
+          decision,
+          quality,
+          report: data.report,
+          run: data.run,
+          warnings: data.provenance?.warnings,
+        },
+        null,
+        2,
+      );
+      let objectUrls = [];
+      function addThumb(url, name) {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = name;
+        img.title = name;
+        $("thumbs").append(img);
+      }
+      function countPhotos() {
+        $("photoCount").textContent = `${$("thumbs").children.length} images`;
+      }
+      (data.images || []).forEach((x) => addThumb(x.data_url, x.name));
+      countPhotos();
+      function showFiles(files) {
+        const images = [...files].filter((f) => f.type.startsWith("image/"));
+        if (!images.length) {
+          $("photoMessage").textContent = "Choose image files to preview.";
+          return;
+        }
+        objectUrls.forEach(URL.revokeObjectURL);
+        objectUrls = [];
+        $("thumbs").replaceChildren();
+        images.slice(0, 16).forEach((f) => {
+          const url = URL.createObjectURL(f);
+          objectUrls.push(url);
+          addThumb(url, f.name);
+        });
+        countPhotos();
+        $("photoMessage").textContent =
+          images.length > 16
+            ? `Showing 16 of ${images.length} photos.`
+            : "Reference preview updated.";
+      }
+      $("folder").addEventListener("change", (e) => showFiles(e.target.files));
+      $("drop").addEventListener("dragover", (e) => {
+        e.preventDefault();
+        $("drop").classList.add("over");
+      });
+      $("drop").addEventListener("dragleave", () =>
+        $("drop").classList.remove("over"),
+      );
+      $("drop").addEventListener("drop", (e) => {
+        e.preventDefault();
+        $("drop").classList.remove("over");
+        showFiles(e.dataTransfer.files);
+      });
+      function normalize(points) {
+        let lo = [Infinity, Infinity, Infinity],
+          hi = [-Infinity, -Infinity, -Infinity];
+        points.forEach((p) =>
+          p.forEach((v, i) => {
+            lo[i] = Math.min(lo[i], v);
+            hi[i] = Math.max(hi[i], v);
+          }),
+        );
+        const c = lo.map((v, i) => (v + hi[i]) / 2),
+          s = Math.max(...hi.map((v, i) => v - lo[i])) || 1;
+        return points.map((p) => p.map((v, i) => (v - c[i]) / s));
+      }
+      const cloud = data.cloud ? normalize(data.cloud.points) : [],
+        raw = data.solid
+          ? data.solid.triangles.map((t) => [
+              t.slice(0, 3),
+              t.slice(3, 6),
+              t.slice(6, 9),
+            ])
+          : [],
+        points = normalize(raw.flat()),
+        triangles = raw.map((_, i) => points.slice(i * 3, i * 3 + 3));
+      function rotate(p) {
+        const [x, y, z] = p,
+          cy = Math.cos(ry),
+          sy = Math.sin(ry),
+          cx = Math.cos(rx),
+          sx = Math.sin(rx),
+          xx = cy * x + sy * z,
+          zz = -sy * x + cy * z;
+        return [xx, cx * y - sx * zz, sx * y + cx * zz];
+      }
+      function project(p, w, h) {
+        const [x, y, z] = rotate(p),
+          s = Math.min(w, h) * 0.78 * zoom;
+        return [w / 2 + x * s, h / 2 - y * s, z];
+      }
+      function shade(t) {
+        const a = t[1].map((v, i) => v - t[0][i]),
+          b = t[2].map((v, i) => v - t[0][i]);
+        let n = [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0],
+          ],
+          len = Math.hypot(...n) || 1;
+        n = rotate(n.map((v) => v / len));
+        if (n[2] < 0) n = n.map((v) => -v);
+        return Math.round(
+          140 + 85 * Math.max(0, n[0] * -0.35 + n[1] * 0.65 + n[2] * 0.67),
+        );
+      }
+      function draw() {
+        const dpr = Math.min(devicePixelRatio || 1, 2),
+          w = canvas.clientWidth,
+          h = canvas.clientHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        if (mode === "cloud" && cloud.length) {
+          cloud.forEach((p) => {
+            const q = project(p, w, h);
+            ctx.fillStyle = "#727a71";
+            ctx.fillRect(q[0], q[1], 1.5, 1.5);
+          });
+          $("geometryInfo").textContent =
+            `${data.cloud.displayed_points.toLocaleString()} points · preview`;
+        } else if (mode === "solid" && triangles.length) {
+          triangles
+            .map((t) => ({
+              p: t.map((p) => project(p, w, h)),
+              shade: shade(t),
+            }))
+            .sort(
+              (a, b) =>
+                a.p.reduce((s, p) => s + p[2], 0) -
+                b.p.reduce((s, p) => s + p[2], 0),
+            )
+            .forEach(({ p: t, shade: c }) => {
+              ctx.beginPath();
+              ctx.moveTo(t[0][0], t[0][1]);
+              ctx.lineTo(t[1][0], t[1][1]);
+              ctx.lineTo(t[2][0], t[2][1]);
+              ctx.closePath();
+              ctx.fillStyle = `rgb(${c},${c + 2},${c})`;
+              ctx.fill();
+            });
+          $("geometryInfo").textContent =
+            `${data.solid.displayed_faces.toLocaleString()} faces · triangle edges hidden`;
+        } else {
+          ctx.fillStyle = "#646964";
+          ctx.font = "14px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText("No geometry available for this view", w / 2, h / 2);
+          $("geometryInfo").textContent = "No geometry";
+        }
+        ["solid", "cloud"].forEach((m) => {
+          const b = $(m + "Btn");
+          b.classList.toggle("active", mode === m);
+          b.setAttribute("aria-pressed", String(mode === m));
+          b.disabled = m === "solid" ? !triangles.length : !cloud.length;
+        });
+        [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1],
+        ].forEach((p, i) => {
+          const [x, y] = rotate(p),
+            name = ["X", "Y", "Z"][i];
+          $("axis" + name).setAttribute(
+            "d",
+            `M28 32L${28 + x * 20} ${32 - y * 20}`,
+          );
+          $("label" + name).setAttribute("x", 26 + x * 26);
+          $("label" + name).setAttribute("y", 35 - y * 26);
+        });
+      }
+      function reset() {
+        rx = -0.35;
+        ry = -0.55;
+        zoom = 1;
+        draw();
+      }
+      canvas.addEventListener("pointerdown", (e) => {
+        drag = true;
+        last = [e.clientX, e.clientY];
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        ry += (e.clientX - last[0]) * 0.01;
+        rx += (e.clientY - last[1]) * 0.01;
+        last = [e.clientX, e.clientY];
+        draw();
+      });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach((event) =>
+        canvas.addEventListener(event, () => (drag = false)),
+      );
+      canvas.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          zoom = Math.max(
+            0.25,
+            Math.min(4, zoom * Math.exp(-e.deltaY * 0.001)),
+          );
+          draw();
+        },
+        { passive: false },
+      );
+      canvas.addEventListener("keydown", (e) => {
+        if (
+          ![
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "ArrowDown",
+            "+",
+            "=",
+            "-",
+            "0",
+          ].includes(e.key)
+        )
+          return;
+        e.preventDefault();
+        if (e.key === "0") {
+          reset();
+          return;
+        }
+        if (e.key === "ArrowLeft") ry -= 0.12;
+        if (e.key === "ArrowRight") ry += 0.12;
+        if (e.key === "ArrowUp") rx -= 0.12;
+        if (e.key === "ArrowDown") rx += 0.12;
+        if (e.key === "+" || e.key === "=") zoom = Math.min(4, zoom * 1.1);
+        if (e.key === "-") zoom = Math.max(0.25, zoom / 1.1);
+        draw();
+      });
+      $("solidBtn").onclick = () => {
+        mode = "solid";
+        draw();
+      };
+      $("cloudBtn").onclick = () => {
+        mode = "cloud";
+        draw();
+      };
+      $("resetBtn").onclick = reset;
+      document.querySelectorAll("[data-view]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            const v = b.dataset.view;
+            rx = v === "top" ? Math.PI / 2 : v === "front" ? 0 : -0.35;
+            ry = v === "iso" ? -0.55 : 0;
+            zoom = 1;
+            draw();
+          }),
+      );
+      new ResizeObserver(draw).observe(canvas);
+      draw();
+    </script>
+  </body>
 </html>

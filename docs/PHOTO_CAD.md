@@ -1,4 +1,4 @@
-# Photos + object description → editable CAD
+# Datumfold · Usage guide
 
 `photo-cad` connects local specialist models and geometry stages in one command.
 The images must show the **same stationary physical object**, photographed from
@@ -67,7 +67,7 @@ hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/caden
 Run the full pipeline on your photo folder:
 
 ```bash
-da3-cad photo-cad photos/ --object "black book" \
+datumfold photo-cad photos/ --object "black book" \
   --output work/book-mvs --device cuda
 ```
 
@@ -89,19 +89,19 @@ This is an observed example, not a general accuracy comparison.
 
 ```bash
 # Inspect automatic selection first, including for a single photo.
-da3-cad photo-cad photos/ --object 'red soda can' \
+datumfold photo-cad photos/ --object 'red soda can' \
   --output work/selection --stop-after-masks --device cuda
 
 # Full calibrated route, including source-view checks.
-da3-cad photo-cad photos/ --object 'red soda can' \
+datumfold photo-cad photos/ --object 'red soda can' \
   --output work/can --device cuda
 
 # Faster learned-depth draft, with explicitly unverified hidden geometry.
-da3-cad photo-cad photos/ --object 'red soda can' \
+datumfold photo-cad photos/ --object 'red soda can' \
   --output work/can-draft --geometry da3 --device cuda
 
 # Skip VLM interpretation when a short English detector phrase is sufficient.
-da3-cad photo-cad photos/ --object 'red soda can' --no-vlm \
+datumfold photo-cad photos/ --object 'red soda can' --no-vlm \
   --output work/can-direct --geometry da3 --device cuda
 ```
 

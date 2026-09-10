@@ -1,4 +1,4 @@
-"""DA3-CAD command-line interface."""
+"""Datumfold command-line interface."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ from da3_cad.viewer import build_viewer
 
 app = typer.Typer(
     name="da3-cad",
-    help="Multi-view RGB to editable B-Rep CAD with Depth Anything 3.",
+    help="Datumfold — photos into editable CAD.",
     no_args_is_help=True,
 )
 console = Console()
@@ -73,7 +73,7 @@ def main(
         typer.Option("--version", callback=_version, is_eager=True, help="Show version and exit."),
     ] = False,
 ) -> None:
-    """DA3-CAD CLI."""
+    """Datumfold — photos into editable CAD."""
 
 
 def _config(path: Path | None, device: str | None, seed: int | None) -> AppConfig:
