@@ -1,15 +1,17 @@
 # Third-party licenses
 
-DA3-CAD source and project-generated synthetic fixtures are Apache-2.0. No
+Datumfold source and project-generated synthetic fixtures are Apache-2.0. No
 third-party model weights, source checkout, dataset, video, or derived real
 capture is distributed in this repository.
 
-| Component | Pinned artifact used by DA3-CAD | Terms | Redistributed here |
+| Component | Pinned artifact used by Datumfold | Terms | Redistributed here |
 |---|---|---|---|
 | [Depth Anything 3 source](https://github.com/ByteDance-Seed/Depth-Anything-3) | commit `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` | Apache-2.0 | no; fetched to ignored `data/upstream/` |
 | [DA3-LARGE-1.1](https://huggingface.co/depth-anything/DA3-LARGE-1.1) | revision `0e109ae307c5982f319a67cf6f9f99ccdc0ec97c`; SHA-256 `739905…33f64` | CC BY-NC 4.0 | no; explicit acceptance and ignored cache |
 | [DA3-BASE](https://huggingface.co/depth-anything/DA3-BASE) | revision `f4a6c9b3c95e41c82048423d3493a81ec3fa810e`; SHA-256 `e01067…78b5` | Apache-2.0 | no; ignored cache |
-| [legacy DA3-LARGE](https://huggingface.co/depth-anything/DA3-LARGE) | revision `c54c26b16ec04d218e8d584ecf4bce082a9fcc20`; retained only for reproducibility | CC BY-NC 4.0 | no |
+| [Qwen2-VL-2B](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct) | revision `895c3a49bc3fa70a340399125c650a463535e71c` | Apache-2.0 | no; local cache |
+| [Qwen2.5-VL-3B](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct) | optional profile, revision `66285546d2b821cf421d4f5eb2576359d3770cd3` | non-commercial Qwen Research License | no; local cache |
+| [Grounding DINO Tiny](https://huggingface.co/IDEA-Research/grounding-dino-tiny) | revision pinned in `segmentation/text_object.py` | Apache-2.0 | no; local cache |
 | [Segment Anything 2](https://github.com/facebookresearch/sam2) | source `2b90b9f5ceec907a1c18123530e92e794ad901a4`; SAM2.1 Hiera Small SHA-256 `6d1aa6…d4d38` | Apache-2.0 | no; fetched to ignored `data/` |
 | [Google Objectron](https://github.com/google-research-datasets/Objectron) | `book/batch-47/25`, `bottle/batch-16/11`, `camera/batch-1/0`, `cup/batch-1/0`, `laptop/batch-34/40` | C-UDA-1.0 | no; explicit acceptance and ignored captures |
 | [CadQuery](https://github.com/CadQuery/cadquery) / OpenCascade bindings | installed package dependencies | upstream package licenses | no vendored code |
@@ -18,9 +20,7 @@ capture is distributed in this repository.
 | [T-LESS](https://www.t-less.org/) | controlled objects 2, 4, 10, 20 and 25 real-RGB evaluation | upstream dataset terms | no; all images and reference meshes remain ignored |
 | [manifold3d](https://github.com/elalish/manifold) | `3.5.2`, reference mesh Boolean evaluator | Apache-2.0 | package dependency only |
 
-The full hashes are intentionally kept in source and
-[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md), while the table abbreviates two long
-values for readability.
+Full hashes and pinned revisions are recorded in the model-loading and fetch scripts.
 
 ## Model acceptance
 
@@ -42,8 +42,7 @@ count and SHA-256 of all five pinned videos and five matching annotations.
 Videos, annotations, source receipts, derived frames, masks, report imagery, and
 run outputs remain ignored. The repository redistributes only source
 identifiers, hashes, commands, and result ledgers. Users remain responsible for
-complying with C-UDA-1.0. The older single-camera downloader remains available
-only to reproduce the archived v0.2.0 result.
+complying with C-UDA-1.0.
 
 ## Dependency inventory
 

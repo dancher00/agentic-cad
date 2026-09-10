@@ -44,3 +44,10 @@ paper/revival/*.blg
 paper/revival/*.log
 paper/revival/*.out
 paper/revival/main.pdf
+
+# Local editor/OS metadata and benchmark scratch files.
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+/.claude/settings.local.json
