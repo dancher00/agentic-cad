@@ -59,6 +59,7 @@ GEOMETRY_ATTRIBUTES = frozenset(
         "tangentArcPoint",
         "spline",
         "curve",
+        "roundover",
         "close",
         "wire",
         "extrude",
@@ -178,6 +179,14 @@ stations. Curvature goes smoothly to zero at stations and tangent joins to strai
 Use few meaningful stations and explicit neck/foot transitions. Follow the curve
 with normal CadQuery lineTo/close/revolve/extrude operations. Closed containers still
 use the exterior.shell(-wall_thickness) construction described above.
+For a SINGLE CONVEX rounded transition such as a base chime, use
+  section = profiles.roundover(section, (end_radius, end_height),
+                               start_tangent=(1, 0), end_tangent=(0, 1))
+instead of guessing intermediate stations. This guarantees a convex C2 roundover
+and preserves the chosen endpoints; it cannot develop an unintended S-shaped skirt.
+Tangent directions must be nonparallel and intersect forward along the start
+direction and backward from the end. Use curve for genuinely inflected profiles,
+or several roundovers with matching intermediate tangents for a compound shoulder.
 CadQuery tangentArcPoint defaults to relative=True. If using absolute endpoints,
 always pass relative=False; do not mix absolute stations with relative displacements.
 """

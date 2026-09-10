@@ -85,3 +85,46 @@ def curve(
     edge = cq.Edge(BRepBuilderAPI_MakeEdge(joined.BSplineCurve()).Edge())
     workplane._addPendingEdge(edge)
     return workplane.newObject([edge])
+
+
+def roundover(
+    workplane: Any,
+    end: tuple[float, float],
+    *,
+    start_tangent: tuple[float, float],
+    end_tangent: tuple[float, float],
+) -> Any:
+    """A convex C2 rounded transition with fixed endpoints and tangent directions.
+
+    The quintic control polygon follows the intersection of endpoint tangents.
+    Its universal blend coefficient matches the midpoint of a quarter ellipse;
+    no object dimensions or intermediate photo stations are prescribed here.
+    """
+    start = np.asarray(workplane._findFromPoint(useLocalCoords=True).toTuple()[:2])
+    finish = np.asarray(end, dtype=float)
+    left = np.asarray(start_tangent, dtype=float)
+    right = np.asarray(end_tangent, dtype=float)
+    if any(v.shape != (2,) or not np.isfinite(v).all() for v in (finish, left, right)):
+        raise ValueError("Roundover endpoints and tangents need two finite local XY components")
+    if min(np.linalg.norm(left), np.linalg.norm(right)) < 1e-9:
+        raise ValueError("Roundover tangents must be nonzero")
+    left /= np.linalg.norm(left)
+    right /= np.linalg.norm(right)
+    matrix = np.column_stack([left, right])
+    if abs(np.linalg.det(matrix)) < 1e-7:
+        raise ValueError(
+            "Roundover requires nonparallel tangents; use curve for an inflected profile"
+        )
+    distance = np.linalg.solve(matrix, finish - start)
+    if np.min(distance) <= 1e-7:
+        raise ValueError("Roundover tangents do not define a forward convex transition")
+    alpha = 16.0 * (np.sqrt(2.0) - 1.0) / 25.0
+    first = alpha * distance[0] * left
+    last = alpha * distance[1] * right
+    controls = [start, start + first, start + 2 * first, finish - 2 * last, finish - last, finish]
+    poles = TColgp_Array1OfPnt(1, 6)
+    for index, point in enumerate(controls, 1):
+        poles.SetValue(index, workplane.plane.toWorldCoords(tuple(point)).toPnt())
+    edge = cq.Edge(BRepBuilderAPI_MakeEdge(Geom_BezierCurve(poles)).Edge())
+    workplane._addPendingEdge(edge)
+    return workplane.newObject([edge])

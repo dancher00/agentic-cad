@@ -1,3 +1,5 @@
+import { smoothNormals } from "./normals.js";
+
 const $ = (id) => document.getElementById(id);
 const canvas = $("model");
 let renderer;
@@ -119,6 +121,7 @@ class SolidView {
     }
     const size = Math.max(...hi.map((v, i) => v - lo[i]));
     if (!Number.isFinite(size) || size <= 0) throw new Error("The CAD preview has no geometry.");
+    smoothNormals(data);
     for (let i = 0; i < data.length; i += 6) {
       for (let k = 0; k < 3; k++) data[i + k] = (data[i + k] - (lo[k] + hi[k]) / 2) / size;
     }

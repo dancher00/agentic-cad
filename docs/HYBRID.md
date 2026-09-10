@@ -57,6 +57,13 @@ joins and smooth curvature transitions into tangent straight walls. Optional end
 tangent directions are bounded against adjacent secants. Stations and dimensions remain editable; no object-specific
 dimensions or templates are built into this helper. Python exports using it require
 Agentic CAD installed; STEP and STL remain independent of the application.
+For a single convex transition, `profiles.roundover` uses endpoints and tangent
+directions instead of intermediate stations. Its quintic Bezier control polygon
+has no inflection and zero endpoint second derivatives. The same construction
+works at any scale; GPT still estimates the endpoints from the photographs.
+Photo review and the website interpolate surface normals across smooth triangle
+joins while retaining sharp creases. This changes lighting only, preserving the
+exported vertices, dimensions and topology.
 The kernel also samples non-periodic profile splines at 257 positions. Along axes
 with monotone input stations, a reversal exceeding the larger of 0.02 mm or 0.2%
 of the axis span triggers regeneration. This catches interpolation overshoot without

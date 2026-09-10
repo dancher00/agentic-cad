@@ -11,7 +11,7 @@ import trimesh
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, ConfigDict, Field
 
-REVIEW_PROTOCOL_VERSION = 4
+REVIEW_PROTOCOL_VERSION = 5
 
 
 class FeatureFinding(BaseModel):
@@ -85,13 +85,15 @@ def photo_mask_profiles(folder: Path) -> list[dict[str, Any]]:
 
 def render_views(mesh_path: Path, output: Path) -> Path:
     """Render the actual export in four fixed, labeled views, preserving aspect ratio."""
-    mesh = trimesh.load(mesh_path, force="mesh", process=False)
+    mesh = trimesh.load(mesh_path, force="mesh", process=True)
     if not isinstance(mesh, trimesh.Trimesh):
         raise ValueError("Feature review requires an exported triangle mesh")
+    mesh = trimesh.graph.smooth_shade(mesh, angle=np.radians(30), facet_minarea=None)
     vertices = np.asarray(mesh.vertices)
     vertices = (vertices - mesh.bounds.mean(axis=0)) / np.ptp(vertices, axis=0).max()
     faces = np.asarray(mesh.faces)
     normals = np.asarray(mesh.face_normals)
+    vertex_normals = np.asarray(mesh.vertex_normals)
     panel = Image.new("RGB", (1000, 1000), "#eeeeee")
     for i, (yaw, pitch, label) in enumerate(
         [
@@ -106,7 +108,7 @@ def render_views(mesh_path: Path, output: Path) -> Path:
         points = vertices @ rotation.T
         triangle = points[faces]
         view_normals = normals @ rotation.T
-        light = np.clip(view_normals @ np.array([-0.3, 0.6, 0.74]), 0, 1)
+        light = np.clip(vertex_normals @ rotation.T @ np.array([-0.3, 0.6, 0.74]), 0, 1)[faces]
         pixels = np.full((500, 500, 3), 238, dtype=np.uint8)
         zbuffer = np.full((500, 500), -np.inf)
         for idx in np.flatnonzero(view_normals[:, 2] > 0):
@@ -129,7 +131,8 @@ def render_views(mesh_path: Path, output: Path) -> Path:
             region = zbuffer[y0 : y1 + 1, x0 : x1 + 1]
             visible = (wa >= -1e-8) & (wb >= -1e-8) & (wc >= -1e-8) & (depth > region)
             region[visible] = depth[visible]
-            pixels[y0 : y1 + 1, x0 : x1 + 1][visible] = int(115 + 100 * light[idx])
+            shade = 115 + 100 * (wa * light[idx, 0] + wb * light[idx, 1] + wc * light[idx, 2])
+            pixels[y0 : y1 + 1, x0 : x1 + 1][visible] = shade[visible, None].astype(np.uint8)
         tile = Image.fromarray(pixels)
         draw = ImageDraw.Draw(tile)
         draw.text((16, 12), label, fill="#222222")

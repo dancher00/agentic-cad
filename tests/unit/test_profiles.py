@@ -32,7 +32,8 @@ def test_explicit_neck_stays_within_each_interval_extrema():
         assert selected.max() <= yhi + 1e-7
 
 
-def test_curve_can_be_exported_as_a_hollow_solid_in_the_sandbox(tmp_path):
+@pytest.mark.parametrize("primitive", ["curve", "roundover"])
+def test_curve_can_be_exported_as_a_hollow_solid_in_the_sandbox(tmp_path, primitive):
     source = """import cadquery as cq
 import da3_cad.cad.profiles as profiles
 section=cq.Workplane('XZ').moveTo(0,0).lineTo(8,0)
@@ -41,6 +42,11 @@ exterior=section.lineTo(0,15).close().revolve(360,(0,0),(0,1))
 r=exterior.shell(-0.2)
 NON_PENETRATION_CAVITY=exterior.cut(r)
 """
+    if primitive == "roundover":
+        source = source.replace(
+            "profiles.curve(section,[(9,1),(10,4),(10,15)]",
+            "profiles.roundover(section,(10,15)",
+        )
     result = validate_and_export(source, tmp_path, SandboxConfig())
     assert result.valid, result.error
     assert result.details["solid_count"] == 1
@@ -89,3 +95,34 @@ def test_profile_has_c2_joins_and_zero_endpoint_curvature():
         point, first, second = gp_Pnt(), gp_Vec(), gp_Vec()
         native.D2(native.Knot(index), point, first, second)
         assert second.Magnitude() < 1e-7
+
+
+def test_roundover_is_convex_and_matches_a_quarter_ellipse_midpoint():
+    from OCP.gp import gp_Pnt, gp_Vec
+
+    from da3_cad.cad.profiles import roundover
+
+    edge = roundover(
+        cq.Workplane("XZ").moveTo(2, 0), (12, 20), start_tangent=(1, 0), end_tangent=(0, 1)
+    ).val()
+    native = edge._geomAdaptor().Bezier()
+    middle = native.Value(0.5)
+    assert middle.X() == pytest.approx(2 + 10 / np.sqrt(2))
+    assert middle.Z() == pytest.approx(20 * (1 - 1 / np.sqrt(2)))
+    for t in np.linspace(0, 1, 101):
+        point, first, second = gp_Pnt(), gp_Vec(), gp_Vec()
+        native.D2(float(t), point, first, second)
+        assert first.X() * second.Z() - first.Z() * second.X() >= -1e-8
+        if t in (0, 1):
+            assert second.Magnitude() < 1e-7
+    assert edge.startPoint().toTuple() == pytest.approx((2, 0, 0))
+    assert edge.endPoint().toTuple() == pytest.approx((12, 0, 20))
+
+
+def test_roundover_rejects_a_nonconvex_tangent_contract():
+    from da3_cad.cad.profiles import roundover
+
+    with pytest.raises(ValueError, match="nonparallel"):
+        roundover(cq.Workplane("XY"), (1, 1), start_tangent=(0, 1), end_tangent=(0, 1))
+    with pytest.raises(ValueError, match="forward convex"):
+        roundover(cq.Workplane("XY"), (1, 1), start_tangent=(-1, 0), end_tangent=(0, 1))
