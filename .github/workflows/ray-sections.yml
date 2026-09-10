@@ -6,12 +6,18 @@ on:
       - "src/da3_cad/ray_section*.py"
       - "tests/unit/test_ray_sections.py"
       - "pyproject.toml"
+      - "constraints/cpu-py312.txt"
+      - "src/da3_cad/cli.py"
+      - "sample_data/ray_sections/**"
       - ".github/workflows/ray-sections.yml"
   pull_request:
     paths:
       - "src/da3_cad/ray_section*.py"
       - "tests/unit/test_ray_sections.py"
       - "pyproject.toml"
+      - "constraints/cpu-py312.txt"
+      - "src/da3_cad/cli.py"
+      - "sample_data/ray_sections/**"
       - ".github/workflows/ray-sections.yml"
 
 jobs:
