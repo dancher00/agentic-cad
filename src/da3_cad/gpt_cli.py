@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 
 from da3_cad.gpt_cad import DEFAULT_MODEL, GPTConfig, collect_images, prepare_images, run_gpt_cad
+from da3_cad.hybrid_evidence import HybridConfig
 
 console = Console()
 
@@ -43,10 +44,32 @@ def generate_command(
         Literal["low", "medium", "high", "xhigh", "max"], typer.Option()
     ] = "xhigh",
     max_repairs: Annotated[
-        int, typer.Option(min=0, max=3, help="Extra API calls to repair invalid CAD programs.")
+        int,
+        typer.Option(
+            min=0, max=3, help="Extra CAD calls for execution or hybrid geometry feedback."
+        ),
     ] = 1,
-    max_output_tokens: Annotated[int, typer.Option(min=1024, max=128000)] = 16384,
-    timeout: Annotated[float, typer.Option(min=1, max=1800)] = 180,
+    max_output_tokens: Annotated[
+        int | None,
+        typer.Option(min=1024, max=128000, help="Default: 16384 for gpt, 32768 for hybrid."),
+    ] = None,
+    timeout: Annotated[
+        float | None,
+        typer.Option(min=1, max=1800, help="Seconds per API request: 180 for gpt, 900 for hybrid."),
+    ] = None,
+    reconstruction: Annotated[
+        Literal["gpt", "hybrid"], typer.Option(help="GPT alone, or SAM2 + DA3 + geometric fitting.")
+    ] = "gpt",
+    device: Annotated[str, typer.Option(help="Hybrid model device: auto, cpu or cuda.")] = "auto",
+    fit_parameters: Annotated[int, typer.Option(min=0, max=12)] = 4,
+    evidence_cache: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            help="Reuse evidence for the same prompt and ordered photos.",
+        ),
+    ] = None,
     viewer: Annotated[bool, typer.Option("--viewer/--no-viewer")] = True,
     dry_run: Annotated[
         bool, typer.Option(help="Validate inputs without API calls or output files.")
@@ -66,9 +89,20 @@ def generate_command(
             provider=provider,
             reasoning_effort=reasoning,
             max_repairs=max_repairs,
-            max_output_tokens=max_output_tokens,
-            timeout_seconds=timeout,
+            max_output_tokens=max_output_tokens or (32768 if reconstruction == "hybrid" else 16384),
+            timeout_seconds=timeout or (900 if reconstruction == "hybrid" else 180),
         )
+        hybrid = (
+            HybridConfig(
+                device=device, fit_parameters=fit_parameters, evidence_cache=evidence_cache
+            )
+            if reconstruction == "hybrid"
+            else None
+        )
+        if evidence_cache is not None and hybrid is None:
+            raise ValueError("--evidence-cache requires --reconstruction hybrid")
+        if hybrid is not None and not paths:
+            raise ValueError("Hybrid reconstruction requires at least one photo")
         if output.exists():
             raise FileExistsError("Output already exists; choose a new directory.")
         if dry_run:
@@ -78,20 +112,31 @@ def generate_command(
                     "prompt": prompt,
                     "images": manifest,
                     "config": settings.model_dump(),
+                    "hybrid": hybrid.model_dump(mode="json") if hybrid else None,
                     "writes": False,
                     "api_calls": 0,
                 }
             )
             return
-        with console.status(f"Generating CAD with {model}..."):
+        with console.status(f"Generating CAD with {model}...") as status:
             report = run_gpt_cad(
-                prompt, output, images=paths, config=settings, create_viewer=viewer
+                prompt,
+                output,
+                images=paths,
+                config=settings,
+                create_viewer=viewer,
+                hybrid=hybrid,
+                progress=status.update,
             )
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print("CAD generation failed: " + str(error), markup=False)
         raise typer.Exit(1) from error
     console.print(f"STEP: {output / report['step']}", markup=False)
     console.print(f"CadQuery: {output / report['python']}", markup=False)
+    if report.get("refinement_stopped"):
+        console.print("Saved the best valid CAD. " + report["refinement_stopped"], markup=False)
+    if (output / "sections.png").exists():
+        console.print(f"Sections: {output / 'sections.png'}", markup=False)
     if report.get("viewer"):
         console.print(f"Viewer: {output / report['viewer']}", markup=False)
 

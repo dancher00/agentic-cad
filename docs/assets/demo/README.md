@@ -1,7 +1,7 @@
 # Real-photo demos
 
-The project site shows two real photographs and the CAD generated from each by
-GPT-5.6 Sol through the configured LLM proxy. Each example uses one photo. The
+The project site shows two real photographs and manually refined CAD, starting
+from GPT-5.6 Sol reconstructions through the configured LLM proxy. Each example uses one photo. The
 visible prompt is the exact user prompt sent to the model; target dimensions
 are modeling inputs, not measurements taken from the photograph.
 
@@ -19,8 +19,10 @@ respective owners; no endorsement is implied.
 
 `examples.json` records the exact prompts, source attribution, model/provider,
 original and submitted image hashes, export hashes and CAD extents. `model.step`,
-`model.stl`, `model.py` and `parameters.json` are copied from the completed
-reconstruction without manual geometry changes. The interactive site reads the
+`model.stl`, `model.py` and `parameters.json` include manual photo-guided corrections:
+the can's body aspect ratio and rim, and the mug's asymmetric handle and opening.
+The 120 mm can and 100 mm mug heights remain reference scales. These reviewed
+examples do not represent unedited model output. The interactive site reads the
 same STL offered for download. `preview.png` is a screenshot of that STL in the
 site's viewer.
 
@@ -37,6 +39,11 @@ agentic-cad reconstruct docs/assets/demo/mug/photo.jpg \
   --prompt "$(cat docs/assets/demo/mug/prompt.txt)" --max-repairs 2 \
   --timeout 600 --output work/demo-mug
 ```
+
+These commands generate a new reconstruction; they do not replay the manual edits.
+To reproduce the reviewed geometry exactly, use the published `model.py` and its
+`PARAMETERS` dictionary with CadQuery 2.4. `validation.json` records solid validity
+and empty cavity/aperture checks, not dimensional accuracy against a measured object.
 
 Generation can vary between calls. These are usage examples, not an accuracy
 benchmark. Only completed demo assets are published; credentials and raw local

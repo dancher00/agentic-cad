@@ -99,7 +99,7 @@ class SolidView {
       $("model-status").textContent = "3D paused. Reload the page to rotate the model.";
     });
   }
-  reset() { this.rx = 0.22; this.ry = this.defaultYaw ?? -0.5; this.zoom = this.defaultZoom ?? 1; this.draw(); }
+  reset() { this.rx = this.defaultPitch ?? 0.22; this.ry = this.defaultYaw ?? -0.5; this.zoom = this.defaultZoom ?? 1; this.draw(); }
   load(bytes) {
     const view = new DataView(bytes);
     if (bytes.byteLength < 84) throw new Error("The CAD preview could not be read.");
@@ -180,7 +180,8 @@ async function selectExample(id) {
     if (!response.ok) throw new Error("Could not load the CAD preview. Please reload or download the STEP.");
     const bytes = await response.arrayBuffer();
     if (version !== revision) return;
-    renderer.defaultYaw = id === "mug" ? 2.65 : -0.5;
+    renderer.defaultYaw = 0;
+    renderer.defaultPitch = id === "mug" ? 0.28 : 0.015;
     renderer.defaultZoom = id === "mug" ? 1.3 : 1;
     renderer.load(bytes);
     $("model-frame").classList.add("loaded");

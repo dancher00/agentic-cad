@@ -45,6 +45,10 @@ Open `work/bracket/viewer.html` in your browser. Download the STEP, or open `mod
 
 All selected photos go into the same model request. The model writes a CAD program; local checks build one solid and export it. Invalid code gets up to one repair request by default. Material assignment, FEM and grasp planning run downstream.
 
+For local segmentation, depth and geometric feedback, add `--reconstruction hybrid`.
+The [hybrid setup](docs/HYBRID.md) uses SAM2 + DA3 on your GPU, fits estimated CAD
+parameters and checks declared cavities against the final solid.
+
 ## Use it from your software
 
 A CLI and Python function are available today. There is no hosted HTTP API or MCP server yet. Claude Code can invoke the CLI directly; [setup and Python example](docs/INTEGRATION.md).

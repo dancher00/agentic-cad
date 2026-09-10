@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import traceback
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
@@ -72,6 +73,18 @@ def run(source_path: Path, output_dir: Path) -> int:
             non_penetration_shape = namespace.get(namespace_name)
             if non_penetration_shape is None:
                 continue
+            clearance = (
+                non_penetration_shape.val()
+                if hasattr(non_penetration_shape, "val")
+                else non_penetration_shape
+            )
+            if (
+                clearance is None
+                or not hasattr(clearance, "Volume")
+                or not clearance.isValid()
+                or clearance.Volume() <= 1e-9
+            ):
+                raise ValueError(f"{namespace_name} must be a nonempty valid clearance solid")
             if not hasattr(result, "intersect"):
                 raise ValueError("non-penetration invariant requires a CadQuery workplane")
             overlap = result.intersect(non_penetration_shape)
@@ -113,11 +126,13 @@ def run(source_path: Path, output_dir: Path) -> int:
         if not all(float("-inf") < float(value) < float("inf") for value in bbox_values):
             raise ValueError("program produced non-finite bounds")
         cq.exporters.export(result, str(output_dir / "model.step"))
-        cq.exporters.export(
-            result,
+        # CadQuery's generic STL exporter uses relative deflection. Use an
+        # absolute millimeter tolerance so large faces keep curved outlines.
+        shape.exportStl(
             str(output_dir / "model.stl"),
-            tolerance=0.01,
-            angularTolerance=0.1,
+            tolerance=0.03,
+            angularTolerance=0.08,
+            relative=False,
         )
         _write(
             manifest,
@@ -131,11 +146,33 @@ def run(source_path: Path, output_dir: Path) -> int:
         )
         return 0
     except BaseException as error:  # worker must turn every candidate failure into a manifest
+        message = f"{type(error).__name__}: {error}"
+        frames = traceback.extract_tb(error.__traceback__)
+        program_frames = [frame for frame in frames if frame.filename == str(source_path)]
+        if program_frames:
+            frame = program_frames[-1]
+            message += f"; generated program line {frame.lineno}: {(frame.line or '')[:240]}"
+        invalid_intermediates = []
+        for name, value in locals().get("namespace", {}).items():
+            if name.startswith("_") or not hasattr(value, "val"):
+                continue
+            try:
+                intermediate = value.val()
+                if (
+                    hasattr(intermediate, "Solids")
+                    and intermediate.Solids()
+                    and not intermediate.isValid()
+                ):
+                    invalid_intermediates.append(name)
+            except Exception:
+                continue
+        if invalid_intermediates:
+            message += "; invalid intermediate solids: " + ", ".join(invalid_intermediates[:12])
         _write(
             manifest,
             {
                 "valid": False,
-                "error": f"{type(error).__name__}: {error}",
+                "error": message,
             },
         )
         return 2

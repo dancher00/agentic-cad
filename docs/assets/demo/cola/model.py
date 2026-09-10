@@ -1,30 +1,26 @@
-PARAMETERS = {'height': 120.0, 'wall_thickness': 0.2, 'body_diameter': 66.0, 'base_recess_depth': 2.8, 'base_mid_radius': 12.0, 'base_dish_radius': 23.5, 'base_dish_height': 1.4, 'base_foot_inner_radius': 28.5, 'base_foot_outer_radius': 31.0, 'base_lower_side_radius': 32.2, 'base_side_height': 2.0, 'lower_taper_height': 7.0, 'shoulder_start_height': 103.5, 'shoulder_end_height': 114.0, 'neck_radius': 30.8, 'lid_recess_depth': 1.4, 'rim_center_radius': 31.8, 'rim_tube_radius': 1.2}
+PARAMETERS = {'target_height': 120.0, 'wall_thickness': 0.2, 'body_diameter': 74.9, 'neck_diameter': 65.8, 'shoulder_start_height': 99.0, 'neck_start_height': 116.0, 'base_chime_height': 6.0, 'base_contact_diameter': 63.0, 'base_recess_depth': 2.8, 'base_recess_flat_diameter': 40.0, 'lid_top_height': 118.6, 'rim_outer_diameter': 68.0, 'rim_roll_diameter': 2.2, 'rim_flange_outer_diameter': 66.2, 'rim_flange_bottom_height': 118.35, 'rim_flange_thickness': 0.45}
 import cadquery as cq
-height = PARAMETERS['height']
+target_height = PARAMETERS['target_height']
 wall_thickness = PARAMETERS['wall_thickness']
 body_diameter = PARAMETERS['body_diameter']
-base_recess_depth = PARAMETERS['base_recess_depth']
-base_mid_radius = PARAMETERS['base_mid_radius']
-base_dish_radius = PARAMETERS['base_dish_radius']
-base_dish_height = PARAMETERS['base_dish_height']
-base_foot_inner_radius = PARAMETERS['base_foot_inner_radius']
-base_foot_outer_radius = PARAMETERS['base_foot_outer_radius']
-base_lower_side_radius = PARAMETERS['base_lower_side_radius']
-base_side_height = PARAMETERS['base_side_height']
-lower_taper_height = PARAMETERS['lower_taper_height']
+neck_diameter = PARAMETERS['neck_diameter']
 shoulder_start_height = PARAMETERS['shoulder_start_height']
-shoulder_end_height = PARAMETERS['shoulder_end_height']
-neck_radius = PARAMETERS['neck_radius']
-lid_recess_depth = PARAMETERS['lid_recess_depth']
-rim_center_radius = PARAMETERS['rim_center_radius']
-rim_tube_radius = PARAMETERS['rim_tube_radius']
-body_radius = body_diameter / 2.0
-inner_body_radius = body_radius - wall_thickness
-inner_neck_radius = neck_radius - wall_thickness
-rim_center_height = height - rim_tube_radius
-lid_top_height = height - lid_recess_depth
-lid_bottom_height = lid_top_height - wall_thickness
-profile = [(0.0, base_recess_depth), (base_mid_radius, base_recess_depth - wall_thickness), (base_dish_radius, base_dish_height), (base_foot_inner_radius, 0.0), (base_foot_outer_radius, 0.0), (base_lower_side_radius, base_side_height), (body_radius, lower_taper_height), (body_radius, shoulder_start_height), (neck_radius, shoulder_end_height), (neck_radius, lid_top_height), (0.0, lid_top_height), (0.0, lid_bottom_height), (inner_neck_radius, lid_bottom_height), (inner_neck_radius, shoulder_end_height), (inner_body_radius, shoulder_start_height), (inner_body_radius, lower_taper_height), (base_lower_side_radius - wall_thickness, base_side_height + wall_thickness), (base_foot_outer_radius - wall_thickness, wall_thickness), (base_foot_inner_radius - wall_thickness, wall_thickness), (base_dish_radius - wall_thickness, base_dish_height + wall_thickness), (base_mid_radius, base_recess_depth), (0.0, base_recess_depth + wall_thickness)]
-shell = cq.Workplane('XZ').polyline(profile).close().revolve(360.0, (0.0, 0.0), (0.0, 1.0))
-rim = cq.Workplane('XZ').moveTo(rim_center_radius, rim_center_height).circle(rim_tube_radius).revolve(360.0, (0.0, 0.0), (0.0, 1.0))
-r = shell.union(rim).clean()
+neck_start_height = PARAMETERS['neck_start_height']
+base_chime_height = PARAMETERS['base_chime_height']
+base_contact_diameter = PARAMETERS['base_contact_diameter']
+base_recess_depth = PARAMETERS['base_recess_depth']
+base_recess_flat_diameter = PARAMETERS['base_recess_flat_diameter']
+lid_top_height = PARAMETERS['lid_top_height']
+rim_outer_diameter = PARAMETERS['rim_outer_diameter']
+rim_roll_diameter = PARAMETERS['rim_roll_diameter']
+rim_flange_outer_diameter = PARAMETERS['rim_flange_outer_diameter']
+rim_flange_bottom_height = PARAMETERS['rim_flange_bottom_height']
+rim_flange_thickness = PARAMETERS['rim_flange_thickness']
+NON_PENETRATION_CAVITY = cq.Workplane('XZ').moveTo(0.0, base_recess_depth + wall_thickness).lineTo(base_recess_flat_diameter / 2.0, base_recess_depth + wall_thickness).spline([(base_recess_flat_diameter / 2.0, base_recess_depth + wall_thickness), (body_diameter / 2.0 - 8.0, base_recess_depth + wall_thickness + 0.4), (body_diameter / 2.0 - 2.0, base_chime_height - 1.0), (body_diameter / 2.0 - wall_thickness, base_chime_height + wall_thickness)], tangents=((1.0, 0.0), (0.0, 1.0))).lineTo(body_diameter / 2.0 - wall_thickness, shoulder_start_height).spline([(body_diameter / 2.0 - wall_thickness, shoulder_start_height), (body_diameter / 2.0 - wall_thickness - 0.1, shoulder_start_height + 2.0), (body_diameter / 2.0 - wall_thickness - 0.8, shoulder_start_height + 5.0), (neck_diameter / 2.0 + 1.0, neck_start_height - 3.0), (neck_diameter / 2.0 - wall_thickness, neck_start_height)], tangents=((0.0, 1.0), (0.0, 1.0))).lineTo(neck_diameter / 2.0 - wall_thickness, lid_top_height - wall_thickness).lineTo(0.0, lid_top_height - wall_thickness).close().revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+outer_blank = cq.Workplane('XZ').moveTo(0.0, 0.0).lineTo(base_contact_diameter / 2.0, 0.0).spline([(base_contact_diameter / 2.0, 0.0), (body_diameter / 2.0 - 1.0, 1.4), (body_diameter / 2.0, base_chime_height)], tangents=((1.0, 0.0), (0.0, 1.0))).lineTo(body_diameter / 2.0, shoulder_start_height).spline([(body_diameter / 2.0, shoulder_start_height), (body_diameter / 2.0 - 0.1, shoulder_start_height + 2.0), (body_diameter / 2.0 - 0.8, shoulder_start_height + 5.0), (neck_diameter / 2.0 + 1.2, neck_start_height - 3.0), (neck_diameter / 2.0, neck_start_height)], tangents=((0.0, 1.0), (0.0, 1.0))).lineTo(neck_diameter / 2.0, lid_top_height).lineTo(0.0, lid_top_height).close().revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+base_recess_cut = cq.Workplane('XZ').moveTo(0.0, -1.0).lineTo(base_contact_diameter / 2.0, -1.0).threePointArc((base_contact_diameter / 2.0 - 4.9, 1.6), (base_recess_flat_diameter / 2.0, base_recess_depth)).lineTo(0.0, base_recess_depth).close().revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+rim_flange = cq.Workplane('XY').workplane(offset=rim_flange_bottom_height).circle(rim_flange_outer_diameter / 2.0).circle(neck_diameter / 2.0 - wall_thickness * 2.0).extrude(rim_flange_thickness)
+rim_roll_outer = cq.Workplane('XZ').moveTo(rim_outer_diameter / 2.0 - rim_roll_diameter / 2.0, target_height - rim_roll_diameter / 2.0).circle(rim_roll_diameter / 2.0).revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+rim_roll_core = cq.Workplane('XZ').moveTo(rim_outer_diameter / 2.0 - rim_roll_diameter / 2.0, target_height - rim_roll_diameter / 2.0).circle(rim_roll_diameter / 2.0 - wall_thickness).revolve(360.0, (0.0, 0.0), (0.0, 1.0))
+external = outer_blank.cut(base_recess_cut).union(rim_flange).union(rim_roll_outer)
+r = external.cut(rim_roll_core).cut(NON_PENETRATION_CAVITY)

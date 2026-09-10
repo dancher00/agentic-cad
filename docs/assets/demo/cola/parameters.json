@@ -2,7 +2,7 @@
   "units": "mm",
   "primary_parameters": [
     {
-      "name": "height",
+      "name": "target_height",
       "value": 120.0,
       "unit": "mm",
       "source": "specified",
@@ -17,7 +17,42 @@
     },
     {
       "name": "body_diameter",
-      "value": 66.0,
+      "value": 74.9,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "neck_diameter",
+      "value": 65.8,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "shoulder_start_height",
+      "value": 99.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "neck_start_height",
+      "value": 116.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_chime_height",
+      "value": 6.0,
+      "unit": "mm",
+      "source": "estimated",
+      "editable": true
+    },
+    {
+      "name": "base_contact_diameter",
+      "value": 63.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
@@ -30,99 +65,50 @@
       "editable": true
     },
     {
-      "name": "base_mid_radius",
-      "value": 12.0,
+      "name": "base_recess_flat_diameter",
+      "value": 40.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_dish_radius",
-      "value": 23.5,
+      "name": "lid_top_height",
+      "value": 118.6,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_dish_height",
-      "value": 1.4,
+      "name": "rim_outer_diameter",
+      "value": 68.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_foot_inner_radius",
-      "value": 28.5,
+      "name": "rim_roll_diameter",
+      "value": 2.2,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_foot_outer_radius",
-      "value": 31.0,
+      "name": "rim_flange_outer_diameter",
+      "value": 66.2,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_lower_side_radius",
-      "value": 32.2,
+      "name": "rim_flange_bottom_height",
+      "value": 118.35,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "base_side_height",
-      "value": 2.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "lower_taper_height",
-      "value": 7.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "shoulder_start_height",
-      "value": 103.5,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "shoulder_end_height",
-      "value": 114.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "neck_radius",
-      "value": 30.8,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "lid_recess_depth",
-      "value": 1.4,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "rim_center_radius",
-      "value": 31.8,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "rim_tube_radius",
-      "value": 1.2,
+      "name": "rim_flange_thickness",
+      "value": 0.45,
       "unit": "mm",
       "source": "estimated",
       "editable": true
@@ -130,10 +116,8 @@
   ],
   "implementation_parameters": [],
   "assumptions": [
-    "All proportions other than the specified height and wall thickness were visually estimated from the reference photograph and were not measured.",
-    "The can is modeled as an axisymmetric, sealed hollow shell with a nominal 0.2 mm wall; simple profile offsets cause small local thickness variation at formed base transitions.",
-    "The recessed base is represented by a shallow central dish, annular contact foot, and tapered lower side.",
-    "The rolled top seam is simplified as a solid toroidal bead fused to the neck and recessed flat lid.",
-    "Pull-tab, scored opening, label, condensation, and other non-requested surface details are omitted."
+    "GPT-generated starting geometry was manually refined against the source photograph.",
+    "Height and wall thickness are modeling inputs, not measured dimensions.",
+    "Hidden geometry and handle depth remain estimates."
   ]
 }

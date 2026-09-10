@@ -1,0 +1,16 @@
+{
+  "valid": true,
+  "solid_count": 1,
+  "extents_mm": [
+    74.90000020000001,
+    74.90000020000001,
+    120.00000019999999
+  ],
+  "topology_invariants": {
+    "non_penetration_cavity": {
+      "intrusion_volume": 0.0,
+      "passed": true,
+      "tolerance": 1.471107772696889e-05
+    }
+  }
+}

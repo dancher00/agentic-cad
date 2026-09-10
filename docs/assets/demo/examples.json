@@ -13,16 +13,20 @@
     "original_photo_sha256": "2b5c599388867c01616b9b7188fab16464237a68f6c07db780ab399454aeb6d5",
     "submitted_photo_sha256": "12e975f80e122ff8323065999a5fab0465c27a0412aafc1a2ad03a9fad38104f",
     "extents": [
-      66.0,
-      66.0000001,
-      120.0000001
+      74.90000020000001,
+      74.90000020000001,
+      120.00000019999999
     ],
     "generated_at": "2026-09-10",
     "exports": {
-      "model.step": "545207a5140465a5027fe6592f72d8c2acd210d3a9f925172c264738ebb617f2",
-      "model.stl": "e4f366dc4de07f030730b778b6e0b99bebc0fe7133dc3f7f6c5c856b47e8190f",
-      "model.py": "5f0a54a4f19606c694e9f5d1366142bc26349179dfc8b82956161737d38f4df4"
-    }
+      "model.step": "3cae4ebdd98b52f64dbd9f677f38ba500f96d6136a032c36eca021b38be5afcb",
+      "model.stl": "6485a5ddb3f6d54afbc0fb3bc3ac4d50aea80881e29bd7b206511f37761c0d21",
+      "model.py": "6ad486828ee6c3d912cddf808ccef68b51811470e1da75ad9c59390bac0fe09d"
+    },
+    "postprocessing": "Manual photo-guided geometry correction",
+    "corrections": [
+      "Body aspect ratio and shoulder/rim proportions; 120 mm reference height."
+    ]
   },
   "mug": {
     "title": "Ceramic mug",
@@ -38,15 +42,19 @@
     "original_photo_sha256": "fa9274c6c3805bb9e108dc9ddc18ace452dadffc84989c573121fee5ce73eae8",
     "submitted_photo_sha256": "3e462c88a7151714266268cf9a8349d70672162ca4ed51eb8e539a2e4b6d6f8c",
     "extents": [
-      154.0000002,
+      137.45151913994522,
       106.00000019999999,
       100.00000019999999
     ],
     "generated_at": "2026-09-10",
     "exports": {
-      "model.step": "c55ed31e2c40239412688adba701099b8314dbd547753985d7cf2578964d4807",
-      "model.stl": "12f33bc024b828661c96b7d2605e4e094be9d1179f204ee323ff294ad657a07f",
-      "model.py": "0e0f7dd4ab424710adb30557340ae682fa21f5007e57e7fd4f69b58fa5b16c09"
-    }
+      "model.step": "05fc8c6e4eda7c4cb64cc64e671bb8b4e0dcd1203335c92519c98a6a12690abb",
+      "model.stl": "78659bee9089d46a6c26b4eadb054fd168a6bc6e606882c649835be8a1d503ad",
+      "model.py": "81f8bae10b990f5522c787d8be575e538ae0103d14851ac7dfd597f920f8939d"
+    },
+    "postprocessing": "Manual photo-guided geometry correction",
+    "corrections": [
+      "Asymmetric handle contour, opening, rounded outer edges and attachments; cavity cut after unions."
+    ]
   }
 }

@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
 
@@ -19,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from da3_cad.cad.ast_policy import AstPolicyError, validate_source
 from da3_cad.cad.sandbox import validate_and_export
 from da3_cad.config import SandboxConfig
+from da3_cad.hybrid_evidence import HybridConfig
 
 DEFAULT_MODEL = "gpt-5.6-sol"
 IMAGE_TYPES = {".jpg", ".jpeg", ".png", ".webp"}
@@ -123,6 +125,14 @@ properties are measured. Record geometric assumptions. Do not calculate FEM, mat
 properties, loads or grasps. If wall thickness is unspecified, expose it as an estimated
 parameter and record the assumption. Do not create a solid filled cylinder for a hollow
 container. Do not add unseen internal features except those necessary to form a solid.
+Use supplied dimensions to set scale, then preserve the observed body aspect ratio;
+do not substitute standard product dimensions. Account for camera elevation and
+perspective before interpreting image height as axial height. Match handles using
+their outer contour, aperture contour and attachment heights separately. Use arcs
+or splines for asymmetric openings rather than defaulting to an ellipse. Preserve
+the visible handle tilt and cross-section. A good whole-object silhouette does not
+establish that a small handle or rim is correct. Cut the container cavity after
+joining handles and feet so attachments cannot fill the interior.
 Return the requested structured object. code must contain executable Python, no fences.
 Use only `import cadquery as cq`, numeric scalar assignments, arithmetic, tuples/lists,
 and chained geometric methods. No loops, functions, comprehensions, other imports,
@@ -301,8 +311,10 @@ def run_gpt_cad(
     config: GPTConfig | None = None,
     client: Any = None,
     create_viewer: bool = True,
+    hybrid: HybridConfig | None = None,
+    progress: Callable[[str], None] | None = None,
 ) -> dict[str, Any]:
-    """Generate and kernel-check CAD; bounded repairs address execution errors only."""
+    """Generate CAD, optionally with SAM2/DA3 evidence and bounded geometric feedback."""
     settings = config or GPTConfig()
     prompt = prompt.strip()
     if not prompt or len(prompt) > 20000:
@@ -311,6 +323,8 @@ def run_gpt_cad(
     if output.exists():
         raise FileExistsError("Output already exists; choose a new directory.")
     paths = collect_images(None, images)
+    if hybrid is not None and not paths:
+        raise ValueError("Hybrid reconstruction requires at least one photo")
     image_content, manifest = prepare_images(paths)
     if client is None:
         key, base_url = provider_credentials(settings.provider)
@@ -323,7 +337,7 @@ def run_gpt_cad(
     started = time.monotonic()
     report: dict[str, Any] = {
         "schema_version": "datumfold-gpt-v1",
-        "status": "FAILED",
+        "status": "RUNNING",
         "object": prompt,
         "backend": "openai-responses",
         "provider": settings.provider,
@@ -345,18 +359,63 @@ def run_gpt_cad(
     )
     content = [{"type": "input_text", "text": prompt}, *image_content]
     repair_text = ""
+    instructions = INSTRUCTIONS
+    evidence_report = None
+    best_geometry = None
+    required_voids: list[str] = []
+
+    def stage(message: str) -> None:
+        report["stage"] = message
+        _write(output / "report.json", report)
+        if progress is not None:
+            progress(message)
+
     try:
+        if hybrid is not None:
+            from da3_cad.hybrid_evidence import evidence_instructions, prepare_evidence
+
+            stage("Preparing object masks and depth")
+            evidence_report = prepare_evidence(
+                paths, prompt, output / "evidence", client, settings, hybrid
+            )
+            instructions += evidence_instructions(evidence_report)
+            panels, _ = prepare_images(
+                [output / "evidence" / name for name in evidence_report["panels"]]
+            )
+            content.extend(panels)
+            report["hybrid"] = hybrid.model_dump(mode="json")
+            report["evidence"] = "evidence/evidence.json"
+            for feature, variable in (
+                ("has_cavity", "NON_PENETRATION_CAVITY"),
+                ("has_handle_aperture", "NON_PENETRATION_HANDLE_APERTURE"),
+            ):
+                if evidence_report["contract"][feature]:
+                    required_voids.append(variable)
+            _write(
+                output / "request.json",
+                {
+                    "prompt": prompt,
+                    "images": manifest,
+                    "instructions": instructions,
+                    "config": settings.model_dump(),
+                    "hybrid": hybrid.model_dump(mode="json"),
+                },
+            )
         for index in range(settings.max_repairs + 1):
+            stage(f"Generating CAD: attempt {index + 1}/{settings.max_repairs + 1}")
             from openai import OpenAIError
 
             try:
                 response = client.responses.parse(
                     model=settings.model,
-                    instructions=INSTRUCTIONS,
+                    instructions=instructions,
                     input=[
                         {
                             "role": "user",
-                            "content": content
+                            "content": [
+                                {k: v for k, v in item.items() if k != "hybrid_feedback"}
+                                for item in content
+                            ]
                             + (
                                 [{"type": "input_text", "text": repair_text}] if repair_text else []
                             ),
@@ -368,6 +427,18 @@ def run_gpt_cad(
                     store=False,
                 )
             except OpenAIError as error:
+                if best_geometry is not None:
+                    report["attempts"].append(
+                        {
+                            "index": index + 1,
+                            "status": "request_failed",
+                            "error": type(error).__name__,
+                        }
+                    )
+                    report["refinement_stopped"] = (
+                        f"Provider request failed ({type(error).__name__})"
+                    )
+                    break
                 # Do not serialize request headers, credentials or arbitrary server bodies.
                 raise RuntimeError(
                     f"OpenAI request failed ({type(error).__name__}); "
@@ -382,8 +453,17 @@ def run_gpt_cad(
             }
             report["attempts"].append(attempt)
             if response.status != "completed":
-                raise RuntimeError("OpenAI response was incomplete; check the output token limit.")
+                if best_geometry is not None:
+                    report["refinement_stopped"] = "Provider returned an incomplete refinement"
+                    break
+                raise RuntimeError(
+                    "OpenAI response was incomplete; increase --max-output-tokens "
+                    "(hybrid examples may need 32768)."
+                )
             if response.output_parsed is None:
+                if best_geometry is not None:
+                    report["refinement_stopped"] = "Provider returned no refinement program"
+                    break
                 raise RuntimeError("OpenAI returned no CAD program (refusal or empty response).")
             candidate = CADResponse.model_validate(response.output_parsed)
             attempt_dir = output / "attempts" / f"{index + 1:02d}"
@@ -393,6 +473,18 @@ def run_gpt_cad(
             error_text = ""
             try:
                 source = parameterize(candidate)
+                assigned = {
+                    node.targets[0].id
+                    for node in ast.parse(source).body
+                    if isinstance(node, ast.Assign)
+                    and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)
+                }
+                missing = set(required_voids) - assigned
+                if missing:
+                    raise ValueError(
+                        "Missing required clearance workplanes: " + ", ".join(sorted(missing))
+                    )
             except (ValueError, SyntaxError) as error:
                 error_text = str(error)
             validation = None
@@ -401,6 +493,13 @@ def run_gpt_cad(
                 validation = validate_and_export(source, attempt_dir, settings.sandbox)
                 if not validation.valid:
                     error_text = validation.error or "CAD kernel rejected the program"
+                elif hybrid is not None:
+                    from da3_cad.hybrid_checks import check_overall_height
+
+                    try:
+                        check_overall_height(candidate, validation)
+                    except ValueError as error:
+                        error_text = str(error)
             if error_text:
                 attempt.update(status="invalid", error=error_text)
                 repair_text = (
@@ -411,64 +510,140 @@ def run_gpt_cad(
                     + error_text[:2000]
                 )
                 if index == settings.max_repairs:
+                    if best_geometry is not None:
+                        report["repair_budget_exhausted"] = True
+                        break
                     raise RuntimeError(
                         f"CAD generation failed after {index + 1} attempts: {error_text}"
                     )
                 continue
             assert validation is not None
-            for name in ("model.py", "model.step", "model.stl"):
-                shutil.copy2(attempt_dir / name, output / name)
-            parameters = {
-                "units": "mm",
-                "primary_parameters": [
-                    {**p.model_dump(), "editable": True} for p in candidate.parameters
-                ],
-                "implementation_parameters": [],
-                "assumptions": candidate.assumptions,
-            }
-            _write(output / "parameters.json", parameters)
-            _write(
-                output / "quality.json",
-                {
-                    "valid": True,
-                    "backend": "openai-responses",
-                    "fallback_used": False,
-                    "warnings": [],
-                    "validation": validation.as_dict(),
-                    "geometric_accuracy_verified": False,
-                },
-            )
-            _write(
-                output / "provenance.json",
-                {
-                    "backend": "openai-responses",
-                    "model": response.model,
-                    "images": manifest,
-                    "assumptions": candidate.assumptions,
-                },
-            )
-            attempt["status"] = "valid"
-            report.update(
-                status="GENERATED",
-                name=candidate.name,
-                step="model.step",
-                stl="model.stl",
-                python="model.py",
-                assumptions=candidate.assumptions,
-            )
-            if create_viewer:
-                from da3_cad.viewer import build_viewer
+            if hybrid is not None:
+                from da3_cad.hybrid_fit import fit_candidate
 
-                preview_dir = output / "images"
-                if paths:
-                    preview_dir.mkdir()
-                    for number, path in enumerate(paths):
-                        shutil.copy2(path, preview_dir / f"{number:02d}{path.suffix.lower()}")
-                # Write metadata before the viewer reads it.
-                _write(output / "report.json", report)
-                build_viewer(output, images_dir=preview_dir if paths else None)
-                report["viewer"] = "viewer.html"
-            return report
+                stage(f"Checking and fitting CAD: attempt {index + 1}")
+                candidate, fitted_validation, geometry = fit_candidate(
+                    candidate, attempt_dir, output / "evidence", settings, hybrid.fit_parameters
+                )
+                if fitted_validation is not None:
+                    validation = fitted_validation
+                attempt["geometry"] = geometry
+                attempt["status"] = "valid"
+                from da3_cad.hybrid_checks import candidate_rank, observation_target_met
+
+                loss = geometry["after"]["loss"]
+                if best_geometry is None or candidate_rank(
+                    geometry["after"], hybrid.min_silhouette_iou
+                ) < candidate_rank(best_geometry[4]["after"], hybrid.min_silhouette_iou):
+                    best_geometry = (loss, candidate, validation, attempt_dir, geometry, index + 1)
+                if (
+                    not observation_target_met(geometry["after"], hybrid.min_silhouette_iou)
+                    and index < settings.max_repairs
+                ):
+                    feedback, _ = prepare_images(
+                        sorted(attempt_dir.glob("comparison-*.png"))
+                        + (
+                            [attempt_dir / "sections.png"]
+                            if (attempt_dir / "sections.png").exists()
+                            else []
+                        )
+                    )
+                    # Keep original photos/evidence; replace only the last candidate overlays.
+                    content = [c for c in content if not c.get("hybrid_feedback")]
+                    for item in feedback:
+                        item["hybrid_feedback"] = True
+                    # Markers are internal only; stripped before calling the API.
+                    content.extend(feedback)
+                    repair_text = (
+                        "Improve the previous CAD's geometric match. Comparison panels: gray is "
+                        "overlap, blue is missing silhouette, red is excess silhouette. "
+                        "Section panels show CAD interiors. Camera registration is estimated "
+                        "and may also explain silhouette mismatch. Preserve "
+                        "specified dimensions and all required clearance checks.\n"
+                        + candidate.code
+                        + "\nMeasured observation consistency:\n"
+                        + json.dumps(geometry["after"])
+                    )
+                    continue
+            break
+        if hybrid is not None:
+            assert best_geometry is not None
+            _, candidate, validation, attempt_dir, geometry, selected_index = best_geometry
+            report["selected_attempt"] = selected_index
+            report["geometry"] = geometry
+            from da3_cad.hybrid_checks import observation_target_met
+
+            report["observation_target_met"] = observation_target_met(
+                geometry["after"], hybrid.min_silhouette_iou
+            )
+            for file in [
+                attempt_dir / "geometry-review.json",
+                *attempt_dir.glob("comparison-*.png"),
+                *attempt_dir.glob("sections.png"),
+                *attempt_dir.glob("material-chords.json"),
+            ]:
+                shutil.copy2(file, output / file.name)
+        assert validation is not None
+        for name in ("model.py", "model.step", "model.stl"):
+            shutil.copy2(attempt_dir / name, output / name)
+        parameters = {
+            "units": "mm",
+            "primary_parameters": [
+                {**p.model_dump(), "editable": True} for p in candidate.parameters
+            ],
+            "implementation_parameters": [],
+            "assumptions": candidate.assumptions,
+        }
+        _write(output / "parameters.json", parameters)
+        _write(
+            output / "quality.json",
+            {
+                "valid": True,
+                "backend": "openai-responses",
+                "fallback_used": False,
+                "warnings": [],
+                "validation": validation.as_dict(),
+                "geometry": report.get("geometry"),
+                "geometric_accuracy_verified": False,
+            },
+        )
+        _write(
+            output / "provenance.json",
+            {
+                "backend": "openai-responses",
+                "model": report["attempts"][
+                    report.get("selected_attempt", len(report["attempts"])) - 1
+                ]["model"],
+                "images": manifest,
+                "assumptions": candidate.assumptions,
+            },
+        )
+        report["attempts"][report.get("selected_attempt", len(report["attempts"])) - 1][
+            "status"
+        ] = "valid"
+        report.update(
+            status="GENERATED",
+            name=candidate.name,
+            step="model.step",
+            stl="model.stl",
+            python="model.py",
+            assumptions=candidate.assumptions,
+        )
+        if create_viewer:
+            stage("Building the offline viewer")
+            from da3_cad.viewer import build_viewer
+
+            preview_dir = output / "images"
+            if paths:
+                preview_dir.mkdir()
+                for number, path in enumerate(paths):
+                    shutil.copy2(path, preview_dir / f"{number:02d}{path.suffix.lower()}")
+            # Write metadata before the viewer reads it.
+            _write(output / "report.json", report)
+            build_viewer(output, images_dir=preview_dir if paths else None)
+            report["viewer"] = "viewer.html"
+        report["stage"] = "Complete"
+        return report
     except Exception as error:
         report.update(status="FAILED", error=str(error))
         raise

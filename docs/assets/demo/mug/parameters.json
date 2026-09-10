@@ -128,63 +128,14 @@
       "editable": true
     },
     {
-      "name": "handle_center_x",
-      "value": 61.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "handle_center_z",
-      "value": 58.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "handle_outer_rx",
-      "value": 40.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "handle_outer_rz",
-      "value": 36.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "handle_band_width",
-      "value": 12.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
       "name": "handle_depth",
-      "value": 14.0,
+      "value": 10.0,
       "unit": "mm",
       "source": "estimated",
       "editable": true
     },
     {
-      "name": "handle_attachment_x",
-      "value": 40.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "handle_clip_length",
-      "value": 80.0,
-      "unit": "mm",
-      "source": "estimated",
-      "editable": true
-    },
-    {
-      "name": "cut_clearance",
+      "name": "handle_edge_radius",
       "value": 2.0,
       "unit": "mm",
       "source": "estimated",
@@ -193,11 +144,8 @@
   ],
   "implementation_parameters": [],
   "assumptions": [
-    "The 100 mm target is the overall height from the bottom of the raised foot to the top of the rim.",
-    "The cup body is modeled as rotationally symmetric with a smooth outward flare inferred from the single perspective photograph.",
-    "The specified 3 mm thickness is applied radially to the bowl wall and vertically to the bowl floor; the rim is closed with a rounded semicircular cap.",
-    "The handle is represented as a flattened elliptical C-shaped band. Its clipping and overlap with the cup wall create two fused attachment regions while preserving the opening.",
-    "The raised foot is modeled as a solid flared pedestal with a flat underside; no unseen underside recess was added.",
-    "The drink, logo, decorative lines, and background are omitted. All dimensions other than height and wall thickness are proportional estimates rather than measurements."
+    "GPT-generated starting geometry was manually refined against the source photograph.",
+    "Height and wall thickness are modeling inputs, not measured dimensions.",
+    "Hidden geometry and handle depth remain estimates."
   ]
 }
