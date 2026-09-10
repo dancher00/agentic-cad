@@ -1,8 +1,9 @@
 # Third-party licenses
 
-Agentic CAD source and project-generated synthetic fixtures are Apache-2.0. No
-third-party model weights, source checkout, dataset, video, or derived real
-capture is distributed in this repository.
+Agentic CAD source and project-generated synthetic fixtures are Apache-2.0.
+The project site includes two attributed real photographs and generated demo
+assets under CC BY-SA 4.0; see [demo sources and terms](assets/demo/README.md).
+No third-party model weights, source checkout or video is redistributed.
 
 | Component | Artifact used by product or optional research tools | Terms | Redistributed here |
 |---|---|---|---|

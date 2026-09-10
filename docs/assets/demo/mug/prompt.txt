@@ -1,0 +1,1 @@
+Reconstruct the white ceramic mug in this photo, including its open bowl, curved handle and raised foot. Ignore the drink, printed logo, decorative gold lines and background. Use a target height of 100 mm and a wall thickness of 3 mm for modeling; infer the other proportions from the photo. Keep the handle opening and join both ends of the handle to the cup.
