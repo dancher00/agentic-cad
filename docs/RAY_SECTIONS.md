@@ -7,7 +7,8 @@ CAD compilation uses OpenCascade in a separate process with a 20-second timeout
 per candidate. CPU execution is also supported. No model weights are required.
 
 The input is **calibrated first-hit depth and masks**, not arbitrary photographs.
-For photographs, first use the existing COLMAP/PatchMatch workflow in the [setup guide](PHOTO_CAD.md#calibrated-reconstruction). Simulated-depth benchmark results must not be read as RGB reconstruction
+For the current text/photo product, use the [setup guide](PHOTO_CAD.md).
+This optional compiler consumes externally prepared, calibrated depth. Simulated-depth benchmark results must not be read as RGB reconstruction
 accuracy. The compiler approximates smooth curves by editable polygonal sketches.
 
 ## Install and try

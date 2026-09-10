@@ -1,62 +1,58 @@
-# Datumfold
+# Agentic CAD
 
-**Text and photos → editable CAD.** Describe a part, optionally add reference views, and get a CadQuery program, STEP and STL.
+**Text and photos → editable CAD.** Describe a part, add up to 16 reference photos, and get STEP, STL and a parameterized CadQuery program.
 
-[![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
-[![Code: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
+![Agentic CAD workspace: reference views, editable dimensions and CAD downloads](docs/assets/quickstart/viewer.png)
 
-## 1. Install
+## Quick start
 
-Linux · Python 3.12 · no GPU or local model weights required.
+Linux · Python 3.12 · no GPU required.
 
 ```bash
-git clone https://github.com/dancher00/DA3-CAD.git
-cd DA3-CAD
+git clone https://github.com/dancher00/agentic-cad.git
+cd agentic-cad
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -r constraints/cpu-py312.txt
+pip install --no-deps -e .
 ```
 
-Default: **GPT-5.6 Sol** through `https://llm-proxy.spirit.culab.ru`.
-Set `LLMPROXY_API_KEY` in your environment, or save the key in
-`~/.config/llm-proxy/api_key`. The environment variable takes precedence.
-For direct OpenAI access, set `OPENAI_API_KEY` and pass `--provider openai`.
+Configure `LLMPROXY_API_KEY`, or save your key in `~/.config/llm-proxy/api_key`.
+The default is **GPT-5.6 Sol** through the configured [LLM proxy](docs/PHOTO_CAD.md#installation).
+For direct OpenAI access, set `OPENAI_API_KEY` and use `--provider openai --model YOUR_MODEL_ID`.
 
-## 2. Describe a part
+Put reference photos of one object in `photos/`, or start with text only.
 
 ```bash
-# Text only.
-datumfold generate --prompt "Plate 60 × 40 × 5 mm, centered 10 mm through-hole" \
+# From a description.
+agentic-cad generate --prompt "Plate 60 × 40 × 5 mm, centered 10 mm hole" \
   --output work/plate
 
-# Text and photographs of the same object.
-datumfold reconstruct photos/ --prompt "Reconstruct the metal bracket" \
-  --dimension "overall height=60mm" --output work/bracket
+# From several views of the same object.
+agentic-cad reconstruct photos/ --prompt "Reconstruct this bracket" \
+  --dimension "height=60mm" --output work/bracket
 ```
 
-Use 1–16 JPEG, PNG or WebP images. Distinct views help reveal holes, cavities and the opposite side. Repeat `--image path.jpg` to choose individual photos. Use a new output folder for every run.
+Open `work/bracket/viewer.html` in your browser. Download the STEP, or open `model.step` directly in your CAD editor. Each run needs a new output folder.
 
-## 3. Open your CAD
-
-Open `work/bracket/viewer.html` in your browser, or `work/bracket/model.step` in your CAD editor.
-
-![Datumfold CAD workspace](docs/assets/quickstart/viewer.png)
-
-| File | Contents |
-|---|---|
-| `model.step` | CAD solid for downstream CAD and meshing tools. |
-| `model.stl` | Triangle mesh. |
-| `model.py` | Editable CadQuery program with a `PARAMETERS` table. |
-| `parameters.json` | Dimensions in mm, parameter sources and geometric assumptions. |
-| `viewer.html` | Local interactive preview and downloads. |
-| `report.json` | Provider, model, token usage and export results. |
+![How to use Agentic CAD: describe, run, open and edit](docs/assets/workflow/quickstart.png)
 
 ## How it works
 
-![Text and photos to CAD: model pipeline and data flow](docs/assets/workflow/photo-to-cad.png)
+![Agentic CAD architecture: photos and text become a CAD program, a local solid and export files](docs/assets/workflow/photo-to-cad.png)
 
-GPT proposes the geometry and program. Local code checks the program, builds the solid and exports it. A failed program can be sent back once for repair. Material assignment, FEM and grasp planning belong downstream.
+All selected photos go into the same model request. The model writes a CAD program; local checks build one solid and export it. Invalid code gets up to one repair request by default. Material assignment, FEM and grasp planning run downstream.
 
-[Usage & configuration](docs/PHOTO_CAD.md) · [Validation](docs/BENCHMARKS.md) · [Vector diagram](docs/assets/workflow/photo-to-cad.svg) · [Editable diagram](docs/assets/workflow/photo-to-cad.excalidraw)
+## Use it from your software
 
-Input text and photos are sent to the selected provider. The preview works offline. Code: [Apache-2.0](LICENSE).
+A CLI and Python function are available today. There is no hosted HTTP API or MCP server yet. Claude Code can invoke the CLI directly; [setup and Python example](docs/INTEGRATION.md).
+
+| Output | Use |
+|---|---|
+| `model.step` / `model.stl` | CAD and mesh tools |
+| `model.py` / `parameters.json` | Edit dimensions |
+| `viewer.html` | Offline preview and downloads |
+
+[Usage](docs/PHOTO_CAD.md) · [Integration & Claude Code](docs/INTEGRATION.md) · [Validation](docs/BENCHMARKS.md) · [Editable diagrams](docs/assets/workflow/README.md) · [Apache-2.0](LICENSE)
+
+Text and photos are sent to your selected provider. Previewing and editing exported CAD run locally.

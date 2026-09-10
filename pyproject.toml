@@ -9,8 +9,8 @@ description = "Text and photos to editable CAD with GPT and CadQuery"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
-authors = [{name = "DA3-CAD contributors"}]
-keywords = ["cad", "depth-anything-3", "3d-reconstruction", "cad-grammar", "cadquery"]
+authors = [{name = "Agentic CAD contributors"}]
+keywords = ["cad", "text-to-cad", "image-to-cad", "3d-reconstruction", "cadquery"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Operating System :: POSIX :: Linux",
@@ -97,12 +97,13 @@ reports = [
   "weasyprint==69.0",
 ]
 [project.urls]
-Homepage = "https://github.com/dancher00/DA3-CAD"
-Documentation = "https://github.com/dancher00/DA3-CAD#readme"
-Repository = "https://github.com/dancher00/DA3-CAD.git"
-Issues = "https://github.com/dancher00/DA3-CAD/issues"
+Homepage = "https://github.com/dancher00/agentic-cad"
+Documentation = "https://github.com/dancher00/agentic-cad#readme"
+Repository = "https://github.com/dancher00/agentic-cad.git"
+Issues = "https://github.com/dancher00/agentic-cad/issues"
 
 [project.scripts]
+agentic-cad = "da3_cad.cli:app"
 datumfold = "da3_cad.cli:app"
 da3-cad = "da3_cad.cli:app"
 

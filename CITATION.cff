@@ -1,22 +1,19 @@
 cff-version: 1.2.0
-message: "If you use Datumfold, please cite this software."
-title: "Datumfold: photos into editable CAD"
+message: "If you use Agentic CAD, please cite this software."
+title: "Agentic CAD: text and photos to editable CAD"
 type: software
 version: 0.5.0
-date-released: 2026-08-13
 authors:
-  - name: "DA3-CAD contributors"
-repository-code: "https://github.com/dancher00/DA3-CAD"
-url: "https://github.com/dancher00/DA3-CAD"
+  - name: "Agentic CAD contributors"
+repository-code: "https://github.com/dancher00/agentic-cad"
+url: "https://github.com/dancher00/agentic-cad"
 license: Apache-2.0
 abstract: >-
-  DA3-CAD converts object-centric multi-view RGB images or moving-camera video
-  into validated editable CadQuery, STEP, and STL using Depth Anything 3
-  geometry and a deterministic, class-free sketch-and-operation CAD grammar
-  with evidence-gated feature recovery.
+  Agentic CAD turns a description and optional RGB reference photographs into
+  a parameterized CadQuery program using a vision-language model. Local
+  execution checks the CAD solid and exports STEP, STL and an offline preview.
 keywords:
   - computer-aided design
-  - 3D reconstruction
-  - Depth Anything 3
-  - B-Rep
-  - CAD grammar
+  - image-to-CAD
+  - text-to-CAD
+  - CadQuery

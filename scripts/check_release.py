@@ -28,7 +28,7 @@ REQUIRED = (
     "docs/BENCHMARKS.md",
     "docs/benchmarks.json",
     "docs/assets/quickstart/viewer.png",
-    "docs/assets/brand/datumfold-mark.svg",
+    "docs/assets/brand/agentic-cad-mark.svg",
     "sample_data/public_benchmark_v2/manifest.json",
     "configs/public_benchmark_v2.yaml",
 )
