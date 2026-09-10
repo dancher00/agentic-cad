@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from typing import Final
 
-ALLOWED_IMPORTS: Final = {"cadquery"}
+ALLOWED_IMPORTS: Final = {"cadquery", "da3_cad.cad.profiles"}
 ALLOWED_BUILTINS: Final = {
     "abs",
     "dict",
@@ -82,8 +82,9 @@ class _PolicyVisitor(ast.NodeVisitor):
         for alias in node.names:
             if alias.name not in ALLOWED_IMPORTS:
                 raise AstPolicyError(f"import is not allowed: {alias.name}")
-            if alias.asname not in {None, "cq"}:
-                raise AstPolicyError("cadquery may only be imported as 'cq'")
+            allowed_aliases = {None, "cq"} if alias.name == "cadquery" else {"profiles"}
+            if alias.asname not in allowed_aliases:
+                raise AstPolicyError("Import cadquery as 'cq' and CAD profiles as 'profiles'")
         self.generic_visit(node)
 
     def visit_Name(self, node: ast.Name) -> None:

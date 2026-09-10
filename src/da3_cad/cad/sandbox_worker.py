@@ -10,7 +10,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
-from da3_cad.cad.ast_policy import ALLOWED_BUILTINS, validate_source
+from da3_cad.cad.ast_policy import ALLOWED_BUILTINS, ALLOWED_IMPORTS, validate_source
 from da3_cad.cad.profile_guard import guard_spline_profiles
 
 
@@ -21,12 +21,10 @@ def _safe_import(
     fromlist: tuple[str, ...] = (),
     level: int = 0,
 ) -> object:
-    del globals_, locals_, fromlist, level
-    if name != "cadquery":
+    if name not in ALLOWED_IMPORTS or level:
         raise ImportError(f"sandbox import is not allowed: {name}")
-    import cadquery
-
-    return cadquery
+    # Preserve Python's dotted-import semantics for the trusted geometry helper.
+    return __import__(name, globals_, locals_, fromlist, level)
 
 
 def _write(path: Path, payload: dict[str, object]) -> None:

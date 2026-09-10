@@ -49,6 +49,13 @@ available; CUDA is recommended.
 
 Closed thin-wall containers use an inward offset of a complete exterior solid,
 avoiding independently drawn inner profiles that can cross and detach the base.
+Photo-derived profiles can use `da3_cad.cad.profiles.curve`: a shape-preserving
+cubic Hermite interpolator with derivatives computed from coordinate-wise PCHIP
+on chord-length parameters. GPT supplies the stations; the helper connects them
+without interpolation overshoot. Optional endpoint tangent directions are bounded
+against adjacent secants. Stations and dimensions remain editable; no object-specific
+dimensions or templates are built into this helper. Python exports using it require
+Agentic CAD installed; STEP and STL remain independent of the application.
 The kernel also samples non-periodic profile splines at 257 positions. Along axes
 with monotone input stations, a reversal exceeding the larger of 0.02 mm or 0.2%
 of the axis span triggers regeneration. This catches interpolation overshoot without

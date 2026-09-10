@@ -58,6 +58,7 @@ GEOMETRY_ATTRIBUTES = frozenset(
         "radiusArc",
         "tangentArcPoint",
         "spline",
+        "curve",
         "close",
         "wire",
         "extrude",
@@ -135,8 +136,9 @@ the visible handle tilt and cross-section. A good whole-object silhouette does n
 establish that a small handle or rim is correct. Cut the container cavity after
 joining handles and feet so attachments cannot fill the interior.
 Return the requested structured object. code must contain executable Python, no fences.
-Use only `import cadquery as cq`, numeric scalar assignments, arithmetic, tuples/lists,
-and chained geometric methods. No loops, functions, comprehensions, other imports,
+Use only `import cadquery as cq`, optional `import da3_cad.cad.profiles as profiles`,
+numeric scalar assignments, arithmetic, tuples/lists, and geometric methods.
+No loops, functions, comprehensions, other imports,
 filesystem/network access, exporters/importers, eval, or introspection. Assign final
 Workplane to `r`. Put editable dimensions in top-level numeric variables. Each parameter
 entry must match a literal numeric assignment in code; its source is `specified` only
@@ -160,6 +162,21 @@ The kernel checks that spline axes with monotone input stations do not reverse
 between stations. Dense interpolation and poorly scaled endpoint tangents can
 create unwanted lips even with ordered points. Prefer simple tangent circular arcs
 for manufactured roundovers; represent intended necks explicitly in the stations.
+For photo-derived base, shoulder, bowl and handle profiles, use the provided
+shape-preserving helper instead of unconstrained interpolating splines:
+  import da3_cad.cad.profiles as profiles
+  section = cq.Workplane('XZ').moveTo(start_radius, start_height)
+  section = profiles.curve(section, [(radius_1, height_1), (radius_2, height_2)],
+                           start_tangent=(1, 0), end_tangent=(0, 1))
+It includes the current point and uses absolute local XY coordinates (radius/height
+on XZ). Do not repeat the current point. Endpoint tangent arguments are optional
+DIRECTIONS; they must agree with adjacent stations. The helper computes bounded
+cubic Hermite derivatives, preventing interpolation overshoot without moving stations.
+Use few meaningful stations and explicit neck/foot transitions. Follow the curve
+with normal CadQuery lineTo/close/revolve/extrude operations. Closed containers still
+use the exterior.shell(-wall_thickness) construction described above.
+CadQuery tangentArcPoint defaults to relative=True. If using absolute endpoints,
+always pass relative=False; do not mix absolute stations with relative displacements.
 """
 
 
