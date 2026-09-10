@@ -146,6 +146,11 @@ entry must match a literal numeric assignment in code; its source is `specified`
 if supplied by the user, otherwise `estimated`. Use robust small fillets where the
 photo shows rounded manufactured edges, including ceramic handle edges. Omit purely
 decorative fillets, but do not leave a visibly rounded handle as a sharp extruded plate.
+Filleting a chain of nontangent arcs can fail even at a small radius. If a handle
+fillet fails, rebuild its contour with tangent joins or sweep a rounded section
+along a smooth path; do not repeatedly shrink the same failing fillet. Workplane
+has no fillet2D method in CadQuery 2.4; draw rounded sketch corners with tangent
+arcs or the provided profile helpers before extrusion.
 In CadQuery 2.4, spline() does not include the current point by default. When
 extending a wire with a spline, use includeCurrent=True and do not duplicate that
 point in the point list. Keep revolve profiles closed and connected.
