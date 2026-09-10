@@ -1,137 +1,105 @@
-# Datumfold · Usage guide
+# Text and photos to CAD
 
-`photo-cad` connects local specialist models and geometry stages in one command.
-The images must show the **same stationary physical object**, photographed from
-different overlapping viewpoints. Three distinct images is an input floor,
-not a promise of sufficient coverage. Prefer 20–40 sharp views around the object.
-
-## What runs
-
-1. A local Qwen VLM interprets the request against the first photograph and
-   returns an English description of the visible target. The original request,
-   raw response and pinned model revision are recorded. Its output supplies no
-   dimensions or CAD geometry.
-2. Grounding DINO Tiny finds the described instance in every photograph.
-   Missing targets and similarly scored distinct instances stop the run.
-3. SAM2.1 Small converts these boxes to masks. Models are released from GPU
-   between stages. Masks and the complete detection report remain inspectable.
-4. The default `mvs` route recovers cameras using full-frame COLMAP matching,
-   undistorts the masks with the same cameras, prepares target crops, jointly
-   resizes RGB/masks/intrinsics for stereo, and runs
-   CUDA PatchMatch. CADENA and measured constructive candidates fit the measured
-   surface and are checked against source views.
-5. `--geometry da3` instead uses DA3-BASE depth/cameras and the constructive CAD
-   grammar. This route exports `candidate.step` and its generating program.
+Datumfold uses GPT-5.6 Sol to generate a parameterized CadQuery program from a description and optional photos. OpenCascade builds and validates the solid locally, then exports STEP and STL.
 
 ## Installation
 
-[← Back to the quickstart](../README.md)
-
-Use Linux, Python 3.12 and an NVIDIA GPU. Run these commands from the cloned
-repository. This uses the pinned CUDA 13 environment tested on an RTX 5080
-16 GB; a compatible NVIDIA driver is required. Learned weights are not bundled.
+Linux and Python 3.12 are required. A GPU is not needed.
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r constraints/cpu-py312.txt
-python -m pip install -r constraints/cu130-py312.txt
-python -m pip install -e '.[photo,da3]'
-python scripts/fetch_sam2_source.py
-python scripts/fetch_sam2_weights.py
-python scripts/fetch_da3_source.py
+pip install -e .
 ```
 
-Qwen and Grounding DINO download pinned snapshots on first use into `data/hf`.
-DA3-BASE downloads on first draft reconstruction. Use `--offline` after caching.
-You can now run the DA3 draft and mask-preview commands in the quickstart.
-For the default `mvs` route, complete the additional setup below.
+The default provider is `llm-proxy`, at `https://llm-proxy.spirit.culab.ru`.
+Credentials are read from `LLMPROXY_API_KEY`, then `~/.config/llm-proxy/api_key`.
+Keys are not written to run metadata or passed to the CAD subprocess.
+The proxy must support the Responses API, image input and structured outputs.
 
-### Calibrated reconstruction
+To use OpenAI directly, set `OPENAI_API_KEY` and add `--provider openai`.
+Use `--model` to select a model available to your account. Datumfold does not
+change your Codex configuration.
 
-Install CADENA and the isolated CUDA 12 stereo environment:
+## Generate
 
 ```bash
-python -m pip install -r constraints/cadena-py312.txt
-python -m pip install "virtualenv>=20,<21"
-scripts/setup_mvs_env.sh .venv/bin/python
-git clone https://github.com/zhemdi/cadena.git data/upstream/cadena
-git -C data/upstream/cadena checkout b636649d1c59e4a4b52f5b683af18d6b136b082b
-hf download kulibinai/cadena --include 'rl/*' --local-dir data/checkpoints/cadena
+datumfold generate --prompt "Plate 60 by 40 by 5 mm with a 10 mm center hole" \
+  --output work/plate
+
+datumfold reconstruct photos/ --prompt "Reconstruct the bracket, including its holes" \
+  --dimension "height=60mm" --output work/bracket
+
+datumfold generate --image front.jpg --image side.jpg \
+  --prompt "Open cylindrical container" --dimension "height=120mm" \
+  --dimension "wall thickness=0.15mm" --output work/container
 ```
 
-Run the full pipeline on your photo folder:
+`generate`, `reconstruct` and the compatibility alias `photo-cad` run the same GPT pipeline.
+`--object` is an alias for `--prompt`. Text-only generation needs no image argument.
+A directory or individual JPEG/PNG/WebP files are accepted, up to 16 unique photos
+and 20 MiB per file. Images are EXIF-oriented, resized to a maximum side of 1536 px,
+and submitted as JPEGs. The run records original and submitted image hashes.
+
+Use a new output directory. Datumfold refuses to overwrite an existing run.
+
+## Configuration
+
+| Option | Default | Purpose |
+|---|---|---|
+| `--model` | `gpt-5.6-sol` | Provider model identifier. |
+| `--provider` | `llm-proxy` | `llm-proxy` or `openai`. |
+| `--reasoning` | `xhigh` | Model reasoning effort. |
+| `--max-output-tokens` | `16384` | Output budget, including reasoning tokens. |
+| `--max-repairs` | `1` | Extra calls to correct invalid CAD code, from 0 to 3. |
+| `--timeout` | `180` | Timeout in seconds for each API request. |
+| `--no-viewer` | off | Skip HTML preview generation. |
+| `--dry-run` | off | Check inputs without an API call or output files. |
+
+API transport retries are disabled. CAD repairs retain the original text and
+images, and add the previous code and local validation error. They repair
+execution failures; they do not perform image-based shape optimization.
+
+## Outputs and editing
+
+A successful run contains `model.step`, `model.stl`, `model.py`, `parameters.json`,
+`quality.json`, `provenance.json`, `report.json` and, by default, `viewer.html`.
+Original reference images are copied into the run for its offline preview.
+API responses and intermediate programs stay under the local `attempts/` folder.
+Requests use `store=false`; provider retention policies still apply.
+
+Edit dimensions in the Python program's `PARAMETERS` mapping, or use:
 
 ```bash
-datumfold photo-cad photos/ --object "metal block" \
-  --output work/block-mvs --device cuda
+datumfold edit work/plate --set length=80 --output work/plate-80
 ```
 
-Read `work/block-mvs/report.json` first. Open the root `model.step` if the
-result is ACCEPT, or inspect `candidate.step` when that export is present.
-
-### Model licenses
-
-Review upstream source and model terms before downloading or deploying.
-
-The default VLM is Qwen2-VL-2B (Apache-2.0). For research, optional
-`--vlm-model qwen2.5-3b` selects Qwen2.5-VL-3B under its **non-commercial Qwen
-Research License**; commercial use requires a separate license from its owner.
-Both profiles run locally.
-
-## Run
+Use the actual parameter names in `parameters.json`. A new local export is made;
+editing does not call GPT. Open a separate preview with:
 
 ```bash
-# Inspect automatic selection first, including for a single photo.
-datumfold photo-cad photos/ --object 'red soda can' \
-  --output work/selection --stop-after-masks --device cuda
-
-# Full calibrated route, including source-view checks.
-datumfold photo-cad photos/ --object 'red soda can' \
-  --output work/can --device cuda
-
-# Reconstruct with the faster learned-depth route.
-datumfold photo-cad photos/ --object 'red soda can' \
-  --output work/can-draft --geometry da3 --device cuda
-
-# Skip VLM interpretation when a short English detector phrase is sufficient.
-datumfold photo-cad photos/ --object 'red soda can' --no-vlm \
-  --output work/can-direct --geometry da3 --device cuda
+datumfold viewer work/plate-80 --output work/plate-80/viewer.html
 ```
 
-Every output directory must be new. `--cameras calibrated.npz` skips SfM in the
-MVS route; supplied images and cameras must already be consistently undistorted.
-`--detector-threshold` is a detection score threshold, not calibrated confidence
-or a CAD acceptance threshold. Do not lower it to conceal a wrong target.
+## Geometry contract
 
-`report.json` contains the outcome, query, selected models and stage log paths:
+Output coordinates are in millimeters. Parameters distinguish user-specified
+values from model estimates. Unseen dimensions, including wall thickness, are
+recorded as assumptions rather than measurements. Units alone do not establish
+metric reconstruction accuracy. Camera calibration and robot poses are not yet
+consumed as geometric constraints by this backend; supply known dimensions in text.
 
-| Status | Meaning |
-|---|---|
-| MASKS_READY | Selection completed; no geometry was requested. |
-| CANDIDATE | The DA3 route exported a kernel-valid STEP. |
-| ACCEPT | The MVS/CAD route passed its kernel and source-view gates. |
-| ABSTAIN | The CAD verifier declined acceptance; available evidence is retained. |
-| FAILED | A stage failed; inspect its log and partial results. |
-
-Accepted exports use `model.step`, `model.stl`, `model.py`; drafts use
-`candidate.step`, `candidate.stl`, `candidate.py` at the output root. Internal
-legacy stages may use `model.*` for kernel-valid drafts: the root `report.json`
-is authoritative. Output dimensions use the reconstruction coordinate system.
-Use calibration or a known dimension to establish physical scale.
-
-Current results and protocols are in [Benchmarks](BENCHMARKS.md).
+The local validator checks a restricted Python syntax and geometric API, enforces
+execution limits, and requires one valid positive-volume solid. This checks CAD
+construction, not agreement with photographs, physical material properties or FEM
+suitability. The output includes no calculated material, contact or grasp model.
 
 ## Troubleshooting
 
-| Problem | What to do |
-|---|---|
-| Object missing or wrong masks | Inspect `selection/grounding.json` and `selection/masks/`. Try a short English object description; `--no-vlm` bypasses VLM interpretation. |
-| Reconstruction fails | Add sharp overlapping views, retain a textured stationary background, and avoid reflections and moving objects. Check the stage log named in `report.json`. |
-| Output folder already exists | Choose a new `--output` path. |
-| Offline model error | Run once online to populate the model cache before using `--offline`. |
-| Result is ABSTAIN | Read the gate measurements in `report.json` and the CAD stage log. |
+- **Missing credentials:** set the provider's environment variable or the proxy key file.
+- **API failure:** check provider access, model availability, quota and network connection.
+- **Incomplete response:** increase `--max-output-tokens`, or reduce `--reasoning`.
+- **Invalid CAD after repairs:** simplify the description, add clearer views or specify missing dimensions.
+- **Existing output:** choose a new directory, preserving the completed run.
 
-The browser viewer command in the quickstart is for the DA3 draft route.
-It creates a self-contained local HTML file; keep it alongside the output files
-if you want its relative download links to work.
+[Back to Datumfold](../README.md)

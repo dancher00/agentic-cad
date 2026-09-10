@@ -1,58 +1,35 @@
 # Contributing
 
-Thank you for helping make photo-to-CAD claims more useful and reproducible.
+Datumfold's product reconstruction path lives in `gpt_cad.py` and `gpt_cli.py`.
+It uses a vision-capable model through the Responses API, then validates and exports
+CadQuery locally. Keep provider calls separate from geometry execution and downstream FEM.
 
-## Before opening a change
-
-- Use an issue for a new backend, external model, dataset, output schema, or
-  benchmark protocol.
-- Keep third-party weights and datasets outside git.
-- State the license and immutable revision of every external artifact.
-- Do not add an accuracy claim without a machine-readable evidence record and
-  exact reproduction command.
-
-## Development setup
+## Development
 
 ```bash
-conda create --prefix ./.venv python=3.12 pip -y
-conda activate "$PWD/.venv"
-python -m pip install -r constraints/cpu-py312.txt
-python -m pip install --no-deps -e .
-```
-
-GPU work additionally installs `constraints/cu130-py312.txt` and
-`constraints/da3-py312.txt`, then fetches DA3 through the checked-in scripts.
-
-## Required checks
-
-```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r constraints/cpu-py312.txt
+pip install --no-deps -e .
 ruff format --check src tests scripts
 ruff check src tests scripts
 mypy
 pytest -m 'not gpu and not weights and not benchmark'
+python scripts/check_release.py
 python -m build
 ```
 
-New behavior needs tests. Network acquisition needs a no-write `--dry-run`,
-displayed terms, explicit acceptance where required, immutable identifiers,
-complete-file verification, ignored targets, and refusal to overwrite divergent
-artifacts.
+Automated tests use injected responses and real local CAD execution. They must not
+send photos to a provider or use account credits. Record live checks separately,
+including model, provider, input protocol and number of attempts.
 
-## Reconstruction and metric rules
+Never commit credentials, runtime outputs, model weights or private photos.
+A valid CAD solid does not establish geometric accuracy. Accuracy claims need a
+fixed evaluation protocol with all attempts included and reference geometry kept
+out of generation. Model-estimated dimensions are not measurements.
 
-- Never use reference CAD during inference, selection, pose correction, or scale
-  recovery unless the experiment is explicitly labelled an oracle diagnostic.
-- Keep input-consistency metrics separate from reference-CAD metrics.
-- Report invalid outputs and irrecoverable cases; do not drop them silently.
-- Do not call canonical or COLMAP units millimetres without recorded evidence.
-- A valid solid is not necessarily a correct solid.
-- Do not substitute a fallback without recording its backend and causal reason.
-- Results intended for publication must identify a clean tested commit.
+Existing experimental reconstruction components remain available to their explicit
+research commands and regression tests; they are not fallbacks for GPT failures.
 
-## Pull requests
-
-A pull request should explain the user-visible outcome, include tests and docs,
-list external artifacts/licenses, and note numerical changes. Avoid mixing code
-formatting, archived research, and a new algorithm in one review.
-
-By contributing, you agree that your contribution is licensed under Apache-2.0.
+PRs should explain the behavior change and relevant validation. Code contributions
+are licensed under Apache-2.0.

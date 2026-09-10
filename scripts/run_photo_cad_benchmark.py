@@ -27,7 +27,7 @@ def command(images: Path, output: Path, query: str, geometry: str, offline: bool
         sys.executable,
         "-m",
         "da3_cad",
-        "photo-cad",
+        "research-photo-cad",
         str(images),
         "--object",
         query,

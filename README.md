@@ -1,63 +1,62 @@
 # Datumfold
 
-**Turn photos of an object into editable CAD.** Describe the object, provide overlapping photos, and export STEP, STL and a CadQuery Python program.
+**Text and photos → editable CAD.** Describe a part, optionally add reference views, and get a CadQuery program, STEP and STL.
 
 [![CI](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/dancher00/DA3-CAD/actions/workflows/ci.yml)
 [![Code: Apache-2.0](https://img.shields.io/badge/code-Apache--2.0-blue.svg)](LICENSE)
 
 ## 1. Install
 
-Linux, Python 3.12 and an NVIDIA GPU. Tested on an RTX 5080 with 16 GB VRAM.
+Linux · Python 3.12 · no GPU or local model weights required.
 
 ```bash
 git clone https://github.com/dancher00/DA3-CAD.git
 cd DA3-CAD
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-Follow the **[one-time setup](docs/PHOTO_CAD.md#installation)** to install the environment and models. Weights download separately. The original `da3-cad` command also works.
+Default: **GPT-5.6 Sol** through `https://llm-proxy.spirit.culab.ru`.
+Set `LLMPROXY_API_KEY` in your environment, or save the key in
+`~/.config/llm-proxy/api_key`. The environment variable takes precedence.
+For direct OpenAI access, set `OPENAI_API_KEY` and pass `--provider openai`.
 
-## 2. Add photos and describe the object
-
-Put **20–40 sharp, overlapping photos of the same stationary object** in `photos/`. Move the camera around it; keep the object still. At least three distinct images are required for reconstruction.
+## 2. Describe a part
 
 ```bash
-# Preview the object selection before reconstructing.
-datumfold photo-cad photos/ --object "metal block" \
-  --output work/selection --stop-after-masks --device cuda
+# Text only.
+datumfold generate --prompt "Plate 60 × 40 × 5 mm, centered 10 mm through-hole" \
+  --output work/plate
 
-# Generate CAD using the DA3 route.
-datumfold photo-cad photos/ --object "metal block" \
-  --output work/block --geometry da3 --device cuda
+# Text and photographs of the same object.
+datumfold reconstruct photos/ --prompt "Reconstruct the metal bracket" \
+  --dimension "overall height=60mm" --output work/bracket
 ```
 
-Use a **new output folder** for each run. Selection masks are in `work/selection/selection/masks/`. For calibrated reconstruction and source-view checks, see the [full MVS workflow](docs/PHOTO_CAD.md#calibrated-reconstruction).
+Use 1–16 JPEG, PNG or WebP images. Distinct views help reveal holes, cavities and the opposite side. Repeat `--image path.jpg` to choose individual photos. Use a new output folder for every run.
 
-## 3. Open the result
+## 3. Open your CAD
 
-Open `work/block/candidate.step` in your CAD editor, or create a local browser preview:
+Open `work/bracket/viewer.html` in your browser, or `work/bracket/model.step` in your CAD editor.
 
-```bash
-datumfold viewer work/block/cad --output work/block/viewer.html
-```
-
-Open `work/block/viewer.html`. Drag to rotate, scroll to zoom, or select **Front**, **Top** and **3D**. Use **Export STEP** to open the model in your CAD editor.
-
-![Datumfold workspace with a reconstructed benchmark block](docs/assets/quickstart/viewer.png)
-
-*Workspace example from the controlled RGB benchmark. Input images and calibration are project-generated.*
+![Datumfold CAD workspace](docs/assets/quickstart/viewer.png)
 
 | File | Contents |
 |---|---|
-| `candidate.step`, `.stl`, `.py` | STEP solid, preview mesh and editable program. |
-| `model.step`, `.stl`, `.py` | Exports from an accepted MVS run. |
-| `report.json` | Final decision, selected models and stage logs. |
+| `model.step` | CAD solid for downstream CAD and meshing tools. |
+| `model.stl` | Triangle mesh. |
+| `model.py` | Editable CadQuery program with a `PARAMETERS` table. |
+| `parameters.json` | Dimensions in mm, parameter sources and geometric assumptions. |
+| `viewer.html` | Local interactive preview and downloads. |
+| `report.json` | Provider, model, token usage and export results. |
 
 ## How it works
 
-![Model pipeline and photo-to-CAD data flow](docs/assets/workflow/photo-to-cad.png)
+![Text and photos to CAD: model pipeline and data flow](docs/assets/workflow/photo-to-cad.png)
 
-[Vector diagram](docs/assets/workflow/photo-to-cad.svg) · [Editable Excalidraw](docs/assets/workflow/photo-to-cad.excalidraw)
+GPT proposes the geometry and program. Local code checks the program, builds the solid and exports it. A failed program can be sent back once for repair. Material assignment, FEM and grasp planning belong downstream.
 
-[Usage, setup & troubleshooting](docs/PHOTO_CAD.md) · [RaySection depth-to-CAD tool](docs/RAY_SECTIONS.md) · [Benchmarks](docs/BENCHMARKS.md) · [Image credits](docs/assets/quickstart/README.md)
+[Usage & configuration](docs/PHOTO_CAD.md) · [Validation](docs/BENCHMARKS.md) · [Vector diagram](docs/assets/workflow/photo-to-cad.svg) · [Editable diagram](docs/assets/workflow/photo-to-cad.excalidraw)
 
-Code: [Apache-2.0](LICENSE). Third-party models and example images have their own terms; see the [model notes](docs/PHOTO_CAD.md#model-licenses).
+Input text and photos are sent to the selected provider. The preview works offline. Code: [Apache-2.0](LICENSE).

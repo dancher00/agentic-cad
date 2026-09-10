@@ -100,7 +100,7 @@ def reconstruct_case(
         sys.executable,
         "-m",
         "da3_cad",
-        "reconstruct",
+        "research-reconstruct",
         str(prepared.input_dir.resolve()),
         "--output",
         str(run_dir.resolve()),

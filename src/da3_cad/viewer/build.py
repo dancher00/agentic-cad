@@ -149,7 +149,9 @@ def viewer_payload(
         decision = "CANDIDATE"
     fallback_name = run_dir.parent.name if run_dir.name == "cad" else run_dir.name
     vlm = report.get("vlm") or {}
-    display_name = vlm.get("description") or report.get("object") or fallback_name
+    display_name = (
+        report.get("name") or vlm.get("description") or report.get("object") or fallback_name
+    )
     return {
         "schema_version": "1.0",
         "run": str(run_dir.resolve()),

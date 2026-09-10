@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "da3-cad"
-version = "0.4.0"
-description = "Deterministic multi-view RGB to editable B-Rep CAD with Depth Anything 3"
+version = "0.5.0"
+description = "Text and photos to editable CAD with GPT and CadQuery"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"
@@ -19,6 +19,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Image Processing",
 ]
 dependencies = [
+  "openai>=1.102,<3",
   "cadquery==2.4.0",
   "nlopt==2.7.1",
   "manifold3d==3.5.2",
