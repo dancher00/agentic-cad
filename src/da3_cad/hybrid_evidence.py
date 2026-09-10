@@ -23,6 +23,7 @@ class HybridConfig(BaseModel):
     offline: bool = True
     evidence_cache: Path | None = None
     fit_parameters: int = Field(default=4, ge=0, le=12)
+    feature_review: bool = True
     min_silhouette_iou: float = Field(default=0.85, gt=0, le=1)
 
 

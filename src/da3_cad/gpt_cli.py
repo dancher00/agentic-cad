@@ -62,6 +62,13 @@ def generate_command(
     ] = "gpt",
     device: Annotated[str, typer.Option(help="Hybrid model device: auto, cpu or cuda.")] = "auto",
     fit_parameters: Annotated[int, typer.Option(min=0, max=12)] = 4,
+    feature_review: Annotated[
+        bool,
+        typer.Option(
+            "--feature-review/--no-feature-review",
+            help="Review local photo features after each hybrid CAD candidate.",
+        ),
+    ] = True,
     evidence_cache: Annotated[
         Path | None,
         typer.Option(
@@ -71,6 +78,14 @@ def generate_command(
         ),
     ] = None,
     viewer: Annotated[bool, typer.Option("--viewer/--no-viewer")] = True,
+    resume_from: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            help="Resume a saved automatic CAD attempt with the same prompt and photos.",
+        ),
+    ] = None,
     dry_run: Annotated[
         bool, typer.Option(help="Validate inputs without API calls or output files.")
     ] = False,
@@ -94,7 +109,10 @@ def generate_command(
         )
         hybrid = (
             HybridConfig(
-                device=device, fit_parameters=fit_parameters, evidence_cache=evidence_cache
+                device=device,
+                fit_parameters=fit_parameters,
+                evidence_cache=evidence_cache,
+                feature_review=feature_review,
             )
             if reconstruction == "hybrid"
             else None
@@ -127,6 +145,7 @@ def generate_command(
                 create_viewer=viewer,
                 hybrid=hybrid,
                 progress=status.update,
+                resume_from=resume_from,
             )
     except (ImportError, OSError, RuntimeError, ValueError) as error:
         console.print("CAD generation failed: " + str(error), markup=False)

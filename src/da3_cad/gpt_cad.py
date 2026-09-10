@@ -140,6 +140,14 @@ filesystem/network access, exporters/importers, eval, or introspection. Assign f
 Workplane to `r`. Put editable dimensions in top-level numeric variables. Each parameter
 entry must match a literal numeric assignment in code; its source is `specified` only
 if supplied by the user, otherwise `estimated`. Avoid fragile decorative fillets.
+In CadQuery 2.4, spline() does not include the current point by default. When
+extending a wire with a spline, use includeCurrent=True and do not duplicate that
+point in the point list. Keep revolve profiles closed and connected.
+For a thin hollow revolved container, keep inner and outer profiles consistent
+through the base and shoulder. Independent interpolating splines can cross between
+their control points, sever a floor disk, or cut a circumferential gap in the wall.
+Prefer an offset shell or matched profile stations with simple arcs. Every union
+must have positive-volume overlap, not merely tangent or coincident contact.
 """
 
 
@@ -313,6 +321,7 @@ def run_gpt_cad(
     create_viewer: bool = True,
     hybrid: HybridConfig | None = None,
     progress: Callable[[str], None] | None = None,
+    resume_from: Path | None = None,
 ) -> dict[str, Any]:
     """Generate CAD, optionally with SAM2/DA3 evidence and bounded geometric feedback."""
     settings = config or GPTConfig()
@@ -326,6 +335,44 @@ def run_gpt_cad(
     if hybrid is not None and not paths:
         raise ValueError("Hybrid reconstruction requires at least one photo")
     image_content, manifest = prepare_images(paths)
+    saved_response = None
+    saved_feedback = ""
+    if resume_from is not None:
+        from types import SimpleNamespace
+
+        previous_request = json.loads((resume_from / "request.json").read_text())
+        if previous_request["prompt"] != prompt or [
+            v["sha256"] for v in previous_request["images"]
+        ] != [v["sha256"] for v in manifest]:
+            raise ValueError("Resume requires the exact same prompt and ordered photos")
+        previous_report = json.loads((resume_from / "report.json").read_text())
+        candidates = sorted((resume_from / "attempts").glob("*/response.json"))
+        if not candidates:
+            raise ValueError("Previous run has no saved CAD response")
+        saved_path = candidates[-1]
+        previous_attempt = previous_report["attempts"][int(saved_path.parent.name) - 1]
+        saved_response = SimpleNamespace(
+            id=previous_attempt["response_id"],
+            model=previous_attempt["model"],
+            status="completed",
+            usage=None,
+            output_parsed=CADResponse.model_validate(json.loads(saved_path.read_text())),
+        )
+        review_path = saved_path.parent / "feature-review.json"
+        if hybrid is not None and hybrid.feature_review and review_path.is_file():
+            from da3_cad.feature_review import feature_rank
+
+            previous_review = json.loads(review_path.read_text())
+            if feature_rank(previous_review)[0] >= 2:
+                saved_feedback = (
+                    "Continue the automatic reconstruction from this saved CAD response. "
+                    "Correct the feature differences identified by the previous photo review. "
+                    "Preserve the specified dimensions and cavity clearances.\n"
+                    + saved_response.output_parsed.code
+                    + "\nAutomatic photo review:\n"
+                    + json.dumps(previous_review)
+                )
+                saved_response = None
     if client is None:
         key, base_url = provider_credentials(settings.provider)
         from openai import OpenAI
@@ -348,6 +395,12 @@ def run_gpt_cad(
         "attempts": [],
         "geometric_accuracy_verified": False,
     }
+    if resume_from is not None:
+        report["resume"] = {
+            "from": str(resume_from),
+            "response_sha256": hashlib.sha256(saved_path.read_bytes()).hexdigest(),
+            "uses_saved_feature_feedback": bool(saved_feedback),
+        }
     _write(
         output / "request.json",
         {
@@ -358,7 +411,7 @@ def run_gpt_cad(
         },
     )
     content = [{"type": "input_text", "text": prompt}, *image_content]
-    repair_text = ""
+    repair_text = saved_feedback
     instructions = INSTRUCTIONS
     evidence_report = None
     best_geometry = None
@@ -406,26 +459,31 @@ def run_gpt_cad(
             from openai import OpenAIError
 
             try:
-                response = client.responses.parse(
-                    model=settings.model,
-                    instructions=instructions,
-                    input=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {k: v for k, v in item.items() if k != "hybrid_feedback"}
-                                for item in content
-                            ]
-                            + (
-                                [{"type": "input_text", "text": repair_text}] if repair_text else []
-                            ),
-                        }
-                    ],
-                    reasoning={"effort": settings.reasoning_effort},
-                    max_output_tokens=settings.max_output_tokens,
-                    text_format=CADResponse,
-                    store=False,
-                )
+                if index == 0 and saved_response is not None:
+                    response = saved_response
+                else:
+                    response = client.responses.parse(
+                        model=settings.model,
+                        instructions=instructions,
+                        input=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {k: v for k, v in item.items() if k != "hybrid_feedback"}
+                                    for item in content
+                                ]
+                                + (
+                                    [{"type": "input_text", "text": repair_text}]
+                                    if repair_text
+                                    else []
+                                ),
+                            }
+                        ],
+                        reasoning={"effort": settings.reasoning_effort},
+                        max_output_tokens=settings.max_output_tokens,
+                        text_format=CADResponse,
+                        store=False,
+                    )
             except OpenAIError as error:
                 if best_geometry is not None:
                     report["attempts"].append(
@@ -451,6 +509,8 @@ def run_gpt_cad(
                 "status": response.status,
                 "usage": response.usage.model_dump() if response.usage else None,
             }
+            if index == 0 and saved_response is not None:
+                attempt["reused_from"] = str(resume_from)
             report["attempts"].append(attempt)
             if response.status != "completed":
                 if best_geometry is not None:
@@ -532,14 +592,42 @@ def run_gpt_cad(
                 from da3_cad.hybrid_checks import candidate_rank, observation_target_met
 
                 loss = geometry["after"]["loss"]
-                if best_geometry is None or candidate_rank(
-                    geometry["after"], hybrid.min_silhouette_iou
-                ) < candidate_rank(best_geometry[4]["after"], hybrid.min_silhouette_iou):
+                feature_feedback = ""
+                feature_failed = False
+                if hybrid.feature_review:
+                    from da3_cad.feature_review import feature_rank, review_features
+
+                    stage(f"Reviewing individual photo features: attempt {index + 1}")
+                    assert evidence_report is not None
+                    reviewed = review_features(
+                        client,
+                        settings,
+                        paths,
+                        attempt_dir,
+                        prompt,
+                        evidence_report["contract"]["visible_features"],
+                    )
+                    geometry["feature_review"] = reviewed
+                    _write(attempt_dir / "geometry-review.json", geometry)
+                    feature_failed = feature_rank(reviewed)[0] >= 2
+                    feature_feedback = "\nIndependent photo feature review:\n" + json.dumps(
+                        reviewed
+                    )
+
+                def reviewed_rank(item: dict[str, Any]) -> tuple[Any, ...]:
+                    from da3_cad.feature_review import feature_rank
+
+                    features = feature_rank(item["feature_review"]) if hybrid.feature_review else ()
+                    return (*features, *candidate_rank(item["after"], hybrid.min_silhouette_iou))
+
+                if best_geometry is None or reviewed_rank(geometry) < reviewed_rank(
+                    best_geometry[4]
+                ):
                     best_geometry = (loss, candidate, validation, attempt_dir, geometry, index + 1)
                 if (
-                    not observation_target_met(geometry["after"], hybrid.min_silhouette_iou)
-                    and index < settings.max_repairs
-                ):
+                    feature_failed
+                    or not observation_target_met(geometry["after"], hybrid.min_silhouette_iou)
+                ) and index < settings.max_repairs:
                     feedback, _ = prepare_images(
                         sorted(attempt_dir.glob("comparison-*.png"))
                         + (
@@ -563,6 +651,7 @@ def run_gpt_cad(
                         + candidate.code
                         + "\nMeasured observation consistency:\n"
                         + json.dumps(geometry["after"])
+                        + feature_feedback
                     )
                     continue
             break
@@ -571,6 +660,10 @@ def run_gpt_cad(
             _, candidate, validation, attempt_dir, geometry, selected_index = best_geometry
             report["selected_attempt"] = selected_index
             report["geometry"] = geometry
+            if hybrid.feature_review:
+                from da3_cad.feature_review import feature_rank
+
+                report["feature_review_passed"] = feature_rank(geometry["feature_review"])[0] < 2
             from da3_cad.hybrid_checks import observation_target_met
 
             report["observation_target_met"] = observation_target_met(
@@ -581,6 +674,8 @@ def run_gpt_cad(
                 *attempt_dir.glob("comparison-*.png"),
                 *attempt_dir.glob("sections.png"),
                 *attempt_dir.glob("material-chords.json"),
+                *attempt_dir.glob("feature-review.json"),
+                *attempt_dir.glob("cad-views.png"),
             ]:
                 shutil.copy2(file, output / file.name)
         assert validation is not None

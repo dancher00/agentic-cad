@@ -152,11 +152,12 @@ async function selectExample(id) {
   request = new AbortController();
   const example = examples[id];
   const path = `assets/demo/${id}/`;
+  const asset = (file) => path + file + (example.exports?.[file] ? `?v=${example.exports[file]}` : "");
   document.querySelectorAll("[data-example]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.example === id)));
   $("photo").src = path + "photo.jpg";
   $("photo").alt = example.photo_alt;
   $("photo-link").href = path + "photo.jpg";
-  $("poster").src = path + "preview.png";
+  $("poster").src = path + "preview.png?v=" + (example.exports?.["model.stl"] ?? "1");
   $("poster").alt = `Generated CAD model: ${example.title}`;
   $("prompt").textContent = example.prompt;
   $("copy").textContent = "Copy";
@@ -168,7 +169,7 @@ async function selectExample(id) {
   }
   $("credit").append("resized");
   for (const [id, file] of [["step", "model.step"], ["stl", "model.stl"], ["python", "model.py"]]) {
-    $(id).href = path + file;
+    $(id).href = asset(file);
     $(id).download = `agentic-cad-${selected}.${file.split(".").at(-1)}`;
   }
   $("model-frame").classList.remove("loaded");
@@ -176,7 +177,7 @@ async function selectExample(id) {
   $("model-status").textContent = "Loading model…";
   try {
     if (!renderer) renderer = new SolidView(canvas);
-    const response = await fetch(path + "model.stl", { signal: request.signal });
+    const response = await fetch(asset("model.stl"), { signal: request.signal });
     if (!response.ok) throw new Error("Could not load the CAD preview. Please reload or download the STEP.");
     const bytes = await response.arrayBuffer();
     if (version !== revision) return;

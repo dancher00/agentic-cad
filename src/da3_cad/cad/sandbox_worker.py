@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import sys
 import traceback
@@ -56,9 +57,29 @@ def run(source_path: Path, output_dir: Path) -> int:
         solids = shape.Solids()
         solid_count = len(solids)
         if solid_count != 1:
+            components = []
+            for solid in solids[:8]:
+                bounds = solid.BoundingBox()
+                components.append(
+                    {
+                        "volume_mm3": round(float(solid.Volume()), 6),
+                        "bbox_mm": [
+                            round(float(v), 6)
+                            for v in (
+                                bounds.xmin,
+                                bounds.ymin,
+                                bounds.zmin,
+                                bounds.xmax,
+                                bounds.ymax,
+                                bounds.zmax,
+                            )
+                        ],
+                    }
+                )
             raise ValueError(
                 f"program produced {solid_count} disconnected solids; "
-                "single-part CAD requires exactly one"
+                "single-part CAD requires exactly one. Component locations: "
+                + json.dumps(components)
             )
         volume = float(shape.Volume())
         if not volume > 0.0:
@@ -168,6 +189,18 @@ def run(source_path: Path, output_dir: Path) -> int:
                 continue
         if invalid_intermediates:
             message += "; invalid intermediate solids: " + ", ".join(invalid_intermediates[:12])
+        if any(
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "spline"
+            and not any(keyword.arg == "includeCurrent" for keyword in node.keywords)
+            for node in ast.walk(locals().get("tree", ast.Module(body=[], type_ignores=[])))
+        ):
+            message += (
+                "; check spline continuity: CadQuery 2.4 excludes the current point by default. "
+                "When extending a profile, use includeCurrent=True and omit the current point "
+                "from the spline point list. Otherwise the wire has a gap and cannot revolve."
+            )
         _write(
             manifest,
             {

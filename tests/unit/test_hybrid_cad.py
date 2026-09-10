@@ -158,7 +158,7 @@ def test_geometric_retry_keeps_better_candidate_and_original_photos(
         "block",
         output,
         images=[photo],
-        hybrid=HybridConfig(),
+        hybrid=HybridConfig(feature_review=False),
         config=GPTConfig(max_repairs=1),
         create_viewer=False,
         client=SimpleNamespace(responses=SimpleNamespace(parse=parse)),

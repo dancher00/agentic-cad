@@ -44,6 +44,7 @@ available; CUDA is recommended.
 | GPT receives photos, masked RGB, depth panels and observations | Parametric CadQuery program with declared cavity clearances |
 | CAD kernel builds the solid | STEP/STL, connectivity and clearance intersection checks |
 | Numerical fitting compares projected CAD to masks and depth | Estimated dimensions adjusted within ±8% of their initial values |
+| A separate GPT review compares source photos with four renders of the exported STL | Feature-specific corrections for proportions, base, rim, handles and openings |
 | Geometric feedback, if needed | Another CAD candidate, retaining the best valid candidate by the observation objective |
 
 Registration uses one shared similarity transform across the DA3 cameras, rather
@@ -61,8 +62,17 @@ The objective is `1 − mean silhouette IoU + 0.1 × relative depth surface resi
 The depth term is a one-sided, clipped distance from observed DA3 points to the
 CAD surface. It does not penalize unobserved back surfaces. The default silhouette
 IoU target is 0.85 in every view at verification resolution; it is a feedback
-threshold, not a certified accuracy level. Candidates meeting it in every view
-rank ahead of candidates with a better average but a failing view.
+threshold, not a certified accuracy level. Within the same feature-review rank,
+candidates meeting it in every view rank ahead of candidates with a better average
+but a failing view.
+By default, a separate photo review also checks individual features. A clear local
+shape error triggers another attempt even when the silhouette target is met.
+Candidates are ranked first by worst and total feature severity, then by the
+observation objective. `feature_review_passed` records whether the selected candidate
+has no clear local errors according to that review; it is a model judgment, not
+ground-truth validation. The reviewer uses `high` reasoning independently of the
+generator's configured effort. Each valid candidate costs an additional provider call.
+`--no-feature-review` disables this stage for controlled comparisons.
 `--max-repairs` bounds extra CAD requests for both execution and geometry errors.
 Object localization uses one additional provider request. If a later refinement
 request fails or is incomplete, the best already validated candidate is exported;
@@ -92,6 +102,14 @@ the exact same prompt and ordered photo hashes. The CLI displays the current sta
 and `report.json` also records it for callers polling a long-running job.
 The public interface remains a CLI and Python function, not an MCP server.
 
+`--resume-from previous-run` reuses the latest saved automatic CAD response after
+an interrupted run, then validates, fits and reviews it again. Use a new output
+directory and the exact same prompt and ordered photos. No model dimensions are
+edited by the resume operation. `--evidence-cache previous-run/evidence` also
+avoids repeating preprocessing. Reused responses are identified in `report.json`.
+If the last candidate already has a completed review with clear feature errors,
+resume sends that saved program and critique directly to the next generation.
+
 ## Inspect a run
 
 - `evidence/`: normalized input photos, localization, masks, depth panels and
@@ -101,6 +119,7 @@ The public interface remains a CLI and Python function, not an MCP server.
 - `sections.png` and `material-chords.json`: central CAD sections and sampled
   inward surface distances, including thick features; not certified wall thickness.
 - `quality.json`: CAD kernel checks and geometric comparison.
+- `feature-review.json` and `cad-views.png`: automatic local feature review and the actual STL views it inspected.
 - `report.json`: selected attempt, provider usage and whether the observation target was met.
 
 These artifacts stay local unless you explicitly publish them. The live website's
