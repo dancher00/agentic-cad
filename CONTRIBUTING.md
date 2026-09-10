@@ -1,6 +1,6 @@
 # Contributing
 
-Datumfold's product reconstruction path lives in `gpt_cad.py` and `gpt_cli.py`.
+Agentic CAD's product reconstruction path lives in `gpt_cad.py` and `gpt_cli.py`.
 It uses a vision-capable model through the Responses API, then validates and exports
 CadQuery locally. Keep provider calls separate from geometry execution and downstream FEM.
 

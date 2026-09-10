@@ -1,10 +1,10 @@
 # Third-party licenses
 
-Datumfold source and project-generated synthetic fixtures are Apache-2.0. No
+Agentic CAD source and project-generated synthetic fixtures are Apache-2.0. No
 third-party model weights, source checkout, dataset, video, or derived real
 capture is distributed in this repository.
 
-| Component | Pinned artifact used by Datumfold | Terms | Redistributed here |
+| Component | Artifact used by product or optional research tools | Terms | Redistributed here |
 |---|---|---|---|
 | [Depth Anything 3 source](https://github.com/ByteDance-Seed/Depth-Anything-3) | commit `3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` | Apache-2.0 | no; fetched to ignored `data/upstream/` |
 | [DA3-LARGE-1.1](https://huggingface.co/depth-anything/DA3-LARGE-1.1) | revision `0e109ae307c5982f319a67cf6f9f99ccdc0ec97c`; SHA-256 `739905…33f64` | CC BY-NC 4.0 | no; explicit acceptance and ignored cache |
@@ -22,7 +22,13 @@ capture is distributed in this repository.
 
 Full hashes and pinned revisions are recorded in the model-loading and fetch scripts.
 
-## Model acceptance
+## Technology marks
+
+Documentation includes official OpenAI, Claude and CadQuery marks solely to
+identify the tools shown. They are excluded from the project license; see
+[asset sources](assets/brands/README.md).
+
+## Optional research model acceptance
 
 `fetch_da3_weights.py` prints every selected model card, immutable revision,
 license, target, and the required acknowledgement. Non-commercial weights are

@@ -86,6 +86,7 @@ def _solid_payload(path: Path | None) -> dict[str, object] | None:
     return {
         "source": path.name,
         "original_faces": original_faces,
+        "extents": np.asarray(mesh.extents, dtype=float).tolist(),
         "displayed_faces": len(triangles),
         "triangles": triangles.reshape(-1, 9).tolist(),
     }
@@ -145,7 +146,7 @@ def viewer_payload(
         report_path = run_dir.parent / "report.json"
     report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else {}
     decision = report.get("status", "CANDIDATE")
-    if decision not in {"ACCEPT", "ABSTAIN", "CANDIDATE", "FAILED"}:
+    if decision not in {"ACCEPT", "ABSTAIN", "CANDIDATE", "FAILED", "GENERATED"}:
         decision = "CANDIDATE"
     fallback_name = run_dir.parent.name if run_dir.name == "cad" else run_dir.name
     vlm = report.get("vlm") or {}

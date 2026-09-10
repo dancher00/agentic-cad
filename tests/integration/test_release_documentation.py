@@ -8,8 +8,8 @@ from pathlib import Path
 def test_product_documentation_and_entry_points() -> None:
     readme = Path("README.md").read_text()
     project = tomllib.loads(Path("pyproject.toml").read_text())["project"]
-    assert readme.startswith("# Datumfold")
-    assert project["scripts"]["datumfold"] == project["scripts"]["da3-cad"]
+    assert readme.startswith("# Agentic CAD")
+    assert project["scripts"]["agentic-cad"] == project["scripts"]["da3-cad"]
     assert f"version: {project['version']}" in Path("CITATION.cff").read_text()
     assert "docs/PHOTO_CAD.md" in readme
     assert "docs/BENCHMARKS.md" in readme

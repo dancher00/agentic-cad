@@ -1,6 +1,6 @@
 # Text and photos to CAD
 
-Datumfold uses GPT-5.6 Sol to generate a parameterized CadQuery program from a description and optional photos. OpenCascade builds and validates the solid locally, then exports STEP and STL.
+Agentic CAD uses GPT-5.6 Sol to generate a parameterized CadQuery program from a description and optional photos. OpenCascade builds and validates the solid locally, then exports STEP and STL.
 
 ## Installation
 
@@ -9,7 +9,8 @@ Linux and Python 3.12 are required. A GPU is not needed.
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -r constraints/cpu-py312.txt
+pip install --no-deps -e .
 ```
 
 The default provider is `llm-proxy`, at `https://llm-proxy.spirit.culab.ru`.
@@ -17,20 +18,20 @@ Credentials are read from `LLMPROXY_API_KEY`, then `~/.config/llm-proxy/api_key`
 Keys are not written to run metadata or passed to the CAD subprocess.
 The proxy must support the Responses API, image input and structured outputs.
 
-To use OpenAI directly, set `OPENAI_API_KEY` and add `--provider openai`.
-Use `--model` to select a model available to your account. Datumfold does not
-change your Codex configuration.
+To use OpenAI directly, set `OPENAI_API_KEY` and add `--provider openai --model YOUR_MODEL_ID`.
+Use `--model` to select a Responses-compatible vision model available to your account. Agentic CAD does not
+change your coding-agent configuration.
 
 ## Generate
 
 ```bash
-datumfold generate --prompt "Plate 60 by 40 by 5 mm with a 10 mm center hole" \
+agentic-cad generate --prompt "Plate 60 by 40 by 5 mm with a 10 mm center hole" \
   --output work/plate
 
-datumfold reconstruct photos/ --prompt "Reconstruct the bracket, including its holes" \
+agentic-cad reconstruct photos/ --prompt "Reconstruct the bracket, including its holes" \
   --dimension "height=60mm" --output work/bracket
 
-datumfold generate --image front.jpg --image side.jpg \
+agentic-cad generate --image front.jpg --image side.jpg \
   --prompt "Open cylindrical container" --dimension "height=120mm" \
   --dimension "wall thickness=0.15mm" --output work/container
 ```
@@ -41,7 +42,7 @@ A directory or individual JPEG/PNG/WebP files are accepted, up to 16 unique phot
 and 20 MiB per file. Images are EXIF-oriented, resized to a maximum side of 1536 px,
 and submitted as JPEGs. The run records original and submitted image hashes.
 
-Use a new output directory. Datumfold refuses to overwrite an existing run.
+Use a new output directory. Agentic CAD refuses to overwrite an existing run.
 
 ## Configuration
 
@@ -64,21 +65,23 @@ execution failures; they do not perform image-based shape optimization.
 
 A successful run contains `model.step`, `model.stl`, `model.py`, `parameters.json`,
 `quality.json`, `provenance.json`, `report.json` and, by default, `viewer.html`.
-Original reference images are copied into the run for its offline preview.
+The viewer’s **Provenance** download is `provenance.json`; `report.json` and
+`quality.json` remain separate files in the run folder. Original reference images
+are copied into the run for its offline preview.
 API responses and intermediate programs stay under the local `attempts/` folder.
 Requests use `store=false`; provider retention policies still apply.
 
 Edit dimensions in the Python program's `PARAMETERS` mapping, or use:
 
 ```bash
-datumfold edit work/plate --set length=80 --output work/plate-80
+agentic-cad edit work/plate --set length=80 --output work/plate-80
 ```
 
 Use the actual parameter names in `parameters.json`. A new local export is made;
 editing does not call GPT. Open a separate preview with:
 
 ```bash
-datumfold viewer work/plate-80 --output work/plate-80/viewer.html
+agentic-cad viewer work/plate-80 --output work/plate-80/viewer.html
 ```
 
 ## Geometry contract
@@ -102,4 +105,4 @@ suitability. The output includes no calculated material, contact or grasp model.
 - **Invalid CAD after repairs:** simplify the description, add clearer views or specify missing dimensions.
 - **Existing output:** choose a new directory, preserving the completed run.
 
-[Back to Datumfold](../README.md)
+[Python & Claude Code](INTEGRATION.md) · [Back to Agentic CAD](../README.md)

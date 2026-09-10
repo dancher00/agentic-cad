@@ -3,21 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Datumfold — Model workspace</title>
+    <title>Agentic CAD — Model workspace</title>
     <link
       rel="icon"
-      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSI+PHRpdGxlPkRhdHVtZm9sZDwvdGl0bGU+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiNmN2Y3ZjYiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNiAxNCkiIHN0cm9rZT0iIzI5MmMyYiIgc3Ryb2tlLXdpZHRoPSIxLjciPjxwYXRoIGQ9Ik01IDVoMTNsOSA5djE3SDE0bC05LTlWNVoiLz48cGF0aCBkPSJtNSA1IDkgOWgxM00xNCAxNHYxN00xOCA1djkiLz48L2c+PC9zdmc+Cg=="
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSI+PHRpdGxlPkFnZW50aWMgQ0FEPC90aXRsZT48cGF0aCBkPSJNNyAxNVY3aDhNMzMgN2g4djhNNDEgMzN2OGgtOE0xNSA0MUg3di04IiBzdHJva2U9IiMyNDI0MjQiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Im0xNiAzMiA4LTE3IDggMTdtLTEzLTZoMTAiIHN0cm9rZT0iIzI0MjQyNCIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4="
     />
     <style>
       :root {
         color-scheme: light;
-        --paper: #f7f7f6;
-        --canvas: #e8e9e7;
+        --paper: #f7f7f7;
+        --canvas: #eeeeee;
         --surface: #fff;
-        --line: #d7d9d6;
-        --ink: #292c2b;
-        --muted: #646964;
-        --soft: #eef0ed;
+        --line: #dedede;
+        --ink: #242424;
+        --muted: #696969;
+        --soft: #f0f0f0;
         --display: "Bahnschrift", "DIN Alternate", "Arial Narrow", sans-serif;
         --body: "Segoe UI", Arial, sans-serif;
         --mono: "SFMono-Regular", Consolas, monospace;
@@ -58,6 +58,9 @@
         outline: 2px solid var(--ink);
         outline-offset: 4px;
       }
+      [hidden] {
+        display: none !important;
+      }
       button:disabled {
         opacity: 0.4;
         cursor: not-allowed;
@@ -97,7 +100,7 @@
         border-color: var(--ink);
       }
       .primary:hover {
-        background: #454a46;
+        background: #444444;
       }
       .muted {
         color: var(--muted);
@@ -125,12 +128,15 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        font: 500 25px var(--display);
-        letter-spacing: -1px;
+        font: 400 23px var(--body);
+        letter-spacing: -0.9px;
+      }
+      .brand b {
+        font-weight: 650;
       }
       .brand svg {
-        width: 30px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
       }
       .header-label {
         border-left: 1px solid var(--line);
@@ -154,7 +160,7 @@
       }
       main {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 332px;
+        grid-template-columns: minmax(0, 1fr) 320px;
         height: calc(100dvh - 76px);
         min-height: 650px;
       }
@@ -186,7 +192,7 @@
         min-height: 360px;
         background: var(--canvas);
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 4px;
         overflow: hidden;
       }
       .view-tools {
@@ -277,7 +283,7 @@
         margin-bottom: 7px;
       }
       .section {
-        padding: 24px;
+        padding: 18px 24px;
         border-bottom: 1px solid var(--line);
       }
       .section h2 {
@@ -387,7 +393,7 @@
       }
       .thumbs {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 6px;
         margin-top: 12px;
       }
@@ -515,20 +521,15 @@
   <body>
     <header>
       <div class="brand">
-        <svg viewBox="0 0 32 36" fill="none" aria-hidden="true">
-          <path
-            d="M5 5h13l9 9v17H14l-9-9V5Z"
-            stroke="currentColor"
-            stroke-width="1.7"
-          />
-          <path
-            d="m5 5 9 9h13M14 14v17M18 5v9"
-            stroke="currentColor"
-            stroke-width="1.7"
-          /></svg
-        >datumfold
+        <svg aria-hidden="true" viewBox="0 0 48 48" fill="none">
+          <path d="M7 15V7h8M33 7h8v8M41 33v8h-8M15 41H7v-8"
+            stroke="currentColor" stroke-width="2" />
+          <path d="m16 32 8-17 8 17m-13-6h10"
+            stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
+        </svg>
+        <span>agentic <b>CAD</b></span>
       </div>
-      <span class="header-label">Photos into editable form</span
+      <span class="header-label">Text &amp; photos to CAD</span
       ><span class="local">Local workspace</span>
     </header>
     <main>
@@ -572,12 +573,12 @@
               ></p>
             </div>
             <svg class="axis" viewBox="0 0 60 60" aria-label="View orientation">
-              <g stroke="#747b73" stroke-width="1">
+              <g stroke="#777777" stroke-width="1">
                 <path id="axisX" />
                 <path id="axisY" />
                 <path id="axisZ" />
               </g>
-              <g fill="#50564f" font-family="monospace" font-size="9">
+              <g fill="#555555" font-family="monospace" font-size="9">
                 <text id="labelX">X</text>
                 <text id="labelY">Y</text>
                 <text id="labelZ">Z</text>
@@ -590,11 +591,11 @@
           ><span>Orthographic view</span>
         </div>
       </section>
-      <aside aria-label="Model inspector">
+      <aside aria-label="Model">
         <div class="inspector-head">
-          <h2>Model inspector</h2>
+          <h2>Model</h2>
           <p class="muted" style="font-size: 12px">
-            Inspect the form before exporting.
+            Dimensions and export files.
           </p>
         </div>
         <section class="section">
@@ -614,8 +615,8 @@
               <dd id="units"></dd>
             </div>
           </dl>
-          <details>
-            <summary>Construction parameters</summary>
+          <details open>
+            <summary>Dimensions</summary>
             <dl class="params" id="params"></dl>
             <details>
               <summary>Additional values</summary>
@@ -708,6 +709,7 @@
       }
       rows("params", parameters.primary);
       rows("implementation", parameters.implementation);
+      $("implementation").closest("details").hidden = !parameters.implementation?.length;
       Object.entries(data.downloads).forEach(([name, url]) => {
         if (!url) return;
         const a = document.createElement("a");
@@ -716,11 +718,11 @@
         a.download = "";
         a.textContent =
           {
-            step: "Export STEP ↗",
+            step: "Download STEP",
             stl: "STL",
             python: "Python source",
             parameters: "Parameters",
-            provenance: "Run metadata",
+            provenance: "Provenance",
           }[name] || name;
         $("downloads").append(a);
       });
@@ -847,7 +849,7 @@
         if (mode === "cloud" && cloud.length) {
           cloud.forEach((p) => {
             const q = project(p, w, h);
-            ctx.fillStyle = "#727a71";
+            ctx.fillStyle = "#777777";
             ctx.fillRect(q[0], q[1], 1.5, 1.5);
           });
           $("geometryInfo").textContent =
@@ -875,13 +877,15 @@
               ctx.lineTo(t[1][0], t[1][1]);
               ctx.lineTo(t[2][0], t[2][1]);
               ctx.closePath();
-              ctx.fillStyle = `rgb(${c},${c + 2},${c})`;
+              ctx.fillStyle = `rgb(${c},${c},${c})`;
               ctx.fill();
             });
           $("geometryInfo").textContent =
-            `${data.solid.displayed_faces.toLocaleString()} faces · triangle edges hidden`;
+            data.solid.extents
+              ? `${data.solid.extents.map(v => Number(v.toFixed(2))).join(" × ")} ${parameters.units || "units"} · X × Y × Z`
+              : `${data.solid.displayed_faces.toLocaleString()} faces · triangle edges hidden`;
         } else {
-          ctx.fillStyle = "#646964";
+          ctx.fillStyle = "#696969";
           ctx.font = "14px Arial";
           ctx.textAlign = "center";
           ctx.fillText("No geometry available for this view", w / 2, h / 2);
@@ -892,6 +896,7 @@
           b.classList.toggle("active", mode === m);
           b.setAttribute("aria-pressed", String(mode === m));
           b.disabled = m === "solid" ? !triangles.length : !cloud.length;
+          b.hidden = b.disabled;
         });
         [
           [1, 0, 0],

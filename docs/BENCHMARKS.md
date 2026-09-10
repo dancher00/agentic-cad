@@ -1,4 +1,4 @@
-# Validation
+# Integration checks
 
 The GPT reconstruction path has been exercised through the configured proxy using
 **GPT-5.6 Sol**, with `xhigh` reasoning. These are integration checks, not a CAD

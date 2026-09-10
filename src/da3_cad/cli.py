@@ -1,4 +1,4 @@
-"""Datumfold command-line interface."""
+"""Agentic CAD command-line interface."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ from da3_cad.viewer import build_viewer
 
 app = typer.Typer(
     name="da3-cad",
-    help="Datumfold — photos into editable CAD.",
+    help="Agentic CAD — text and photos to editable CAD.",
     no_args_is_help=True,
 )
 console = Console()
@@ -73,7 +73,7 @@ def main(
         typer.Option("--version", callback=_version, is_eager=True, help="Show version and exit."),
     ] = False,
 ) -> None:
-    """Datumfold — photos into editable CAD."""
+    """Agentic CAD — text and photos to editable CAD."""
 
 
 def _config(path: Path | None, device: str | None, seed: int | None) -> AppConfig:

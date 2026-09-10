@@ -1,17 +1,11 @@
-# Datumfold
+# Agentic CAD
 
-Photos into editable form.
+Text and photos to editable CAD. The original mark combines an A with the four
+corners of a dimension frame. It is separate from third-party technology marks.
 
-The name combines a geometric datum with folding a surface into a solid.
-The mark follows the same idea: a profile, a fold and a volume.
+Paper `#f7f7f7`, canvas `#eeeeee`, white `#ffffff`, ink `#242424`, secondary
+text `#696969`, rules `#dedede`. The workspace uses system UI type, narrow
+technical headings and monospace measurements. No remote fonts or scripts.
 
-The workspace uses paper gray (`#f7f7f6`), a gray model field (`#e8e9e7`),
-white (`#ffffff`), graphite (`#292c2b`), secondary text (`#646964`) and
-dividers (`#d7d9d6`). Contrast comes from type, spacing and geometry.
-
-Display type uses locally available Bahnschrift / DIN Alternate, with system
-fallbacks. Interface text uses Segoe UI / Arial; measurements use a monospace
-stack. No font service, tracking or network request is needed to open a viewer.
-
-`datumfold` is the product and command name. The existing `da3-cad` entry point,
-Python package and repository URL remain compatible with published experiments.
+The product command is `agentic-cad`. Python imports remain `da3_cad`;
+`datumfold` and `da3-cad` remain compatible command aliases.

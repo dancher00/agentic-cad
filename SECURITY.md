@@ -3,28 +3,34 @@
 ## Supported versions
 
 Security fixes are applied to the latest `main` branch and newest tagged release.
-The frozen `legacy/` archive is unsupported and must not be used as a service.
 
 ## Reporting a vulnerability
 
 Do not open a public issue for a vulnerability. Use GitHub's private security
-advisory interface for `dancher00/DA3-CAD`, or contact the repository owner
+advisory interface for `dancher00/agentic-cad`, or contact the repository owner
 privately through the GitHub profile if advisories are unavailable. Include a
 minimal reproduction, affected revision, impact, and suggested mitigation when
 known.
 
 ## Relevant threat boundaries
 
-DA3-CAD processes untrusted images, videos, camera bundles, masks, YAML, meshes,
-and generated CadQuery source. The project:
+The product accepts text and JPEG, PNG or WebP photos, receives generated
+CadQuery source from a remote provider, and builds CAD and viewer meshes locally.
+It:
 
-- validates paths, arrays, transforms, finite values, and mesh topology;
-- applies an AST allow-list to generated source;
-- executes CAD generation in an isolated subprocess with memory, CPU, and wall
-  limits;
-- refuses existing output directories and divergent external artifacts;
-- hashes external source, weights, captures, and inputs;
-- does not require secrets for normal inference.
+- checks input paths, file sizes and image formats;
+- applies a geometric AST allow-list to model-generated source;
+- executes CAD in a subprocess with memory, CPU and wall-time limits;
+- checks that the result is one valid, positive-volume solid;
+- refuses existing output directories and records input image hashes;
+- reads provider credentials locally and sends text and photos to the selected API.
+
+Optional research commands additionally process video, calibrated camera/depth
+bundles, masks, YAML and external weights. They are separate from the product
+reconstruction path.
+
+The CAD subprocess removes environment variables whose names contain KEY, TOKEN,
+SECRET or PASSWORD. This filter is not a complete credential isolation boundary.
 
 These controls reduce risk but do not make the program a hardened multi-tenant
 sandbox. Run unknown inputs under an OS/container account without sensitive

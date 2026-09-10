@@ -46,11 +46,12 @@ def test_build_viewer_embeds_geometry_parameters_and_downloads(tmp_path: Path) -
     html = output.read_text(encoding="utf-8")
 
     assert output == run / "viewer.html"
-    assert "Datumfold — Model workspace" in html
+    assert "Agentic CAD — Model workspace" in html
     assert '"decision":"CANDIDATE"' in html
     assert "model.py" in html
     assert '"name":"width"' in html
     assert '"original_points":8' in html
+    assert '"extents":[2.0,1.0,0.5]' in html
     assert "model.step" in html
     assert "triangle edges hidden" in html
     assert "ctx.stroke()" not in html

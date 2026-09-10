@@ -17,7 +17,7 @@
       "input_photos": 0,
       "api_calls": 1,
       "protocol": "Live API call; local CadQuery execution, positive-volume single solid, STEP/STL export and HTML viewer. No reference-geometry accuracy score.",
-      "command": "datumfold generate --prompt \"A mounting plate 60 by 40 by 5 mm with one centered 10 mm diameter through-hole. Use editable length, width, thickness and hole diameter parameters.\" --output work/text-plate"
+      "command": "agentic-cad generate --prompt \"A mounting plate 60 by 40 by 5 mm with one centered 10 mm diameter through-hole. Use editable length, width, thickness and hole diameter parameters.\" --output work/text-plate"
     },
     {
       "name": "photo-block",
@@ -33,7 +33,7 @@
       "input_photos": 1,
       "api_calls": 1,
       "protocol": "Live API call; local CadQuery execution, positive-volume single solid, STEP/STL export and HTML viewer. No reference-geometry accuracy score.",
-      "command": "datumfold generate sample_data/public_benchmark_v2/block/views/view_000.png --prompt \"Reconstruct the blue rectangular block in the reference photo as a single CAD solid. Use length 60 mm, width 40 mm, height 30 mm. Ignore background.\" --output work/photo-block"
+      "command": "agentic-cad generate sample_data/public_benchmark_v2/block/views/view_000.png --prompt \"Reconstruct the blue rectangular block in the reference photo as a single CAD solid. Use length 60 mm, width 40 mm, height 30 mm. Ignore background.\" --output work/photo-block"
     },
     {
       "name": "multiview-bracket",
@@ -49,7 +49,7 @@
       "input_photos": 4,
       "api_calls": 1,
       "protocol": "Live API call; local CadQuery execution, positive-volume single solid, STEP/STL export and HTML viewer. No reference-geometry accuracy score.",
-      "command": "datumfold generate --image sample_data/public_benchmark_v2/l_bracket/views/view_000.png --image sample_data/public_benchmark_v2/l_bracket/views/view_003.png --image sample_data/public_benchmark_v2/l_bracket/views/view_006.png --image sample_data/public_benchmark_v2/l_bracket/views/view_009.png --prompt \"Reconstruct the blue L-shaped bracket from these four views. Overall longest dimension is 60 mm. Preserve the L profile and visible cutouts. Other dimensions may be estimated.\" --output work/bracket"
+      "command": "agentic-cad generate --image sample_data/public_benchmark_v2/l_bracket/views/view_000.png --image sample_data/public_benchmark_v2/l_bracket/views/view_003.png --image sample_data/public_benchmark_v2/l_bracket/views/view_006.png --image sample_data/public_benchmark_v2/l_bracket/views/view_009.png --prompt \"Reconstruct the blue L-shaped bracket from these four views. Overall longest dimension is 60 mm. Preserve the L profile and visible cutouts. Other dimensions may be estimated.\" --output work/bracket"
     }
   ]
 }
