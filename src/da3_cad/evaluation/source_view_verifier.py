@@ -28,6 +28,9 @@ class SourceViewScore:
     appearance_edge_recall: float | None = None
     appearance_edge_pixels: int = 0
     rendered_geometry_edge_pixels: int = 0
+    input_view_count: int = 0
+    used_view_count: int = 0
+    rejected_views: tuple[dict[str, object], ...] = ()
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -40,6 +43,9 @@ class SourceViewScore:
             "appearance_edge_recall": self.appearance_edge_recall,
             "appearance_edge_pixels": self.appearance_edge_pixels,
             "rendered_geometry_edge_pixels": self.rendered_geometry_edge_pixels,
+            "input_view_count": self.input_view_count,
+            "used_view_count": self.used_view_count,
+            "rejected_views": list(self.rejected_views),
             "views": list(self.views),
         }
 
@@ -168,6 +174,44 @@ class _ViewEvidence:
     appearance_edges: BoolArray
 
 
+def _depth_view_admission(
+    depth: FloatArray,
+    mask: BoolArray,
+    *,
+    minimum_pixels: int,
+    minimum_mask_fraction: float,
+) -> tuple[bool, dict[str, object]]:
+    """Admit only views with enough cross-view-confirmed depth to verify CAD."""
+
+    values = np.asarray(depth, dtype=np.float32)
+    target = np.asarray(mask, dtype=np.bool_)
+    if values.shape != target.shape:
+        raise ValueError("depth admission requires matching depth and mask shapes")
+    if minimum_pixels < 1:
+        raise ValueError("minimum depth pixels must be positive")
+    if not 0.0 < minimum_mask_fraction <= 1.0:
+        raise ValueError("minimum depth mask fraction must be in (0, 1]")
+    mask_pixels = int(target.sum())
+    measured = target & np.isfinite(values) & (values > 0.0)
+    measured_pixels = int(measured.sum())
+    fraction = float(measured_pixels / max(mask_pixels, 1))
+    reasons: list[str] = []
+    if measured_pixels < minimum_pixels:
+        reasons.append(f"{measured_pixels} measured depth pixels < {minimum_pixels}")
+    if fraction < minimum_mask_fraction:
+        reasons.append(
+            f"measured depth covers {fraction:.4f} of target mask < {minimum_mask_fraction:.4f}"
+        )
+    return not reasons, {
+        "mask_pixels": mask_pixels,
+        "measured_depth_pixels": measured_pixels,
+        "measured_mask_fraction": fraction,
+        "minimum_depth_pixels": minimum_pixels,
+        "minimum_depth_mask_fraction": minimum_mask_fraction,
+        "reasons": reasons,
+    }
+
+
 def _appearance_edges(image: UInt8Array, mask: BoolArray) -> BoolArray:
     """Return high-contrast boundaries away from the segmentation silhouette."""
 
@@ -284,6 +328,8 @@ class SourceViewVerifier:
         silhouette_weight: float,
         depth_inlier_tolerance: float,
         appearance_edge_tolerance_pixels: float,
+        input_view_count: int | None = None,
+        rejected_views: tuple[dict[str, object], ...] = (),
     ) -> None:
         if not views:
             raise ValueError("source-view verifier requires at least one view")
@@ -297,6 +343,10 @@ class SourceViewVerifier:
         self._silhouette_weight = silhouette_weight
         self._depth_inlier_tolerance = depth_inlier_tolerance
         self._appearance_edge_tolerance_pixels = appearance_edge_tolerance_pixels
+        self._input_view_count = len(views) if input_view_count is None else input_view_count
+        self._rejected_views = rejected_views
+        if self._input_view_count != len(views) + len(rejected_views):
+            raise ValueError("source-view admission counts do not match")
 
     @classmethod
     def from_colmap_workspace(
@@ -309,6 +359,8 @@ class SourceViewVerifier:
         silhouette_weight: float = 0.65,
         depth_inlier_tolerance: float = 0.03,
         appearance_edge_tolerance_pixels: float = 2.0,
+        minimum_observed_depth_pixels: int = 128,
+        minimum_observed_depth_mask_fraction: float = 0.10,
     ) -> SourceViewVerifier:
         if maximum_image_dimension < 64:
             raise ValueError("maximum_image_dimension must be at least 64")
@@ -317,6 +369,7 @@ class SourceViewVerifier:
         observations = load_observations(workspace_dir / "images")
         bundle = load_camera_bundle(camera_bundle_path, observations)
         views: list[_ViewEvidence] = []
+        rejected_views: list[dict[str, object]] = []
         for index, observation in enumerate(observations.images):
             depth = _read_colmap_array(
                 workspace_dir
@@ -330,6 +383,20 @@ class SourceViewVerifier:
                 raise ValueError(
                     f"source-view depth/mask shape mismatch: {observation.relative_path}"
                 )
+            admitted, admission = _depth_view_admission(
+                depth,
+                mask,
+                minimum_pixels=minimum_observed_depth_pixels,
+                minimum_mask_fraction=minimum_observed_depth_mask_fraction,
+            )
+            if not admitted:
+                rejected_views.append(
+                    {
+                        "image": observation.relative_path,
+                        **admission,
+                    }
+                )
+                continue
             height, width = mask.shape
             scale = min(1.0, maximum_image_dimension / max(height, width))
             output_height = max(1, int(round(height * scale)))
@@ -389,6 +456,8 @@ class SourceViewVerifier:
             silhouette_weight=silhouette_weight,
             depth_inlier_tolerance=depth_inlier_tolerance,
             appearance_edge_tolerance_pixels=appearance_edge_tolerance_pixels,
+            input_view_count=len(observations.images),
+            rejected_views=tuple(rejected_views),
         )
 
     def score(self, mesh: trimesh.Trimesh) -> SourceViewScore:
@@ -511,4 +580,7 @@ class SourceViewVerifier:
             ),
             appearance_edge_pixels=appearance_edge_pixels,
             rendered_geometry_edge_pixels=geometry_edge_pixels,
+            input_view_count=self._input_view_count,
+            used_view_count=len(self._views),
+            rejected_views=self._rejected_views,
         )

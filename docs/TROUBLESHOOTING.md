@@ -1,160 +1,129 @@
 # Troubleshooting
 
-## Python version
+Ниже описан основной dense path:
+`prepare-photos-sfm → prepare-target → dense-surface → fit-cad`.
+Legacy-команда `reconstruct` с DA3 depth имеет отдельные исследовательские
+артефакты и не является рекомендуемым фото→CAD маршрутом.
 
-Use CPython 3.12. Python 3.13 is outside the tested package contract.
+## Python и окружения
+
+Используйте CPython 3.12 и checked-in constraints:
 
 ```bash
 conda create --prefix ./.venv python=3.12 pip -y
 conda activate "$PWD/.venv"
-```
-
-## RTX 5080 / `sm_120`
-
-The verified overlay is torch 2.13.0+cu130. It includes `sm_120` kernels and ran
-DA3-LARGE-1.1 on the RTX 5080. Install the checked-in CUDA overlay instead of
-downgrading torch to match an older research environment.
-
-```bash
 python -m pip install -r constraints/cpu-py312.txt
 python -m pip install -r constraints/cu130-py312.txt
-python -m pip install -r constraints/da3-py312.txt
-python -m pip check
+python -m pip install -r constraints/cadena-py312.txt
+python -m pip install --no-deps -e .
 ```
 
-The measured 24-view run peaked at about 6.02 GB allocated and 8.67 GB reserved.
-If memory is constrained, reduce views or `da3.process_resolution`; lowering the
-sketch raster resolution affects CPU geometry, not DA3's main GPU allocation.
-
-## DA3 source revision mismatch
-
-The adapter requires official source commit
-`3d835ec1a5802d64a8b8b15f817a1ab54809bfe4` and refuses a nearby branch head.
-Run:
+PatchMatch живёт в отдельном CUDA 12 environment, чтобы не заменять CUDA 13
+runtime основного Torch:
 
 ```bash
-python scripts/fetch_da3_source.py
+python -m pip install "virtualenv>=20,<21"
+scripts/setup_mvs_env.sh .venv/bin/python
+.venv-mvs/bin/pip check
 ```
 
-The downloader refuses to modify a dirty external checkout. Remove or preserve
-those external changes yourself, then retry.
+RTX 5080 16 GB достаточна для текущего inference. H100 ускоряет sweep, но не
+исправляет плохие камеры, маски или ненаблюдаемую топологию.
 
-## Missing or rejected checkpoint
+## COLMAP регистрирует мало кадров
 
-The default config is offline after acquisition. Fetch once:
+Проверьте `camera_recovery.json`. Для фотографий используйте
+`--pairing exhaustive`; `sequential` подходит только упорядоченному видео.
+
+Снимайте медленнее, держите 60–80% overlap, фиксируйте zoom/focus и оставляйте
+текстурный неподвижный фон. Добавьте противоположную сторону, верхний и нижний
+пояса. Несколько десятков кадров с одной дуги не дают полного coverage.
+
+Turntable нарушает текущий SfM-контракт: фон неподвижен, а предмет движется.
+Нужна moving-camera съёмка или отдельный object-centric pose estimator.
+
+## Нет исходных masks
+
+`prepare-photos-sfm --masks` принимает source-resolution PNG и undistort-ит
+их точно той же моделью, что RGB. Если masks ещё нет, опустите эту опцию,
+восстановите камеры и создайте masks или SAM2 boxes для
+`registered_frames/`. Затем передайте их в `prepare-target`.
+
+Имена masks должны совпадать со stem соответствующих изображений. Всегда
+просматривайте overlay: ошибка target selection превращается в ошибку
+геометрии, а не исправляется CAD fitter.
+
+## PatchMatch не запускается
+
+Проверьте:
 
 ```bash
-python scripts/fetch_da3_weights.py \
-  --profile large-1.1 \
-  --accept-noncommercial-weights
+.venv-mvs/bin/python -c "import torch; print(torch.cuda.is_available())"
+.venv-mvs/bin/pip check
 ```
 
-DA3-LARGE-1.1 is CC BY-NC 4.0. Both acquisition and inference require explicit
-acceptance. A revision or SHA mismatch is a hard error, not a fallback to another
-model. For permissive checkpoint terms, use DA3-BASE with a matching config.
+`dense-surface` заранее отказывает при camera coverage ниже 0.25. Не ослабляйте
+gate только ради запуска: добавьте отсутствующие направления съёмки.
 
-## Output directory already exists
+Если отдельный source view содержит менее 128 измеренных depth pixels или depth
+покрывает менее 10% target mask, он исключается из CAD verification и
+записывается в отчёт.
 
-Real reconstruction refuses an existing output directory so evidence cannot be
-silently mixed. Choose a new path or deliberately move the old run elsewhere.
+## Raw cloud выглядит лучше Poisson surface
 
-## Automatic mask is empty, huge, or follows the wrong object
+Это ожидаемо. `fused_cloud.ply` хранит cross-view-confirmed измеренные точки и
+является входом CAD fitter. `surface.ply` — сглаженный Poisson conditioning
+render для proposer; он может быть менее плотным, терять отверстия и быть
+non-watertight. Не подменяйте им `--measurements fused_cloud.ply`.
 
-The default mask assumes one prominent central object. Inspect:
+## STEP валиден, но геометрия неверна
 
-```text
-RUN/artefacts/geometry/artefacts/mask_*.png
-RUN/artefacts/geometry/artefacts/mask_overlay_*.png
-```
+OpenCascade проверяет только B-Rep-инварианты: один solid, положительный объём,
+`isValid()` и экспорт. Геометрически неверный STEP тоже может пройти kernel.
 
-For clutter, similar foreground/background colour, truncation, or multiple
-objects, supply binary PNG masks with exact input stems and use
-`configs/internet_photo_masked.yaml` plus `--masks`.
+Поэтому `fit-cad` дополнительно проецирует кандидата в исходные calibrated
+views и проверяет silhouette, depth и appearance edges. При провале получается
+`candidate.step` + `ABSTAIN`, а не успешный `model.step`. Причины находятся
+в `cadena_report.json`.
 
-## COLMAP registers too few frames
+## Пропало отверстие, shell или ручка
 
-Capture a slow orbit with 60–80% adjacent overlap, fixed zoom/focus, sharp
-texture, and a stationary object/background. Very smooth objects may need
-removable background texture or fiducials outside the object mask. The current
-contract does not support a turntable: COLMAP would interpret the moving object
-as a static world.
+Pooled point cloud не сохраняет per-view identity. Он может поддержать внешний
+revolve/sketch профиль, но не доказывает внутреннюю стенку. Поэтому прямой
+revolve root намеренно остаётся solid.
 
-Use `--no-recover-cameras` only when accepting that DA3 must estimate poses.
+Для cavity, shell, handle и составных тел нужен view-preserving fitter:
+наблюдение внутренней поверхности из нескольких calibrated views, согласованные
+границы и отрицательное пространство. Добавьте near-axis и oblique views.
+Невидимая полость не должна достраиваться как измеренная.
 
-## Dimensions are not millimetres
+## В preview много треугольников и линий
 
-DA3 any-view and COLMAP geometry have unresolved similarity scale. Pass one
-measured dimension whose name exists in the emitted template, for example:
+STL — тесселяция B-Rep для показа. Треугольники не означают, что STEP состоит из
+тысяч CAD-граней. Авторитетны `candidate.step`/`model.step` и
+`kernel_validation` в отчёте.
 
-```bash
---known-dimension extrusion_length=120mm
-```
+Если kernel report сам показывает десятки лишних faces/edges, это уже ошибка
+CAD-программы или boolean topology, а не визуализатора.
 
-If the requested parameter is absent, scale remains pending or the run fails;
-DA3-CAD does not invent a mapping.
+## Размеры не в миллиметрах
 
-## A visible hole was not recovered
+COLMAP/MVS восстанавливают сцену с неизвестным similarity scale. До известного
+размера или внешней metric calibration результат остаётся в canonical units.
+Увеличение числа фотографий само по себе миллиметровый масштаб не создаёт.
 
-The sketch backend accepts circular through-cuts from either a closed
-background component repeated in calibrated object masks, or a repeated RGB
-ellipse whose interior violates the local DA3 depth plane. Review the masks and
-the `cad-generation.details.report.apertures` measurement source. A gap in the
-point cloud or a painted circle on planar depth is deliberately insufficient.
+## Output directory уже существует
 
-For axial bodies, a repeated concentric outer rim can create only a conservative
-observed-side cavity. A through-hole requires opposite-side evidence. Add
-near-axis and oblique views and improve camera calibration before changing
-thresholds. General line/arc pockets, threads and arbitrary internal features
-are not yet supported.
+Команды reconstruction не смешивают новое evidence со старым и поэтому
+отказываются писать в существующий output directory. Выберите новый путь или
+осознанно перенесите прежний run; не объединяйте артефакты вручную.
 
-## The point cloud contains a detached duplicate or island
+## Когда нужен DA3
 
-Inspect `artefacts/geometry/artefacts/pose_admission.json` and
-`pose_admission_samples.npz`. With DA3-estimated cameras, DA3-CAD rejects a
-whole view only when its centre and bidirectional masked-surface distances
-disconnect it from the main view component. A rejection also preserves
-`camera_prediction_before_pose_admission.npz`; the final camera prediction and
-cloud contain admitted views only. Calibrated external cameras intentionally
-bypass this gate.
+DA3 не нужен dense benchmark и не является источником камер. Его текущая
+экспериментальная роль — confidence-aware prior внутри sparse/textureless 2DGS.
+Он выключен по умолчанию, пока held-out multi-seed проверка не подтвердит
+выигрыш. См. [BREPGAUSSIAN_DA3.md](BREPGAUSSIAN_DA3.md).
 
-For small residual errors, inspect the nested camera_bundle_refinement
-record. accepted means a bounded joint correction passed held-out feature,
-reprojection, independent-surface and full-graph audits.
-accepted-component-rig-refinement means one transform aligned a coherent
-multi-view group without changing its internal relative poses. rolled-back
-preserves the original cameras. topology-guarded-abstention means repeated
-RGB/depth interior boundaries made a surface-only correction ambiguous; keeping
-the opening evidence was safer than making the cloud denser. If ghost surfaces
-remain after an abstention, add discriminative oblique views or supply
-calibrated K/E.
-
-If only a thin off-body loop appears several times, inspect
-`loop_feature_admission.json` and `geometry_mask_*.png`. `observed_cloud`
-intentionally retains every pose-admitted mask/depth hypothesis, so several
-handles there are an audit of unresolved DA3 poses. `trusted_geometry` and
-canonicalizer stage `00_input` should contain only the largest pairwise-
-consistent loop group while full masks remain available to the CAD grammar.
-The report status `feature-3d-unavailable` means no two loop views agreed; it
-does not silently choose one view or synthesize a handle. External calibrated
-cameras bypass feature admission.
-
-## STEP generation times out or returns multiple solids
-
-Generated code runs under an AST allow-list, memory/CPU limits, and a wall
-timeout. The worker must return one finite positive-volume solid. The error is
-recorded; no cached or stub geometry is substituted. Inspect the generated
-profile and validation report before changing sandbox resource limits.
-
-## CadQuery / NumPy resolver conflict
-
-The tested combination intentionally pins CadQuery 2.4.0, cadquery-ocp 7.7.2,
-nlopt 2.7.1, and NumPy 1.26.4. Installing a newer CadQuery stack in the same
-environment may pull NumPy 2 and break the audited DA3 combination. Use the
-constraints and confirm `pip check` is clean.
-
-## RTX 5080 versus H100
-
-Both can run inference. The 5080 is sufficient for current DA3-LARGE-1.1 plus
-CPU CAD construction. Use H100 for large benchmark sweeps, higher-resolution or
-larger DA3 variants, and future training of feature/constraint models—not as a
-substitute for fixing masks, cameras, scale, or evaluation design.
+Для воспроизведения исторических DA3 ledgers нужны pinned source/checkpoints и
+явное принятие их лицензий; это не требуется CPU smoke или текущему dense path.

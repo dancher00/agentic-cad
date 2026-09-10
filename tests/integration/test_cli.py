@@ -69,6 +69,8 @@ def test_prepare_video_dry_run_does_not_decode_or_write(tmp_path: Path) -> None:
 def test_prepare_photos_sfm_dry_run_does_not_run_colmap_or_write(tmp_path: Path) -> None:
     photos = tmp_path / "photos"
     photos.mkdir()
+    masks = tmp_path / "masks"
+    masks.mkdir()
     output = tmp_path / "sfm"
 
     result = runner.invoke(
@@ -78,6 +80,8 @@ def test_prepare_photos_sfm_dry_run_does_not_run_colmap_or_write(tmp_path: Path)
             str(photos),
             "--output",
             str(output),
+            "--masks",
+            str(masks),
             "--pairing",
             "exhaustive",
             "--device",
@@ -90,6 +94,7 @@ def test_prepare_photos_sfm_dry_run_does_not_run_colmap_or_write(tmp_path: Path)
 
     assert result.exit_code == 0, result.stdout
     assert "'pairing': 'exhaustive'" in result.stdout
+    assert "'masks':" in result.stdout
     assert "'device': 'cpu'" in result.stdout
     assert "'minimum_registered_fraction': 0.9" in result.stdout
     assert "'writes': False" in result.stdout
@@ -178,6 +183,8 @@ def test_dense_surface_dry_run_does_not_run_mvs_or_write(tmp_path: Path) -> None
 def test_fit_cad_dry_run_does_not_load_model_or_write(tmp_path: Path) -> None:
     surface = tmp_path / "surface.ply"
     surface.write_bytes(b"not-loaded-in-dry-run")
+    measurements = tmp_path / "fused_cloud.ply"
+    measurements.write_bytes(b"not-loaded-in-dry-run")
     checkout = tmp_path / "cadena"
     checkpoint = tmp_path / "checkpoint"
     workspace = tmp_path / "mvs"
@@ -195,6 +202,10 @@ def test_fit_cad_dry_run_does_not_load_model_or_write(tmp_path: Path) -> None:
             str(surface),
             "--output",
             str(output),
+            "--measurements",
+            str(measurements),
+            "--maximum-measurement-points",
+            "4096",
             "--cadena-checkout",
             str(checkout),
             "--cadena-checkpoint",
@@ -209,6 +220,8 @@ def test_fit_cad_dry_run_does_not_load_model_or_write(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.stdout
     assert "'command': 'fit-cad'" in result.stdout
+    assert str(measurements.resolve()) in result.stdout
+    assert "'maximum_measurement_points': 4096" in result.stdout
     assert "'expansions': 4" in result.stdout
     assert "'temperature': 0.8" in result.stdout
     assert "'writes': False" in result.stdout

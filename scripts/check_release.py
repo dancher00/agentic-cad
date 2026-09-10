@@ -16,7 +16,9 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "sample_data" / "public_benchmark_v2"
 LEDGER = ROOT / "docs" / "results" / "public-benchmark-v2.json"
-REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v5.json"
+REAL_RGB_LEDGER = ROOT / "docs" / "results" / "real-rgb-mvs-cadena-v6.json"
+REAL_PHOTO_E2E_LEDGER = ROOT / "docs" / "results" / "real-photo-e2e-v1.json"
+PLANAR_GRAMMAR_LEDGER = ROOT / "docs" / "results" / "measured-planar-grammar-v6.json"
 MAX_PUBLIC_FILE_BYTES = 8 * 1024 * 1024
 
 REQUIRED = (
@@ -31,8 +33,12 @@ REQUIRED = (
     "docs/assets/release/cpu_smoke.gif",
     "docs/assets/release/public_benchmark_v2.png",
     "docs/results/public-benchmark-v2.json",
-    "docs/results/real-rgb-mvs-cadena-v5.json",
+    "docs/results/real-rgb-mvs-cadena-v6.json",
+    "docs/results/real-photo-e2e-v1.json",
+    "docs/results/measured-planar-grammar-v6.json",
     "scripts/build_real_rgb_cadena_report.py",
+    "scripts/build_real_photo_e2e_report.py",
+    "scripts/run_measured_planar_grammar_benchmark.py",
     "sample_data/public_benchmark_v2/README.md",
     "sample_data/public_benchmark_v2/manifest.json",
     "configs/public_benchmark_v2.yaml",
@@ -168,18 +174,139 @@ def _check_fixture_and_ledger(errors: list[str]) -> tuple[int, int]:
 
 def _check_real_rgb_ledger(errors: list[str]) -> None:
     ledger = _read_json(REAL_RGB_LEDGER)
-    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v5":
-        errors.append("real-RGB ledger schema is not v5")
+    if ledger.get("schema_version") != "da3-cad-real-rgb-mvs-cadena-v6":
+        errors.append("real-RGB ledger schema is not v6")
     if ledger.get("input", {}).get("reference_geometry_access_during_reconstruction") is not False:
         errors.append("real-RGB ledger reference-geometry leakage contract is not false")
+    architecture = ledger.get("architecture_change", {})
+    if architecture.get("trusted_operations") != [
+        "axial_revolved_add",
+        "axial_revolved_cut",
+        "planar_profile_add",
+        "planar_profile_cut",
+    ]:
+        errors.append("real-RGB v6 trusted operation contract is inconsistent")
+    if architecture.get("learned_policy_can_invoke_measured_feature") is not False:
+        errors.append("learned policy must not invoke trusted measured features")
+    if architecture.get("maximum_measured_feature_rounds") != 2:
+        errors.append("real-RGB v6 measured search must remain bounded to two rounds")
+    controls = ledger.get("real_controls", {})
     decisions = (
-        ledger.get("object_2", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
-        ledger.get("object_4", {}).get("v5_iterative_measured_grammar", {}).get("decision"),
+        controls.get("object_2", {}).get("decision"),
+        controls.get("object_4", {}).get("decision"),
     )
     if decisions != ("ACCEPT", "ABSTAIN"):
-        errors.append(f"real-RGB v5 decisions are inconsistent: {decisions!r}")
+        errors.append(f"real-RGB v6 decisions are inconsistent: {decisions!r}")
+    for object_id in ("object_2", "object_4"):
+        if controls.get(object_id, {}).get("kernel_valid_single_solid") is not True:
+            errors.append(f"real-RGB v6 {object_id} is not one kernel-valid solid")
     if "/home/" in REAL_RGB_LEDGER.read_text(encoding="utf-8"):
         errors.append("real-RGB ledger contains machine-local runtime paths")
+
+
+def _check_real_photo_e2e_ledger(errors: list[str]) -> None:
+    ledger = _read_json(REAL_PHOTO_E2E_LEDGER)
+    if ledger.get("schema_version") != "da3-cad-real-photo-e2e-v1":
+        errors.append("real-photo E2E ledger schema is not v1")
+    pipeline = ledger.get("pipeline", {})
+    if pipeline.get("reference_geometry_access_during_generation") is not False:
+        errors.append("real-photo E2E reference-geometry leakage contract is not false")
+    if pipeline.get("da3_role_in_this_benchmark") != "not used":
+        errors.append("real-photo E2E ledger must disclose that DA3 was not used")
+
+    cases = ledger.get("cases", [])
+    case_ids = [case.get("case_id") for case in cases if isinstance(case, dict)]
+    expected_ids = ["o02-fixed", "o04-fixed", "o10", "o20-fixed", "o25"]
+    if case_ids != expected_ids:
+        errors.append(f"real-photo E2E cases are inconsistent: {case_ids!r}")
+    expected_origins = [
+        "measured-revolve",
+        "measured-revolve",
+        "measured-sketch-extrusion",
+        "measured-sketch-extrusion",
+        "learned-cadena",
+    ]
+    origins = [
+        case.get("candidate_pool", {}).get("selected_origin")
+        for case in cases
+        if isinstance(case, dict)
+    ]
+    if origins != expected_origins:
+        errors.append(f"real-photo E2E selected origins are inconsistent: {origins!r}")
+    for case in cases:
+        if not isinstance(case, dict):
+            errors.append("real-photo E2E contains a non-object case")
+            continue
+        case_id = case.get("case_id", "unknown")
+        input_contract = case.get("input", {})
+        if (input_contract.get("selected_views"), input_contract.get("registered_views")) != (
+            32,
+            32,
+        ):
+            errors.append(f"real-photo E2E {case_id} does not contain 32 registered views")
+        if case.get("product_decision", {}).get("decision") != "ABSTAIN":
+            errors.append(f"real-photo E2E {case_id} decision is not ABSTAIN")
+        step = case.get("step", {})
+        if step.get("kernel_valid") is not True or step.get("solids") != 1:
+            errors.append(f"real-photo E2E {case_id} is not one kernel-valid solid")
+        if case.get("posthoc_reference_only", {}).get("alignment") != "none":
+            errors.append(f"real-photo E2E {case_id} uses posthoc alignment")
+
+    summary = ledger.get("aggregate", {})
+    expected_counts = {
+        "cases": 5,
+        "accept": 0,
+        "abstain": 5,
+        "kernel_valid_single_solid": 5,
+    }
+    for key, expected_count in expected_counts.items():
+        if summary.get(key) != expected_count:
+            errors.append(f"real-photo E2E aggregate {key!r} is not {expected_count!r}")
+    expected_metrics = {
+        "v9_mean_direct_iou": 0.376325144517502,
+        "v9_mean_chamfer_squared_x1000": 17.313081695927735,
+    }
+    for key, expected_metric in expected_metrics.items():
+        if abs(float(summary.get(key, 0.0)) - expected_metric) > 1e-12:
+            errors.append(f"real-photo E2E aggregate {key!r} is inconsistent")
+    if "/home/" in REAL_PHOTO_E2E_LEDGER.read_text(encoding="utf-8"):
+        errors.append("real-photo E2E ledger contains machine-local runtime paths")
+
+
+def _check_planar_grammar_ledger(errors: list[str]) -> None:
+    ledger = _read_json(PLANAR_GRAMMAR_LEDGER)
+    if ledger.get("schema_version") != "da3-cad-measured-planar-grammar-v6":
+        errors.append("measured planar grammar ledger schema is not v6")
+    if ledger.get("method", {}).get("operations") != [
+        "planar_profile_add",
+        "planar_profile_cut",
+    ]:
+        errors.append("measured planar grammar operations are inconsistent")
+    cases = ledger.get("cases", [])
+    case_ids = [case.get("id") for case in cases if isinstance(case, dict)]
+    if case_ids != ["l_add", "t_add", "u_cut", "hex_cut"]:
+        errors.append(f"measured planar grammar cases are inconsistent: {case_ids!r}")
+    summary = ledger.get("summary", {})
+    expected_summary = {
+        "positive_cases": 4,
+        "valid_single_solid_steps": 4,
+        "correct_axis_selections": 4,
+        "negative_controls_passed": 1,
+    }
+    for key, expected in expected_summary.items():
+        if summary.get(key) != expected:
+            errors.append(f"measured planar grammar summary {key!r} is not {expected!r}")
+    if float(summary.get("mean_exact_volume_iou", 0.0)) < 0.97:
+        errors.append("measured planar grammar mean exact-volume IoU is below 0.97")
+    controls = ledger.get("negative_controls", [])
+    if len(controls) != 1 or controls[0].get("id") != "nonconstant_frustum_add":
+        errors.append("measured planar grammar frustum control is missing")
+    elif controls[0].get("candidate_count") != 0 or controls[0].get("passed") is not True:
+        errors.append("measured planar grammar frustum control was not rejected")
+    if ledger.get("claim_boundary", {}).get("fit_reference_cad_access") is not False:
+        errors.append("measured planar grammar reference-CAD leakage contract is not false")
+    if "/home/" in PLANAR_GRAMMAR_LEDGER.read_text(encoding="utf-8"):
+        errors.append("measured planar grammar ledger contains machine-local runtime paths")
 
 
 def _check_metadata(errors: list[str]) -> None:
@@ -200,7 +327,7 @@ def _check_metadata(errors: list[str]) -> None:
         errors.append("invalid GIF signature: docs/assets/release/cpu_smoke.gif")
     else:
         with Image.open(animation_path) as animation:
-            if animation.size != (1200, 540) or animation.n_frames < 4:
+            if animation.size != (1200, 540) or getattr(animation, "n_frames", 1) < 4:
                 errors.append("CPU smoke GIF must be 1200x540 with at least four frames")
 
 
@@ -212,6 +339,8 @@ def main() -> None:
     _check_readme_links(errors)
     cases, views = _check_fixture_and_ledger(errors)
     _check_real_rgb_ledger(errors)
+    _check_real_photo_e2e_ledger(errors)
+    _check_planar_grammar_ledger(errors)
     _check_metadata(errors)
     if errors:
         print("release check failed:", file=sys.stderr)

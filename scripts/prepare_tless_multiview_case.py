@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+from numpy.typing import NDArray
 
 from da3_cad.geometry.cameras import CameraBundle
 from da3_cad.integrations.gaussian_scene import prepare_gaussian_scene
@@ -26,8 +27,8 @@ class View:
     image_id: int
     gt_index: int
     visibility: float
-    intrinsic: np.ndarray
-    extrinsic: np.ndarray
+    intrinsic: NDArray[np.float64]
+    extrinsic: NDArray[np.float64]
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -36,6 +37,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("scene_id", type=int)
     parser.add_argument("object_id", type=int)
     parser.add_argument("output_dir", type=Path)
+    parser.add_argument(
+        "--gt-index",
+        type=int,
+        help="Fixed BOP instance index; default chooses one stable index for all views.",
+    )
     parser.add_argument("--minimum-visible-fraction", type=float, default=0.97)
     parser.add_argument("--views", type=int, default=40)
     parser.add_argument("--held-out-views", type=int, default=6)
@@ -67,38 +73,68 @@ def _view(
     return View(image_id, gt_index, visibility, intrinsic, extrinsic)
 
 
-def _candidates(scene: Path, object_id: int, minimum_visibility: float) -> list[View]:
+def _candidates(
+    scene: Path,
+    object_id: int,
+    minimum_visibility: float,
+    gt_index: int | None = None,
+) -> tuple[list[View], int, dict[int, int]]:
+    """Return views of one stable physical instance, never a per-frame best match."""
+
     cameras = _load_json(scene / "scene_camera.json")
     ground_truth = _load_json(scene / "scene_gt.json")
     information = _load_json(scene / "scene_gt_info.json")
-    result: list[View] = []
+    by_instance: dict[int, list[View]] = {}
+    total_by_instance: dict[int, int] = {}
     for key in sorted(ground_truth, key=int):
         gt_rows = ground_truth[key]
         info_rows = information[key]
         if not isinstance(gt_rows, list) or not isinstance(info_rows, list):
             raise ValueError("malformed BOP scene GT arrays")
-        matches = [
-            (index, row, info_rows[index])
-            for index, row in enumerate(gt_rows)
-            if isinstance(row, dict) and int(row.get("obj_id", -1)) == object_id
-        ]
-        if not matches:
-            continue
-        index, gt_row, info_row = max(
-            matches,
-            key=lambda item: float(item[2].get("visib_fract", 0.0)),
-        )
-        visibility = float(info_row.get("visib_fract", 0.0))
-        if visibility < minimum_visibility:
-            continue
         camera_row = cameras[key]
         if not isinstance(camera_row, dict):
             raise ValueError("malformed BOP camera row")
-        result.append(_view(int(key), index, visibility, camera_row, gt_row))
-    return result
+        for index, row in enumerate(gt_rows):
+            if not isinstance(row, dict) or int(row.get("obj_id", -1)) != object_id:
+                continue
+            total_by_instance[index] = total_by_instance.get(index, 0) + 1
+            info_row = info_rows[index]
+            if not isinstance(info_row, dict):
+                raise ValueError("malformed BOP scene GT info row")
+            visibility = float(info_row.get("visib_fract", 0.0))
+            if visibility < minimum_visibility:
+                continue
+            by_instance.setdefault(index, []).append(
+                _view(int(key), index, visibility, camera_row, row)
+            )
+    if not total_by_instance:
+        raise RuntimeError(f"object {object_id} is absent from the selected scene")
+    if gt_index is None:
+        eligible = [index for index, views in by_instance.items() if views]
+        if not eligible:
+            raise RuntimeError(
+                f"no stable object {object_id} instance meets visibility >= "
+                f"{minimum_visibility:.3f}"
+            )
+        selected_index = max(
+            eligible,
+            key=lambda index: (
+                len(by_instance[index]),
+                float(np.mean([view.visibility for view in by_instance[index]])),
+                -index,
+            ),
+        )
+    else:
+        if gt_index not in total_by_instance:
+            raise RuntimeError(
+                f"object {object_id} has no stable BOP gt_index {gt_index}; "
+                f"available indices: {sorted(total_by_instance)}"
+            )
+        selected_index = gt_index
+    return by_instance.get(selected_index, []), selected_index, total_by_instance
 
 
-def _camera_centres(views: list[View]) -> np.ndarray:
+def _camera_centres(views: list[View]) -> NDArray[np.float64]:
     return np.stack([-(view.extrinsic[:3, :3].T @ view.extrinsic[:3, 3]) for view in views])
 
 
@@ -127,7 +163,12 @@ def main() -> None:
     scene = args.dataset_root.resolve() / f"{args.scene_id:06d}"
     if not scene.is_dir():
         raise ValueError(f"T-LESS scene does not exist: {scene}")
-    candidates = _candidates(scene, args.object_id, args.minimum_visible_fraction)
+    candidates, selected_gt_index, instance_counts = _candidates(
+        scene,
+        args.object_id,
+        args.minimum_visible_fraction,
+        args.gt_index,
+    )
     if len(candidates) < min(args.views, 9):
         raise RuntimeError(
             f"only {len(candidates)} views meet visibility >= {args.minimum_visible_fraction:.3f}"
@@ -192,6 +233,16 @@ def main() -> None:
         "schema_version": "da3-cad-tless-controlled-case-v1",
         "scene_id": args.scene_id,
         "object_id": args.object_id,
+        "selected_gt_index": selected_gt_index,
+        "available_gt_indices": sorted(instance_counts),
+        "instance_frame_counts": {
+            str(index): count for index, count in sorted(instance_counts.items())
+        },
+        "instance_selection": (
+            "explicit --gt-index"
+            if args.gt_index is not None
+            else "stable index maximizing eligible view count, then mean visibility"
+        ),
         "candidate_views": len(candidates),
         "selected_views": len(selected),
         "minimum_visible_fraction": args.minimum_visible_fraction,
@@ -201,8 +252,9 @@ def main() -> None:
         "gaussian_scene": str(gaussian.output_dir),
         "reference_geometry_access": False,
         "evidence_policy": (
-            "BOP object poses and visible masks isolate RGB-to-surface fitting from SfM; "
-            "the reference CAD mesh is reserved for post-hoc evaluation"
+            "one fixed BOP instance index provides masks and evaluator-only frame "
+            "selection; RGB-only COLMAP remains the product camera path and the "
+            "reference CAD mesh is reserved for post-hoc evaluation"
         ),
     }
     report_path = root / "controlled_case.json"

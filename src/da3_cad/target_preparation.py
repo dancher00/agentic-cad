@@ -31,6 +31,7 @@ TargetSelectionSource = Literal[
     "sam2-box",
     "sam2-point",
     "sam2-track",
+    "text-sam2",
 ]
 
 
@@ -345,6 +346,7 @@ def prepare_target_from_masks(
         "sam2-box",
         "sam2-point",
         "sam2-track",
+        "text-sam2",
     }
     if selection_source not in allowed_sources:
         raise ValueError(f"unsupported target selection source: {selection_source}")

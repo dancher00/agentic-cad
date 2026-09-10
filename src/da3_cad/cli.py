@@ -96,6 +96,140 @@ def _parse_updates(values: list[str]) -> dict[str, float]:
     return updates
 
 
+@app.command("photo-cad")
+def photo_cad_command(
+    images: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
+    output: Annotated[Path, typer.Option("--output", "-o")],
+    object_query: Annotated[
+        str,
+        typer.Option(
+            "--object", help="Unique object description; VLM interprets it against the first photo."
+        ),
+    ],
+    vlm: Annotated[
+        bool,
+        typer.Option(
+            "--vlm/--no-vlm",
+            help="Use local Qwen VLM; --no-vlm expects an English detector phrase.",
+        ),
+    ] = True,
+    vlm_model: Annotated[
+        Literal["qwen2-2b", "qwen2.5-3b"],
+        typer.Option(help="3B uses Qwen's non-commercial research license."),
+    ] = "qwen2-2b",
+    geometry: Annotated[
+        Literal["mvs", "da3"], typer.Option(help="Calibrated MVS + CADENA, or faster DA3 draft.")
+    ] = "mvs",
+    stop_after_masks: Annotated[
+        bool, typer.Option(help="Run only text selection and SAM2 masks.")
+    ] = False,
+    device: Annotated[str, typer.Option()] = "auto",
+    offline: Annotated[bool, typer.Option(help="Use cached model files only.")] = False,
+    detector_threshold: Annotated[float, typer.Option(min=0.01, max=0.99)] = 0.3,
+    cameras: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True, dir_okay=False, help="Optional calibrated, undistorted input cameras."
+        ),
+    ] = None,
+    mvs_python: Annotated[Path, typer.Option()] = Path(".venv-mvs/bin/python"),
+    cache_dir: Annotated[Path, typer.Option()] = Path("data/hf"),
+    sam2_source: Annotated[Path, typer.Option()] = Path("data/upstream/SAM2"),
+    sam2_checkpoint: Annotated[Path, typer.Option()] = Path(
+        "data/checkpoints/sam2.1_hiera_small.pt"
+    ),
+    da3_source: Annotated[Path, typer.Option()] = Path("data/upstream/Depth-Anything-3"),
+    cadena_source: Annotated[Path, typer.Option()] = Path("data/upstream/cadena"),
+    cadena_checkpoint: Annotated[Path, typer.Option()] = Path("data/checkpoints/cadena/rl"),
+) -> None:
+    """Find a requested object across photos, segment it, and reconstruct editable CAD."""
+    from da3_cad.photo_cad import run_photo_cad
+
+    try:
+        report = run_photo_cad(
+            images,
+            output,
+            object_query,
+            use_vlm=vlm,
+            vlm_model=vlm_model,
+            geometry=geometry,
+            stop_after_masks=stop_after_masks,
+            device=device,
+            local_files_only=offline,
+            detector_threshold=detector_threshold,
+            cameras=cameras,
+            mvs_python=mvs_python,
+            cache_dir=cache_dir,
+            sam2_source=sam2_source,
+            sam2_checkpoint=sam2_checkpoint,
+            da3_source=da3_source,
+            cadena_source=cadena_source,
+            cadena_checkpoint=cadena_checkpoint,
+        )
+    except (ImportError, OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+        console.print(f"[red]photo-cad failed:[/red] {error}")
+        raise typer.Exit(1) from error
+    console.print(f"{report['status']}: {output / 'report.json'}")
+    if report.get("step"):
+        console.print(f"STEP: {output / report['step']}")
+    if report["status"] == "ABSTAIN":
+        raise typer.Exit(3)
+
+
+@app.command("ray-sections")
+def ray_sections_command(
+    observations: Annotated[Path, typer.Argument(help="Calibrated ray bundle (.npz).")],
+    output: Annotated[Path, typer.Option("--output", help="New output directory.")],
+    resolution: Annotated[int, typer.Option(min=16, max=256)] = 72,
+    max_sections: Annotated[int, typer.Option(min=1, max=32)] = 8,
+    penalty: Annotated[float, typer.Option(min=0)] = 0.03,
+    device: Annotated[str, typer.Option(help="auto, cpu, cuda, or cuda:N")] = "auto",
+) -> None:
+    """Compile calibrated depth/masks into an editable experimental CAD candidate."""
+    try:
+        from da3_cad.ray_section_search import reconstruct_sections
+        from da3_cad.ray_sections import RayBundle
+
+        report = reconstruct_sections(
+            RayBundle.load(observations),
+            output,
+            resolution=resolution,
+            maximum_sections=max_sections,
+            penalty=penalty,
+            device=device,
+        )
+    except (ImportError, OSError, ValueError, RuntimeError) as error:
+        console.print(f"[red]Ray-section reconstruction failed:[/red] {error}")
+        raise typer.Exit(2) from error
+    console.print_json(data=report)
+    console.print(
+        "Experimental candidate: kernel validity does not establish reconstruction accuracy."
+    )
+    if not report["kernel_valid"]:
+        raise typer.Exit(3)
+
+
+@app.command("pack-rays")
+def pack_rays_command(
+    workspace: Annotated[Path, typer.Argument(help="COLMAP MVS workspace.")],
+    cameras: Annotated[Path, typer.Option("--cameras", help="Matching camera bundle (.npz).")],
+    output: Annotated[Path, typer.Option("--output", help="Output ray bundle (.npz).")],
+) -> None:
+    """Package existing RGB-derived MVS depth and masks for ray-sections."""
+    from da3_cad.ray_sections import bundle_from_mvs
+
+    if output.exists():
+        console.print(f"[red]Output already exists:[/red] {output}")
+        raise typer.Exit(2)
+    try:
+        bundle = bundle_from_mvs(workspace, cameras)
+        bundle.save(output)
+    except (OSError, ValueError) as error:
+        console.print(f"[red]Could not package rays:[/red] {error}")
+        raise typer.Exit(2) from error
+    console.print(f"Saved {len(bundle.names)} calibrated views to {output}")
+
+
 @contextmanager
 def _cpu_smoke_fixture() -> Iterator[Path]:
     """Yield the checked-in fixture or reproduce it for an installed wheel."""
@@ -194,7 +328,7 @@ def prepare_target_command(
             "[red]Target preparation failed:[/red] provide exactly one of --masks or --boxes"
         )
         raise typer.Exit(2)
-    allowed_mask_sources = {"user-mask", "robot-mask", "dataset-mask-oracle"}
+    allowed_mask_sources = {"user-mask", "robot-mask", "dataset-mask-oracle", "text-sam2"}
     if masks is not None and selection_source not in allowed_mask_sources:
         console.print(
             "[red]Target preparation failed:[/red] invalid --selection-source for explicit masks"
@@ -548,6 +682,24 @@ def fit_cad_command(
             help="Exact calibrated cameras used by dense-surface.",
         ),
     ],
+    measurements: Annotated[
+        Path | None,
+        typer.Option(
+            "--measurements",
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="Raw fused_cloud.ply used by trusted measured feature fitting.",
+        ),
+    ] = None,
+    maximum_measurement_points: Annotated[
+        int,
+        typer.Option(
+            "--maximum-measurement-points",
+            min=256,
+            help="Deterministic cap for raw points passed to measured CAD fitting.",
+        ),
+    ] = 10_000,
     max_steps: Annotated[int, typer.Option("--max-steps", min=1, max=40)] = 8,
     expansions: Annotated[
         int,
@@ -585,6 +737,8 @@ def fit_cad_command(
         str(verification_workspace),
         "--cameras",
         str(cameras),
+        "--maximum-measurement-points",
+        str(maximum_measurement_points),
         "--max-steps",
         str(max_steps),
         "--expansions",
@@ -594,12 +748,18 @@ def fit_cad_command(
         "--seed",
         str(effective_seed),
     ]
+    if measurements is not None:
+        command.extend(["--measurements", str(measurements)])
     if dry_run:
         console.print(
             Pretty(
                 {
                     "command": "fit-cad",
                     "surface": str(surface.resolve()),
+                    "measurements": (
+                        str(measurements.resolve()) if measurements is not None else None
+                    ),
+                    "maximum_measurement_points": maximum_measurement_points,
                     "output": str(output_dir.resolve()),
                     "cadena_checkout": str(cadena_checkout.resolve()),
                     "cadena_checkpoint": str(cadena_checkpoint.resolve()),
@@ -644,6 +804,16 @@ def prepare_photos_sfm_command(
     output_dir: Annotated[
         Path, typer.Option("--output", "-o", help="New COLMAP camera-recovery directory.")
     ],
+    masks_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--masks",
+            exists=True,
+            file_okay=False,
+            readable=True,
+            help="Optional source-resolution PNG masks to undistort with registered photos.",
+        ),
+    ] = None,
     pairing: Annotated[
         Literal["exhaustive", "sequential"],
         typer.Option(
@@ -676,7 +846,7 @@ def prepare_photos_sfm_command(
     ] = 0.8,
     dry_run: DryRunOption = False,
 ) -> None:
-    """Recover trusted cameras for photos before segmentation and DA3 depth."""
+    """Recover calibrated cameras before segmentation and dense reconstruction."""
 
     if dry_run:
         console.print(
@@ -685,6 +855,7 @@ def prepare_photos_sfm_command(
                     "command": "prepare-photos-sfm",
                     "photos": str(photos_dir.resolve()),
                     "output": str(output_dir.resolve()),
+                    "masks": str(masks_dir.resolve()) if masks_dir is not None else None,
                     "pairing": pairing,
                     "device": device,
                     "camera_model": camera_model,
@@ -701,6 +872,7 @@ def prepare_photos_sfm_command(
             cameras = recover_colmap_cameras(
                 photos_dir,
                 output_dir,
+                masks_dir=masks_dir,
                 camera_model=camera_model,
                 pairing=pairing,
                 device=device,
@@ -716,10 +888,12 @@ def prepare_photos_sfm_command(
         raise typer.Exit(1) from error
     console.print(f"[green]Registered frames:[/green] {cameras.registered_frames_dir}")
     console.print(f"[green]Camera bundle:[/green] {cameras.camera_bundle_path}")
+    if cameras.registered_masks_dir is not None:
+        console.print(f"[green]Registered masks:[/green] {cameras.registered_masks_dir}")
     console.print(f"[green]SfM report:[/green] {cameras.report_path}")
     console.print(
-        "[cyan]Next:[/cyan] segment the registered frames with prepare-target and pass "
-        "the adjusted cameras.npz to reconstruct."
+        "[cyan]Next:[/cyan] run prepare-target, dense-surface, then fit-cad with "
+        "the adjusted cameras.npz."
     )
 
 

@@ -1,0 +1,180 @@
+{
+  "schema_version": "da3-cad-real-rgb-mvs-cadena-v6",
+  "date": "2026-08-16",
+  "claim": "v6 adds trusted arbitrary planar-profile add/cut, rejects non-constant sections, preserves the controlled real-RGB safety decisions, and makes the final programs deterministic on two independent runs",
+  "supersedes": "real-rgb-mvs-cadena-v5.json",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 5080",
+    "memory_mib": 16303
+  },
+  "input": {
+    "real_dataset": "T-LESS",
+    "scene": 20,
+    "rgb_views_per_real_object": 32,
+    "grammar_fixture_surface_samples_per_case": 32000,
+    "reference_geometry_access_during_reconstruction": false,
+    "scale_scope": "ignored for this architecture experiment"
+  },
+  "architecture_change": {
+    "learned_policy_role": "propose a restricted CADENA construction root",
+    "measured_feature_role": "fit bounded axial or arbitrary-polyline constant-section additions and subtractions from signed target-surface residuals after each valid root or rewrite",
+    "learned_policy_can_invoke_measured_feature": false,
+    "trusted_operations": [
+      "axial_revolved_add",
+      "axial_revolved_cut",
+      "planar_profile_add",
+      "planar_profile_cut"
+    ],
+    "maximum_measured_feature_rounds": 2,
+    "planar_profile": {
+      "axis_search": [0, 1, 2],
+      "primitive": "arbitrary closed 2D polyline, not a part-class dictionary",
+      "minimum_axial_coverage_fraction": 0.75,
+      "maximum_constant_section_residual": 0.15,
+      "minimum_profile_raster_iou": 0.78,
+      "maximum_profile_vertices": 32,
+      "add_attachment": "measured profile is extended 2% into the nearest current-solid face before exact union",
+      "cut_extent": "a measured near-face interval is extended through that face before exact subtraction"
+    },
+    "shared_gates": {
+      "signed_surface_polarity_required": true,
+      "exact_single_solid_kernel_validation_per_prefix": true,
+      "source_view_non_regression_required": true,
+      "unsupported_frustum_control_must_be_rejected": true
+    },
+    "decoder_determinism": {
+      "python_numpy_torch_and_cuda_seeded": true,
+      "torch_deterministic_algorithms": true,
+      "proxy_render_quantization_step": 64,
+      "proxy_render_downsample_factor": 1,
+      "proxy_spur_filter_size": 3,
+      "reason": "one quantization-boundary VTK pixel changed a sampled policy branch; a full-resolution morphological opening removes isolated bright spurs without the quality loss caused by 2x downsampling"
+    },
+    "construction_graph": "learned proposal -> exact profile rewrite -> zero to two trusted measured operations, with evidence and kernel validation on every accepted node"
+  },
+  "planar_grammar_benchmark": {
+    "ledger": "measured-planar-grammar-v6.json",
+    "purpose": "capability test from target-surface points plus a known root B-Rep; not an end-to-end photo benchmark",
+    "positive_cases": 4,
+    "cases": [
+      "l_add",
+      "t_add",
+      "u_cut",
+      "hex_cut"
+    ],
+    "valid_single_solid_steps": 4,
+    "correct_axis_selections": 4,
+    "mean_exact_volume_iou": 0.9805272087078714,
+    "negative_control": {
+      "id": "nonconstant_frustum_add",
+      "candidate_count": 0,
+      "passed": true
+    },
+    "ledger_sha256": "33867af74c53136907e61f9b27d5fa48936565d8741d30bb1816d3c742945a7e",
+    "visual_sha256": "8c325487e84d77e22ccfe04435ec01f021fd8480357875ccfeaaa7792f1db61d"
+  },
+  "real_controls": {
+    "object_2": {
+      "run": "outputs/controlled-tless-v1/s20-o2/cadena-planar-spur-v36a",
+      "selected_branch": "revolve-proxy root -> profile rewrite -> conservative measured axial-revolved-cut",
+      "decision": "ACCEPT",
+      "source_view_score": 0.9357070532599456,
+      "silhouette_iou": 0.9101505109721908,
+      "depth_inlier_fraction": 0.9831692032229186,
+      "appearance_edge_precision": 0.5674846625766872,
+      "appearance_edge_recall": 0.8731417244796829,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 20,
+      "kernel_edges": 37,
+      "measured_feature": {
+        "kind": "axial-revolved-cut",
+        "axis": 2,
+        "support_points": 1286,
+        "angular_coverage_fraction": 1.0,
+        "axial_span_fraction": 0.16091571401782856,
+        "radial_growth_fraction": 0.5574282032625032,
+        "normalized_profile_residual": 0.08701396850269737,
+        "selected_variant": "conservative",
+        "radial_scale": 0.85,
+        "floor_offset": 2.985
+      },
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.5349216391965443,
+      "posthoc_chamfer_squared_x1000": 3.782437093130193,
+      "delta_from_v5": {
+        "mesh_iou": 0.0426007484835789,
+        "chamfer_squared_x1000": 0.4219005888890915,
+        "source_view_score": 0.0014380952567805
+      },
+      "visual_audit": "the measured cavity remains present; the macro envelope improves by IoU, while the surface-distance trade-off and missing fine external detail remain explicit",
+      "product_reason": "the measured cavity passes the kernel and 32-source-view topology gates; this remains a provisional controlled-case acceptance",
+      "reproducibility": {
+        "independent_processes": 2,
+        "byte_identical_program_step_proxy_and_report": true,
+        "artifacts": {
+          "proposal_proxy_png_sha256": "41ea79662712a00d42c369043776b67674143e76dfacb0bc56af1f1e81e21c7f",
+          "model_py_sha256": "abbda26fcccd0f65390636b44644ddcc5f82bec0d94e94cf9917d5d74589737f",
+          "model_step_sha256": "4ba442381bf95389502917a8ddb96b454caae0d62a3d44b73a8f785fe20a5855",
+          "cadena_report_json_sha256": "9f8a873c56b3088e396045317b579bc7e6d4ffc555a1d468fe1fd01ce8b5c416"
+        }
+      }
+    },
+    "object_4": {
+      "run": "outputs/controlled-tless-v1/s20-o4/cadena-planar-spur-v37a",
+      "selected_branch": "measured-target root -> profile rewrite -> conservative measured axial-revolved-add",
+      "decision": "ABSTAIN",
+      "decision_reason": "appearance-edge precision 0.3329 < 0.4500",
+      "source_view_score": 0.9273516774458683,
+      "silhouette_iou": 0.9082081715700987,
+      "depth_inlier_fraction": 0.9629039026437264,
+      "appearance_edge_precision": 0.3329229253878355,
+      "appearance_edge_recall": 0.7151515151515152,
+      "kernel_valid_single_solid": true,
+      "kernel_faces": 19,
+      "kernel_edges": 35,
+      "measured_feature": {
+        "kind": "axial-revolved-add",
+        "axis": 2,
+        "side": -1,
+        "support_points": 267,
+        "angular_coverage_fraction": 1.0,
+        "axial_span_fraction": 0.1433045143936853,
+        "normalized_profile_residual": 0.02666653212805851,
+        "selected_variant": "conservative",
+        "radial_scale": 0.85,
+        "axial_scale": 0.95
+      },
+      "posthoc_step_valid": true,
+      "posthoc_mesh_iou": 0.7400129732197381,
+      "posthoc_chamfer_squared_x1000": 2.161758062080477,
+      "delta_from_v5": {
+        "mesh_iou": 0.0,
+        "chamfer_squared_x1000": 0.0,
+        "source_view_score": 0.0
+      },
+      "visual_audit": "the macro envelope remains improved, but unexplained image edges keep the candidate at ABSTAIN",
+      "product_reason": "macro geometry remains strong, but edge precision stays below the frozen safety threshold, so no STEP is released as accepted",
+      "reproducibility": {
+        "independent_processes": 2,
+        "byte_identical_final_program_and_step": true,
+        "rejected_proposal_trace_identical": false,
+        "observed_proxy_pixel_channel_differences": 2,
+        "product_effect": "none: final candidate program, STEP, decision and post-hoc metrics are identical",
+        "artifacts": {
+          "candidate_py_sha256": "e07399988f5e43696e40fb856031f2426828b8a9a1d8400d0192a40407dbf28e",
+          "candidate_step_sha256": "30d6cde4cb7c4c15eb6e24a1c6a1f9b30119c3d7e93d61a9670ad2925658d18a"
+        }
+      }
+    }
+  },
+  "evaluator": {
+    "version": "da3-cad-evaluator-v3-centered-occ-seam-cleanup",
+    "alignment": "independent bbox centering and largest-extent normalization; no ICP or per-axis scaling",
+    "reference_access": "post-hoc after program and ACCEPT/ABSTAIN decision were frozen"
+  },
+  "claim_boundary": {
+    "demonstrated": "a trusted grammar can recover axis-aligned arbitrary constant-section L/T/U/hex-like features from measured 3D residuals and retain prior axial real-RGB behavior",
+    "not_demonstrated": "universal image-to-CAD, free-form surfaces, arbitrary feature orientation, assemblies, fillets, chamfers, patterns, or real-photo planar-feature accuracy",
+    "da3_role": "optional depth prior upstream; not used in the two calibrated dense real controls"
+  }
+}

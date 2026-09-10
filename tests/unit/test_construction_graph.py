@@ -115,7 +115,9 @@ def test_operation_must_attach_to_patch_and_use_its_residual_axis() -> None:
 def test_operation_polarity_is_explicit_and_graph_keeps_rejected_branches() -> None:
     assert operation_polarity("extrude") == "additive"
     assert operation_polarity("axial_revolved_add") == "additive"
+    assert operation_polarity("planar_profile_add") == "additive"
     assert operation_polarity("axial_revolved_cut") == "subtractive"
+    assert operation_polarity("planar_profile_cut") == "subtractive"
     assert operation_polarity("hole") == "subtractive"
     assert not polarity_consistent("additive", "subtractive")
     assert polarity_consistent("subtractive", "transform")

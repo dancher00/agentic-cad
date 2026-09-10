@@ -21,6 +21,7 @@ PatchKind = Literal["planar", "curved", "undersampled"]
 _ADDITIVE_OPERATIONS = {
     "extrude",
     "axial_revolved_add",
+    "planar_profile_add",
     "gear",
     "loft",
     "revolve",
@@ -28,7 +29,7 @@ _ADDITIVE_OPERATIONS = {
     "sweep",
     "sweep_adv",
 }
-_SUBTRACTIVE_OPERATIONS = {"axial_revolved_cut", "hole", "orto_cut"}
+_SUBTRACTIVE_OPERATIONS = {"axial_revolved_cut", "planar_profile_cut", "hole", "orto_cut"}
 _TRANSFORM_OPERATIONS = {"shell"}
 _WORKPLANE_AXIS = {"XY": 2, "YZ": 0, "ZX": 1}
 

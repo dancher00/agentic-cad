@@ -17,13 +17,11 @@ import random
 import sys
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
-import torch
 import trimesh
 from PIL import Image
-from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
 from da3_cad.cad_program import simplify_revolve_profiles
 from da3_cad.cad_validation import validate_and_export_cadquery, validate_cadquery
@@ -34,6 +32,8 @@ from da3_cad.evaluation.source_view_verifier import (
     decide_source_view_progress,
     decide_source_view_score,
 )
+from da3_cad.geometry.orientation import orient_canonical_frame
+from da3_cad.geometry.symmetry import detect_symmetry_plane
 from da3_cad.integrations.construction_graph import (
     ConstructionGraphLedger,
     bind_operation_to_patch,
@@ -46,12 +46,22 @@ from da3_cad.integrations.construction_graph import (
 from da3_cad.integrations.measured_features import (
     AxialRevolvedAdd,
     AxialRevolvedCut,
+    PlanarProfileAdd,
+    PlanarProfileCut,
     fit_axial_revolved_add,
     fit_axial_revolved_cut,
+    fit_planar_profile_add_candidates,
+    fit_planar_profile_cut_candidates,
 )
-from da3_cad.integrations.proposal_proxy import fit_revolve_proposal_proxy
+from da3_cad.integrations.proposal_proxy import (
+    ProposalProxy,
+    fit_revolve_proposal_proxy,
+    fit_sketch_extrusion_proposal_proxy,
+)
 from da3_cad.integrations.render_canonicalization import (
+    CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
     CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+    CADENA_PROXY_SPUR_FILTER_SIZE,
     CADENA_RENDER_DOWNSAMPLE_FACTOR,
     CADENA_RENDER_QUANTIZATION_STEP,
     canonicalize_rgb_render,
@@ -78,6 +88,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("checkpoint", type=Path)
     parser.add_argument("mesh", type=Path)
     parser.add_argument("output_dir", type=Path)
+    parser.add_argument(
+        "--measurements",
+        type=Path,
+        help="Optional raw cross-view-confirmed point cloud used for measured CAD fitting.",
+    )
+    parser.add_argument("--maximum-measurement-points", type=int, default=10_000)
     parser.add_argument("--max-steps", type=int, default=20)
     parser.add_argument("--max-new-tokens", type=int, default=500)
     parser.add_argument("--seed", type=int, default=20260815)
@@ -136,6 +152,7 @@ def _imports(checkout: Path) -> tuple[Any, Any, str, Any, Any, Any]:
         CODE_PREFIX
         + "\nfrom da3_cad.integrations.measured_features import ("
         + "\n    axial_revolved_add, axial_revolved_cut,"
+        + "\n    planar_profile_add, planar_profile_cut,"
         + "\n)",
         code_to_mesh,
         transform_mesh_0_1,
@@ -199,6 +216,8 @@ def _generate_steps(
     expansions: int,
     temperature: float,
 ) -> tuple[str, ...]:
+    import torch
+
     messages = [
         {
             "role": "user",
@@ -317,12 +336,116 @@ def _fit_best_axial_revolved_add(
     return selected, candidates
 
 
+def _fit_best_planar_profile_add(
+    target_points: FloatArray,
+    current_mesh: trimesh.Trimesh,
+) -> tuple[PlanarProfileAdd | None, tuple[PlanarProfileAdd, ...]]:
+    candidates = fit_planar_profile_add_candidates(target_points, current_mesh)
+    if not candidates:
+        return None, ()
+    selected = max(
+        candidates,
+        key=lambda value: (
+            value.axial_coverage_fraction,
+            value.profile_occupancy_iou,
+            -value.constant_section_residual,
+            value.support_points,
+        ),
+    )
+    return selected, candidates
+
+
+def _fit_best_planar_profile_cut(
+    target_points: FloatArray,
+    current_mesh: trimesh.Trimesh,
+) -> tuple[PlanarProfileCut | None, tuple[PlanarProfileCut, ...]]:
+    candidates = fit_planar_profile_cut_candidates(target_points, current_mesh)
+    if not candidates:
+        return None, ()
+    selected = max(
+        candidates,
+        key=lambda value: (
+            value.axial_coverage_fraction,
+            value.profile_occupancy_iou,
+            -value.constant_section_residual,
+            value.support_points,
+        ),
+    )
+    return selected, candidates
+
+
+def _load_measurement_points(
+    path: Path,
+    *,
+    maximum_points: int,
+    seed: int,
+) -> tuple[FloatArray, dict[str, object]]:
+    """Load a deterministic finite subset of measured point-cloud vertices."""
+
+    if maximum_points < 256:
+        raise ValueError("maximum measurement points must be at least 256")
+    loaded = trimesh.load(path.resolve(), process=False)
+    if isinstance(loaded, trimesh.Scene):
+        parts = [
+            np.asarray(geometry.vertices, dtype=np.float64)
+            for geometry in loaded.geometry.values()
+            if hasattr(geometry, "vertices") and len(geometry.vertices)
+        ]
+        raw = np.concatenate(parts, axis=0) if parts else np.empty((0, 3), dtype=np.float64)
+    elif hasattr(loaded, "vertices"):
+        raw = np.asarray(loaded.vertices, dtype=np.float64)
+    else:
+        raw = np.empty((0, 3), dtype=np.float64)
+    if raw.ndim != 2 or raw.shape[1:] != (3,):
+        raise ValueError(f"measurement cloud has invalid vertex shape: {path}")
+    finite = raw[np.isfinite(raw).all(axis=1)]
+    if len(finite) < 256:
+        raise ValueError(f"measurement cloud requires at least 256 finite points: {path}")
+    input_points = int(len(finite))
+    if input_points > maximum_points:
+        rng = np.random.default_rng(seed)
+        indices = np.sort(rng.choice(input_points, size=maximum_points, replace=False))
+        finite = finite[indices]
+        sampling = "seeded-uniform-without-replacement"
+    else:
+        sampling = "all-finite-points"
+    return finite, {
+        "source": "cross-view-confirmed-point-cloud",
+        "path": str(path.resolve()),
+        "input_points": input_points,
+        "used_points": int(len(finite)),
+        "sampling": sampling,
+        "seed": seed if sampling.startswith("seeded") else None,
+    }
+
+
+def _candidate_in_observation_frame(
+    candidate: trimesh.Trimesh,
+    *,
+    target_extent: float,
+    target_center: FloatArray,
+    object_to_observation: FloatArray,
+) -> trimesh.Trimesh:
+    """Map CADENA's centred 200-unit solid back to calibrated observation space."""
+
+    result = candidate.copy()
+    result.apply_scale(target_extent / 200.0)  # type: ignore[no-untyped-call]
+    result.apply_translation(np.asarray(target_center, dtype=np.float64))
+    result.apply_transform(np.asarray(object_to_observation, dtype=np.float64))
+    return result
+
+
 def main() -> None:
+    import torch
+    from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+
     args = _parser().parse_args()
     if args.output_dir.exists():
         raise ValueError(f"refusing to overwrite output: {args.output_dir}")
     if args.max_steps < 1 or args.max_new_tokens < 1:
         raise ValueError("step and token budgets must be positive")
+    if args.maximum_measurement_points < 256:
+        raise ValueError("maximum measurement points must be at least 256")
     if args.expansions < 1 or args.expansions > 16:
         raise ValueError("expansions must be in [1, 16]")
     if args.temperature <= 0.0:
@@ -342,9 +465,12 @@ def main() -> None:
     if args.minimum_appearance_edge_pixels < 0:
         raise ValueError("minimum appearance edge pixels must be non-negative")
     os.environ.setdefault("PYVISTA_OFF_SCREEN", "true")
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    torch.use_deterministic_algorithms(True)
     Plotter, get_point, code_prefix, code_to_mesh, transform_target, metric_tools = _imports(
         args.checkout
     )
@@ -352,9 +478,61 @@ def main() -> None:
 
     output = args.output_dir.resolve()
     output.mkdir(parents=True)
-    target_raw = trimesh.load(args.mesh.resolve(), force="mesh", process=True)
-    if not isinstance(target_raw, trimesh.Trimesh) or target_raw.is_empty:
+    target_world = trimesh.load(args.mesh.resolve(), force="mesh", process=True)
+    if not isinstance(target_world, trimesh.Trimesh) or target_world.is_empty:
         raise ValueError(f"target is not a non-empty triangle mesh: {args.mesh}")
+
+    target_mesh_path = args.mesh.resolve()
+    object_to_observation = np.eye(4, dtype=np.float64)
+    measurement_points_world: FloatArray | None = None
+    object_frame_report: dict[str, object] = {
+        "enabled": False,
+        "reason": "no separate cross-view measurement cloud was supplied",
+        "object_to_observation": object_to_observation.tolist(),
+    }
+    if args.measurements is None:
+        target_raw = target_world
+    else:
+        measurement_points_world, measurement_report = _load_measurement_points(
+            args.measurements,
+            maximum_points=args.maximum_measurement_points,
+            seed=args.seed,
+        )
+        symmetry = detect_symmetry_plane(
+            measurement_points_world,
+            tolerance_fraction=0.04,
+            seed=args.seed,
+            maximum_evaluation_points=4096,
+        )
+        orientation = orient_canonical_frame(
+            measurement_points_world,
+            symmetry,
+            seed=args.seed,
+            planar_extent_ratio_threshold=0.20,
+            plane_distance_fraction=0.02,
+            plane_ransac_iterations=256,
+            eigenvalue_tie_tolerance=0.05,
+        )
+        orientation_center = np.asarray(orientation.center_world, dtype=np.float64)
+        axes_world_columns = np.asarray(orientation.axes_world, dtype=np.float64).T
+        target_raw = target_world.copy()
+        target_raw.vertices = (
+            np.asarray(target_raw.vertices, dtype=np.float64) - orientation_center[None, :]
+        ) @ axes_world_columns
+        target_mesh_path = output / "target_canonical.ply"
+        target_raw.export(target_mesh_path)
+        object_to_observation[:3, :3] = axes_world_columns
+        object_to_observation[:3, 3] = orientation_center
+        object_frame_report = {
+            "enabled": True,
+            "method": "existing-da3-cad-orientation-v1",
+            "orientation": orientation.as_dict(),
+            "symmetry": symmetry.as_dict(),
+            "object_to_observation": object_to_observation.tolist(),
+            "conditioning_mesh": target_mesh_path.name,
+            "reference_geometry_access": False,
+        }
+
     use_iou = bool(target_raw.is_watertight and target_raw.is_volume)
     target = transform_target(target_raw)
     target_center = np.asarray(target_raw.bounds, dtype=np.float64).mean(axis=0)
@@ -371,7 +549,7 @@ def main() -> None:
         else None
     )
 
-    processor = AutoProcessor.from_pretrained(  # type: ignore[no-untyped-call]
+    processor = cast(Any, AutoProcessor).from_pretrained(
         args.checkpoint.resolve(),
         local_files_only=True,
         trust_remote_code=True,
@@ -387,59 +565,174 @@ def main() -> None:
         .eval()
     )
     plotter = Plotter()
-    target_image = canonicalize_rgb_render(plotter.get_img(str(args.mesh.resolve()), None))
+    target_image = canonicalize_rgb_render(plotter.get_img(str(target_mesh_path), None))
     target_image.save(output / "target.png")
 
-    first_target_point, point_cloud = get_point(
-        str(args.mesh.resolve()),
-        None,
-        seed=args.seed,
-    )
+    if args.measurements is None:
+        first_target_point, point_cloud = get_point(
+            str(target_mesh_path),
+            None,
+            seed=args.seed,
+        )
+        measurement_report = {
+            "source": "triangle-surface-samples",
+            "path": str(target_mesh_path),
+            "input_points": None,
+            "used_points": int(len(point_cloud)),
+            "sampling": "CADENA-area-weighted-surface",
+            "seed": args.seed,
+            "canonicalization": "CADENA mesh-bounds centre and maximum extent",
+        }
+    else:
+        if measurement_points_world is None:
+            raise RuntimeError("measurement point cloud was not loaded")
+        frame = object_to_observation[:3, :3]
+        frame_center = object_to_observation[:3, 3]
+        oriented = (measurement_points_world - frame_center[None, :]) @ frame
+        point_cloud = (oriented - target_center[None, :]) * (200.0 / target_extent)
+        measurement_report.update(
+            {
+                "canonicalization": (
+                    "DA3-CAD oriented object frame, then target-mesh bbox centre and maximum extent"
+                ),
+                "canonical_extent": target_extent,
+                "canonical_bbox_center": target_center.tolist(),
+            }
+        )
+        first_target_point, point_cloud = get_point(point_cloud, None, seed=args.seed)
     proposal_point = first_target_point
     proposal_image: Image.Image | None = None
-    proposal_proxy = fit_revolve_proposal_proxy(point_cloud, seed=args.seed)
-    proposal_proxy_report: dict[str, object] = {
-        "attempted": True,
-        "available": False,
-        "role": "proposal-conditioning-only",
-    }
-    if proposal_proxy is None:
-        proposal_proxy_report["reason"] = "target evidence did not support a revolve proxy"
-    else:
+    measured_root_candidates: list[
+        tuple[str, trimesh.Trimesh, float, SourceViewScore | None, str]
+    ] = []
+    measured_root_reports: list[dict[str, object]] = []
+
+    def register_measured_root(
+        proxy: ProposalProxy,
+        *,
+        artifact_stem: str,
+    ) -> tuple[trimesh.Trimesh | None, Image.Image | None, str | None]:
+        root_report: dict[str, object] = {
+            "attempted": True,
+            "available": False,
+            "role": "independent-measured-root",
+            **proxy.as_dict(),
+        }
+        root_report["role"] = "independent-measured-root"
         proxy_execution = code_to_mesh(
-            proposal_proxy.source,
+            proxy.source,
             var_name="r",
             _tol=0.001,
             _ang=0.1,
         )
         proxy_mesh = proxy_execution.get("mesh")
         if not isinstance(proxy_mesh, trimesh.Trimesh) or proxy_mesh.is_empty:
-            proposal_proxy_report["reason"] = (
-                f"proxy CAD execution failed: {proxy_execution.get('status')}"
+            proxy_status = proxy_execution.get("status")
+            root_report["reason"] = f"proxy CAD execution failed: {proxy_status}"
+            measured_root_reports.append(root_report)
+            return None, None, None
+        try:
+            proxy_kernel = validate_cadquery(_execute_result(proxy.source)).as_dict()
+        except Exception as error:  # noqa: BLE001 - isolate one measured hypothesis
+            root_report["reason"] = f"proxy CAD kernel rejected fit: {error}"
+            measured_root_reports.append(root_report)
+            return None, None, None
+        preview = canonicalize_rgb_render(
+            plotter.get_img(proxy_mesh.copy(), None),
+            downsample_factor=CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
+            quantization_step=CADENA_PROXY_RENDER_QUANTIZATION_STEP,
+            spur_filter_size=CADENA_PROXY_SPUR_FILTER_SIZE,
+        )
+        render_path = output / f"{artifact_stem}.png"
+        preview_path = output / f"{artifact_stem}.stl"
+        preview.save(render_path)
+        proxy_mesh.export(preview_path)
+        conditioning_point, _ = get_point(proxy_mesh, None, seed=args.seed)
+        proxy_view_score = None
+        if view_verifier is None:
+            proxy_score = _score(
+                target,
+                proxy_mesh,
+                transform_pred_mesh,
+                compute_iou,
+                compute_gms,
+                use_iou=use_iou,
             )
+            selection_metric = "IoU" if use_iou else "GMS"
         else:
-            try:
-                proxy_kernel = validate_cadquery(_execute_result(proposal_proxy.source)).as_dict()
-            except Exception as error:  # noqa: BLE001 - optional proposal conditioner
-                proposal_proxy_report["reason"] = f"proxy CAD kernel rejected fit: {error}"
-            else:
-                proposal_image = canonicalize_rgb_render(
-                    plotter.get_img(proxy_mesh, None),
-                    quantization_step=CADENA_PROXY_RENDER_QUANTIZATION_STEP,
-                )
-                proposal_image.save(output / "proposal_proxy.png")
-                proxy_mesh.export(output / "proposal_proxy.stl")
-                proposal_point, _ = get_point(proxy_mesh, None, seed=args.seed)
-                proposal_proxy_report.update(
-                    {
-                        "available": True,
-                        "conditioning_point": proposal_point,
-                        "kernel_validation": proxy_kernel,
-                        "preview_path": "proposal_proxy.stl",
-                        "render_path": "proposal_proxy.png",
-                        **proposal_proxy.as_dict(),
-                    }
-                )
+            proxy_world = _candidate_in_observation_frame(
+                proxy_mesh,
+                target_extent=target_extent,
+                target_center=target_center,
+                object_to_observation=object_to_observation,
+            )
+            proxy_view_score = view_verifier.score(proxy_world)
+            proxy_score = proxy_view_score.score
+            selection_metric = "source-view-multiobjective-v2"
+        measured_root_candidates.append(
+            (proxy.source, proxy_mesh, proxy_score, proxy_view_score, proxy.family)
+        )
+        root_report.update(
+            {
+                "available": True,
+                "conditioning_point": conditioning_point,
+                "kernel_validation": proxy_kernel,
+                "preview_path": preview_path.name,
+                "render_path": render_path.name,
+                "candidate_score": proxy_score,
+                "selection_metric": selection_metric,
+                "source_view_score": (
+                    proxy_view_score.as_dict() if proxy_view_score is not None else None
+                ),
+            }
+        )
+        measured_root_reports.append(root_report)
+        return proxy_mesh, preview, conditioning_point
+
+    proposal_proxy = fit_revolve_proposal_proxy(point_cloud, seed=args.seed)
+    proposal_proxy_report: dict[str, object]
+    if proposal_proxy is None:
+        proposal_proxy_report = {
+            "attempted": True,
+            "available": False,
+            "role": "proposal-conditioning-and-independent-root",
+            "reason": "target evidence did not support a revolve proxy",
+        }
+        measured_root_reports.append(
+            {
+                "attempted": True,
+                "available": False,
+                "role": "independent-measured-root",
+                "family": "revolve",
+                "reason": "target evidence did not support a revolve proxy",
+            }
+        )
+    else:
+        _, proposal_image, fitted_point = register_measured_root(
+            proposal_proxy,
+            artifact_stem="proposal_proxy",
+        )
+        proposal_proxy_report = dict(measured_root_reports[-1])
+        proposal_proxy_report["role"] = "proposal-conditioning-and-independent-root"
+        if fitted_point is not None:
+            proposal_point = fitted_point
+
+    sketch_proxy = fit_sketch_extrusion_proposal_proxy(point_cloud, seed=args.seed)
+    if sketch_proxy is None:
+        measured_root_reports.append(
+            {
+                "attempted": True,
+                "available": False,
+                "role": "independent-measured-root",
+                "family": "sketch-extrusion",
+                "reason": "target evidence did not support one constant-section extrusion",
+            }
+        )
+    else:
+        register_measured_root(
+            sketch_proxy,
+            artifact_stem="sketch_extrusion_proxy",
+        )
 
     prefix = code_prefix
     best_source: str | None = None
@@ -477,7 +770,7 @@ def main() -> None:
         if current is None:
             image = target_image
         else:
-            image = canonicalize_rgb_render(plotter.get_img(str(args.mesh.resolve()), current))
+            image = canonicalize_rgb_render(plotter.get_img(str(target_mesh_path), current))
         image.save(output / f"step_{step_index:02d}_input.png")
         generation_requests = [(image, point, "measured-target")]
         if step_index == 0 and proposal_image is not None:
@@ -711,9 +1004,12 @@ def main() -> None:
                 )
                 selection_metric = "IoU" if use_iou else "GMS"
             else:
-                candidate_world = candidate.copy()
-                candidate_world.apply_scale(target_extent / 200.0)  # type: ignore[no-untyped-call]
-                candidate_world.apply_translation(target_center)
+                candidate_world = _candidate_in_observation_frame(
+                    candidate,
+                    target_extent=target_extent,
+                    target_center=target_center,
+                    object_to_observation=object_to_observation,
+                )
                 candidate_view_score = view_verifier.score(candidate_world)
                 candidate_score = candidate_view_score.score
                 selection_metric = "source-view-multiobjective-v2"
@@ -822,9 +1118,12 @@ def main() -> None:
         best_mesh = candidate.copy()
         best_iou = candidate_iou
         if view_verifier is not None:
-            accepted_world = candidate.copy()
-            accepted_world.apply_scale(target_extent / 200.0)  # type: ignore[no-untyped-call]
-            accepted_world.apply_translation(target_center)
+            accepted_world = _candidate_in_observation_frame(
+                candidate,
+                target_extent=target_extent,
+                target_center=target_center,
+                object_to_observation=object_to_observation,
+            )
             best_view_score = view_verifier.score(accepted_world)
         else:
             best_view_score = None
@@ -839,12 +1138,25 @@ def main() -> None:
         if best_iou >= 0.98:
             break
 
-    if best_source is None or best_mesh is None:
-        raise RuntimeError("CADENA produced no improving, executable CAD operation")
+    selection_candidates: list[
+        tuple[str, trimesh.Trimesh, float, SourceViewScore | None, str, int | None]
+    ] = [(*value[:4], "learned-cadena", value[4]) for value in accepted_prefixes]
+    selection_candidates.extend(
+        (*value[:4], f"measured-{value[4]}", None) for value in measured_root_candidates
+    )
+    if not selection_candidates:
+        raise RuntimeError("CAD search produced no kernel-valid candidate")
     if view_verifier is not None:
 
         def prefix_key(
-            value: tuple[str, trimesh.Trimesh, float, SourceViewScore | None, int],
+            value: tuple[
+                str,
+                trimesh.Trimesh,
+                float,
+                SourceViewScore | None,
+                str,
+                int | None,
+            ],
         ) -> tuple[bool, float]:
             view_score = value[3]
             if view_score is None:
@@ -859,16 +1171,25 @@ def main() -> None:
             )
             return decision.accepted, view_score.score
 
-        best_source, best_mesh, best_iou, best_view_score, selected_step = max(
-            accepted_prefixes,
-            key=prefix_key,
-        )
+        (
+            best_source,
+            best_mesh,
+            best_iou,
+            best_view_score,
+            selected_candidate_origin,
+            selected_step,
+        ) = max(selection_candidates, key=prefix_key)
     else:
-        best_source, best_mesh, best_iou, best_view_score, selected_step = max(
-            accepted_prefixes,
-            key=lambda value: value[2],
-        )
-    trajectory[selected_step]["selected_prefix"] = True
+        (
+            best_source,
+            best_mesh,
+            best_iou,
+            best_view_score,
+            selected_candidate_origin,
+            selected_step,
+        ) = max(selection_candidates, key=lambda value: value[2])
+    if selected_step is not None:
+        trajectory[selected_step]["selected_prefix"] = True
     selected_prefix_accepted = (
         decide_source_view_score(
             best_view_score,
@@ -889,6 +1210,14 @@ def main() -> None:
         point_cloud,
         best_mesh,
     )
+    measured_planar_cut, measured_planar_cut_candidates = _fit_best_planar_profile_cut(
+        point_cloud,
+        best_mesh,
+    )
+    measured_planar_add, measured_planar_add_candidates = _fit_best_planar_profile_add(
+        point_cloud,
+        best_mesh,
+    )
     measured_feature_report: dict[str, object] = {
         "iteration_limit": 2,
         "axial_revolved_cut": {
@@ -903,6 +1232,18 @@ def main() -> None:
             "selected_fit": measured_axial_add.as_dict() if measured_axial_add else None,
             "role": "source-view-gated-constructive-hypothesis",
         },
+        "planar_profile_cut": {
+            "attempted_axes": [0, 1, 2],
+            "candidates": [value.as_dict() for value in measured_planar_cut_candidates],
+            "selected_fit": measured_planar_cut.as_dict() if measured_planar_cut else None,
+            "role": "source-view-gated-constructive-hypothesis",
+        },
+        "planar_profile_add": {
+            "attempted_axes": [0, 1, 2],
+            "candidates": [value.as_dict() for value in measured_planar_add_candidates],
+            "selected_fit": measured_planar_add.as_dict() if measured_planar_add else None,
+            "role": "source-view-gated-constructive-hypothesis",
+        },
     }
 
     simplification_rows: list[dict[str, object]] = []
@@ -911,7 +1252,7 @@ def main() -> None:
     ] = []
     for tolerance in (0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0):
         simplification = simplify_revolve_profiles(best_source, tolerance)
-        if simplification.profiles == 0:
+        if simplification.profiles == 0 and tolerance > 0.0:
             break
         if any(value[2] == simplification.source for value in simplified_candidates):
             continue
@@ -948,9 +1289,12 @@ def main() -> None:
             )
             simplified_view_score = None
         else:
-            simplified_world = simplified_mesh.copy()
-            simplified_world.apply_scale(target_extent / 200.0)  # type: ignore[no-untyped-call]
-            simplified_world.apply_translation(target_center)
+            simplified_world = _candidate_in_observation_frame(
+                simplified_mesh,
+                target_extent=target_extent,
+                target_center=target_center,
+                object_to_observation=object_to_observation,
+            )
             simplified_view_score = view_verifier.score(simplified_world)
             simplified_score = simplified_view_score.score
         row = {
@@ -1010,11 +1354,22 @@ def main() -> None:
             ) in feature_frontier:
                 round_cut, _ = _fit_best_axial_revolved_cut(point_cloud, parent_mesh)
                 round_add, _ = _fit_best_axial_revolved_add(point_cloud, parent_mesh)
-                measured_feature_options: list[tuple[str, AxialRevolvedCut | AxialRevolvedAdd]] = []
+                round_planar_cut, _ = _fit_best_planar_profile_cut(point_cloud, parent_mesh)
+                round_planar_add, _ = _fit_best_planar_profile_add(point_cloud, parent_mesh)
+                measured_feature_options: list[
+                    tuple[
+                        str,
+                        AxialRevolvedCut | AxialRevolvedAdd | PlanarProfileCut | PlanarProfileAdd,
+                    ]
+                ] = []
                 if round_cut is not None:
                     measured_feature_options.append(("axial-revolved-cut", round_cut))
                 if round_add is not None:
                     measured_feature_options.append(("axial-revolved-add", round_add))
+                if round_planar_cut is not None:
+                    measured_feature_options.append(("planar-profile-cut", round_planar_cut))
+                if round_planar_add is not None:
+                    measured_feature_options.append(("planar-profile-add", round_planar_add))
                 for feature_kind, measured_feature in measured_feature_options:
                     axis_extent = float(parent_mesh.extents[measured_feature.axis])
                     if isinstance(measured_feature, AxialRevolvedCut):
@@ -1026,28 +1381,50 @@ def main() -> None:
                                 measured_feature.side * 0.015 * axis_extent,
                             ),
                         )
-                    else:
+                    elif isinstance(measured_feature, AxialRevolvedAdd):
                         feature_variants = (
                             ("measured", 1.0, 1.0),
                             ("conservative", 0.85, 0.95),
                         )
-                    for variant, radial_scale, secondary_scale in feature_variants:
+                    elif isinstance(measured_feature, PlanarProfileCut):
+                        feature_variants = (
+                            ("measured", 1.0, 1.0),
+                            ("conservative", 0.90, 1.0),
+                        )
+                    else:
+                        feature_variants = (
+                            ("measured", 1.0, 1.0),
+                            ("conservative", 0.90, 0.95),
+                        )
+                    for variant, primary_scale, secondary_scale in feature_variants:
                         if isinstance(measured_feature, AxialRevolvedCut):
                             feature_step = measured_feature.step(
-                                radial_scale=radial_scale,
+                                radial_scale=primary_scale,
                                 floor_offset=secondary_scale,
                             )
                             feature_parameters = {
-                                "radial_scale": radial_scale,
+                                "radial_scale": primary_scale,
                                 "floor_offset": secondary_scale,
                             }
-                        else:
+                        elif isinstance(measured_feature, AxialRevolvedAdd):
                             feature_step = measured_feature.step(
-                                radial_scale=radial_scale,
+                                radial_scale=primary_scale,
                                 axial_scale=secondary_scale,
                             )
                             feature_parameters = {
-                                "radial_scale": radial_scale,
+                                "radial_scale": primary_scale,
+                                "axial_scale": secondary_scale,
+                            }
+                        elif isinstance(measured_feature, PlanarProfileCut):
+                            feature_step = measured_feature.step(profile_scale=primary_scale)
+                            feature_parameters = {"profile_scale": primary_scale}
+                        else:
+                            feature_step = measured_feature.step(
+                                profile_scale=primary_scale,
+                                axial_scale=secondary_scale,
+                            )
+                            feature_parameters = {
+                                "profile_scale": primary_scale,
                                 "axial_scale": secondary_scale,
                             }
                         feature_source = parent_source.rstrip() + "\n" + feature_step
@@ -1114,9 +1491,12 @@ def main() -> None:
                             )
                             feature_view_score = None
                         else:
-                            feature_world = feature_mesh.copy()
-                            feature_world.apply_scale(target_extent / 200.0)  # type: ignore[no-untyped-call]
-                            feature_world.apply_translation(target_center)
+                            feature_world = _candidate_in_observation_frame(
+                                feature_mesh,
+                                target_extent=target_extent,
+                                target_center=target_center,
+                                object_to_observation=object_to_observation,
+                            )
                             feature_view_score = view_verifier.score(feature_world)
                             feature_score = feature_view_score.score
                         iterative_eligible = (
@@ -1330,10 +1710,13 @@ def main() -> None:
     best_mesh.export(preview_path)
     kernel_validation = _execute_final(best_source, step_path)
     report = {
-        "schema_version": "da3-cad-cadena-direct-v6",
+        "schema_version": "da3-cad-cadena-direct-v9",
         "upstream_checkout": str(args.checkout.resolve()),
         "checkpoint": str(args.checkpoint.resolve()),
         "target_mesh": str(args.mesh.resolve()),
+        "target_conditioning_mesh": str(target_mesh_path),
+        "target_measurements": measurement_report,
+        "object_frame": object_frame_report,
         "seed": args.seed,
         "maximum_steps": args.max_steps,
         "expansions_per_step": args.expansions,
@@ -1341,11 +1724,14 @@ def main() -> None:
         "proxy_quantization_step": CADENA_PROXY_RENDER_QUANTIZATION_STEP,
         "renderer_canonicalization": {
             "method": "optional-lanczos-downsample-then-nearest-channel-quantization",
-            "downsample_factor": CADENA_RENDER_DOWNSAMPLE_FACTOR,
+            "measured_downsample_factor": CADENA_RENDER_DOWNSAMPLE_FACTOR,
+            "proposal_downsample_factor": CADENA_PROXY_RENDER_DOWNSAMPLE_FACTOR,
+            "proposal_spur_filter_size": CADENA_PROXY_SPUR_FILTER_SIZE,
             "quantization_step": CADENA_RENDER_QUANTIZATION_STEP,
             "reason": "remove sub-pixel off-screen raster jitter before policy inference",
         },
         "proposal_proxy": proposal_proxy_report,
+        "measured_root_candidates": measured_root_reports,
         "measured_features": measured_feature_report,
         "minimum_score_improvement": args.minimum_score_improvement,
         "profile_simplification": {
@@ -1355,11 +1741,15 @@ def main() -> None:
         },
         "accepted_steps": sum(bool(row.get("accepted")) for row in trajectory),
         "selected_prefix_step": selected_step,
+        "selected_candidate_origin": selected_candidate_origin,
         "construction_graph": construction_graph.as_dict(),
         "search_policy": (
-            "condition the first proposal on an evidence-fitted primitive proxy, bind "
+            "score measured revolve and sketch-extrusion roots beside learned "
+            "proposals, condition the first learned proposal on an evidence-fitted "
+            "revolve proxy, bind "
             "decoded operations to signed residual patches, then iteratively fit bounded "
-            "additive or subtractive axial profiles from measured target evidence; retain "
+            "additive or subtractive axial or planar profiles from measured target "
+            "evidence; retain "
             "only kernel-valid source-view-non-regressing candidates and backtrack"
         ),
         "selection_metric": (
@@ -1402,10 +1792,14 @@ def main() -> None:
         "preview_path": preview_path.name,
         "trajectory": trajectory,
         "safety": (
-            "each model response is restricted to one assignment calling a published CADENA "
+            "measured revolve and sketch-extrusion roots are kernel-validated and "
+            "source-view-scored before selection; each model response is restricted "
+            "to one assignment calling a published CADENA "
             "DSL operation with literal arguments; trusted measured add/cut operations are "
-            "not in that allowlist; every measured feature requires circumferential signed-"
-            "distance support, a valid single-solid B-Rep, and source-view non-regression; "
+            "not in that allowlist; axial features require circumferential signed-distance "
+            "support, while planar features require 75% axial coverage and a constant-section "
+            "residual at most 0.15; all require a valid single-solid B-Rep and source-view "
+            "non-regression; "
             "arbitrary residual-component unions are not part of the direct runner"
         ),
         "mesh_contract": (

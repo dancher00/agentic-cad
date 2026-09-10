@@ -1,0 +1,353 @@
+{
+  "cases": [
+    {
+      "artifacts": {
+        "measured_target": "outputs/measured-planar-grammar-v6/l_add/measured_target.ply",
+        "model_step": "outputs/measured-planar-grammar-v6/l_add/model.step",
+        "model_step_sha256": "f89a5e938d3f6594e1cb5037d1d5f3e9de24c304fa7e1dfd0ea865c04b77893d",
+        "root_step": "outputs/measured-planar-grammar-v6/l_add/root.step",
+        "target_step": "outputs/measured-planar-grammar-v6/l_add/target.step"
+      },
+      "exact_volume_iou": 0.9851422451909857,
+      "executed_step": "r = planar_profile_add(r, 1, ((0.789305263157895, 0.96), (-0.789305263157895, 0.96), (-0.789305263157895, 2.1922720204873025), (-0.16479999999999995, 2.1922720204873025), (-0.16479999999999995, 1.465233443969904), (-0.11275789473684206, 1.427628000356935), (0.789305263157895, 1.427628000356935)), -1.0, 1.0)",
+      "expected_axis": 1,
+      "expected_operation": "planar_profile_add",
+      "feature": {
+        "attachment": [
+          5.551115123125783e-17,
+          0.96
+        ],
+        "axial_coverage_fraction": 1.0,
+        "axis": 1,
+        "constant_section_residual": 0.06695095482155161,
+        "convexity_ratio": 0.7466495040508822,
+        "kind": "planar-profile-add",
+        "lower": -1.0,
+        "measurement": "signed target surface outside the current CAD solid",
+        "profile": [
+          [
+            0.789305263157895,
+            0.96
+          ],
+          [
+            -0.7893052631578948,
+            0.96
+          ],
+          [
+            -0.7893052631578948,
+            2.1922720204873025
+          ],
+          [
+            -0.16479999999999995,
+            2.1922720204873025
+          ],
+          [
+            -0.16479999999999995,
+            1.465233443969904
+          ],
+          [
+            -0.11275789473684206,
+            1.427628000356935
+          ],
+          [
+            0.789305263157895,
+            1.427628000356935
+          ]
+        ],
+        "profile_occupancy_iou": 1.0,
+        "support_points": 10380,
+        "transverse_axes": [
+          2,
+          0
+        ],
+        "upper": 1.0
+      },
+      "id": "l_add",
+      "kernel_validation": {
+        "edges": 33,
+        "faces": 13,
+        "solids": 1,
+        "valid": true,
+        "volume": 10.307121621903885
+      },
+      "selected_axis": 1
+    },
+    {
+      "artifacts": {
+        "measured_target": "outputs/measured-planar-grammar-v6/t_add/measured_target.ply",
+        "model_step": "outputs/measured-planar-grammar-v6/t_add/model.step",
+        "model_step_sha256": "e50c4d488ed5e9bb4339eb55bec9230eb6455280b0c0b4ff48e5a01a7e520d9d",
+        "root_step": "outputs/measured-planar-grammar-v6/t_add/root.step",
+        "target_step": "outputs/measured-planar-grammar-v6/t_add/target.step"
+      },
+      "exact_volume_iou": 0.9867444024863523,
+      "executed_step": "r = planar_profile_add(r, 2, ((-0.34586315789473676, 0.96), (-0.34586315789473676, 1.4417900516298825), (-0.417421052631579, 1.4758463823817218), (-1.0852947368421053, 1.4758463823817218), (-1.0852947368421053, 2.1002124461654406), (1.0852947368421053, 2.1002124461654406), (1.0852947368421053, 1.4758463823817218), (0.4174210526315789, 1.4758463823817218), (0.3458631578947369, 1.4417900516298825), (0.3458631578947369, 0.96)), -0.5, 0.5)",
+      "expected_axis": 2,
+      "expected_operation": "planar_profile_add",
+      "feature": {
+        "attachment": [
+          5.551115123125783e-17,
+          0.96
+        ],
+        "axial_coverage_fraction": 1.0,
+        "axis": 2,
+        "constant_section_residual": 0.09553711196389578,
+        "convexity_ratio": 0.8454989532449407,
+        "kind": "planar-profile-add",
+        "lower": -0.5,
+        "measurement": "signed target surface outside the current CAD solid",
+        "profile": [
+          [
+            -0.34586315789473676,
+            0.96
+          ],
+          [
+            -0.34586315789473676,
+            1.4417900516298825
+          ],
+          [
+            -0.417421052631579,
+            1.4758463823817218
+          ],
+          [
+            -1.0852947368421053,
+            1.4758463823817218
+          ],
+          [
+            -1.0852947368421053,
+            2.1002124461654406
+          ],
+          [
+            1.0852947368421053,
+            2.1002124461654406
+          ],
+          [
+            1.0852947368421053,
+            1.4758463823817218
+          ],
+          [
+            0.4174210526315789,
+            1.4758463823817218
+          ],
+          [
+            0.3458631578947369,
+            1.4417900516298825
+          ],
+          [
+            0.3458631578947369,
+            0.96
+          ]
+        ],
+        "profile_occupancy_iou": 1.0,
+        "support_points": 9548,
+        "transverse_axes": [
+          0,
+          1
+        ],
+        "upper": 0.5
+      },
+      "id": "t_add",
+      "kernel_validation": {
+        "edges": 42,
+        "faces": 16,
+        "solids": 1,
+        "valid": true,
+        "volume": 7.686834870072305
+      },
+      "selected_axis": 2
+    },
+    {
+      "artifacts": {
+        "measured_target": "outputs/measured-planar-grammar-v6/u_cut/measured_target.ply",
+        "model_step": "outputs/measured-planar-grammar-v6/u_cut/model.step",
+        "model_step_sha256": "1db48adc755fc2031bdd956b4ea24a2c8718916def2fd11f8fd0d5314c397771",
+        "root_step": "outputs/measured-planar-grammar-v6/u_cut/root.step",
+        "target_step": "outputs/measured-planar-grammar-v6/u_cut/target.step"
+      },
+      "exact_volume_iou": 0.9640282937961827,
+      "executed_step": "r = planar_profile_cut(r, 2, ((-1.2826210526315789, -1.2826210526315789), (-1.2826210526315789, 1.2826210526315789), (1.2826210526315789, 1.2826210526315789), (1.2826210526315789, -1.2826210526315789), (0.7470210526315788, -1.2826210526315789), (0.7470210526315788, 0.6624526315789474), (0.6624526315789474, 0.7470210526315788), (-0.6624526315789473, 0.7470210526315788), (-0.7470210526315789, 0.6624526315789474), (-0.7470210526315789, -1.2826210526315789)), -1.03, 1.03)",
+      "expected_axis": 2,
+      "expected_operation": "planar_profile_cut",
+      "feature": {
+        "axial_coverage_fraction": 1.0,
+        "axis": 2,
+        "constant_section_residual": 0.0,
+        "convexity_ratio": 0.5402729138992876,
+        "kind": "planar-profile-cut",
+        "lower": -1.03,
+        "measurement": "signed target surface inside the current CAD solid",
+        "profile": [
+          [
+            -1.2826210526315789,
+            -1.2826210526315789
+          ],
+          [
+            -1.2826210526315789,
+            1.2826210526315789
+          ],
+          [
+            1.2826210526315789,
+            1.2826210526315789
+          ],
+          [
+            1.2826210526315789,
+            -1.2826210526315789
+          ],
+          [
+            0.7470210526315788,
+            -1.2826210526315789
+          ],
+          [
+            0.7470210526315788,
+            0.6624526315789474
+          ],
+          [
+            0.6624526315789474,
+            0.7470210526315788
+          ],
+          [
+            -0.6624526315789473,
+            0.7470210526315788
+          ],
+          [
+            -0.7470210526315789,
+            0.6624526315789474
+          ],
+          [
+            -0.7470210526315789,
+            -1.2826210526315789
+          ]
+        ],
+        "profile_occupancy_iou": 1.0,
+        "support_points": 10457,
+        "transverse_axes": [
+          0,
+          1
+        ],
+        "upper": 1.03
+      },
+      "id": "u_cut",
+      "kernel_validation": {
+        "edges": 42,
+        "faces": 16,
+        "solids": 1,
+        "valid": true,
+        "volume": 24.88950377484764
+      },
+      "selected_axis": 2
+    },
+    {
+      "artifacts": {
+        "measured_target": "outputs/measured-planar-grammar-v6/hex_cut/measured_target.ply",
+        "model_step": "outputs/measured-planar-grammar-v6/hex_cut/model.step",
+        "model_step_sha256": "2de50b34aa764c1b36d31a40b274cb65ee2029fd7fc258cb339bb14c24f6874e",
+        "root_step": "outputs/measured-planar-grammar-v6/hex_cut/root.step",
+        "target_step": "outputs/measured-planar-grammar-v6/hex_cut/target.step"
+      },
+      "exact_volume_iou": 0.9861938933579646,
+      "executed_step": "r = planar_profile_cut(r, 2, ((-0.15962215600279506, -0.9657781106454153), (-0.8544480115443732, -0.5604673060040861), (-0.8544480115443732, 0.5488043698563936), (-0.14084307882599567, 0.9754473221104245), (0.14084307882599545, 0.9754473221104245), (0.854448011544373, 0.5488043698563936), (0.854448011544373, -0.5604673060040861), (0.19718031035639372, -0.9444459630327138)), -1.03, 1.03)",
+      "expected_axis": 2,
+      "expected_operation": "planar_profile_cut",
+      "feature": {
+        "axial_coverage_fraction": 1.0,
+        "axis": 2,
+        "constant_section_residual": 0.06304993105494477,
+        "convexity_ratio": 0.990133742600307,
+        "kind": "planar-profile-cut",
+        "lower": -1.03,
+        "measurement": "signed target surface inside the current CAD solid",
+        "profile": [
+          [
+            -0.15962215600279506,
+            -0.9657781106454153
+          ],
+          [
+            -0.8544480115443732,
+            -0.5604673060040861
+          ],
+          [
+            -0.8544480115443732,
+            0.5488043698563936
+          ],
+          [
+            -0.14084307882599567,
+            0.9754473221104245
+          ],
+          [
+            0.14084307882599545,
+            0.9754473221104245
+          ],
+          [
+            0.854448011544373,
+            0.5488043698563936
+          ],
+          [
+            0.854448011544373,
+            -0.5604673060040861
+          ],
+          [
+            0.19718031035639372,
+            -0.9444459630327138
+          ]
+        ],
+        "profile_occupancy_iou": 0.9928171239764402,
+        "support_points": 5191,
+        "transverse_axes": [
+          0,
+          1
+        ],
+        "upper": 1.03
+      },
+      "id": "hex_cut",
+      "kernel_validation": {
+        "edges": 36,
+        "faces": 14,
+        "solids": 1,
+        "valid": true,
+        "volume": 26.543854608497817
+      },
+      "selected_axis": 2
+    }
+  ],
+  "claim_boundary": {
+    "fit_reference_cad_access": false,
+    "input": "32000 sampled target-surface points plus a known root B-Rep",
+    "not_claimed": "end-to-end real-photo accuracy",
+    "purpose": "deterministic grammar capability and false-positive control",
+    "reference_role": "post-hoc exact-volume evaluator and visualization only"
+  },
+  "created_utc": "2026-08-16T21:51:06.514098+00:00",
+  "method": {
+    "axis_search": [
+      0,
+      1,
+      2
+    ],
+    "kernel_contract": "exactly one valid solid",
+    "maximum_constant_section_residual": 0.15,
+    "minimum_axial_coverage": 0.75,
+    "operations": [
+      "planar_profile_add",
+      "planar_profile_cut"
+    ],
+    "profile": "largest supported raster component simplified to an arbitrary polyline",
+    "residual": "signed target surface relative to the current watertight B-Rep"
+  },
+  "negative_controls": [
+    {
+      "candidate_count": 0,
+      "expected": "reject planar constant-section hypothesis",
+      "id": "nonconstant_frustum_add",
+      "passed": true
+    }
+  ],
+  "schema_version": "da3-cad-measured-planar-grammar-v6",
+  "summary": {
+    "correct_axis_selections": 4,
+    "mean_exact_volume_iou": 0.9805272087078714,
+    "negative_controls_passed": 1,
+    "positive_cases": 4,
+    "valid_single_solid_steps": 4
+  },
+  "visual": "outputs/measured-planar-grammar-v6/benchmark.png"
+}

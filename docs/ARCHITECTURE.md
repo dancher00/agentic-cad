@@ -11,9 +11,10 @@ RGB views + target masks + calibrated cameras
   → cross-view-confirmed depth fusion
   → measured surface
   → raw-surface proposals + evidence-fitted primitive proxy proposals
-  → restricted CAD operation candidates scored on the original views
+  → restricted CAD root candidates scored on the original views
   → evidence-preserving profile simplification
-  → render CAD into every source camera
+  → signed residual → bounded axial/planar measured feature grammar
+  → render every accepted prefix into every source camera
   → source-mask and measured-depth gates
   → OpenCascade validation
   → model.py + model.step, or ABSTAIN
@@ -70,32 +71,43 @@ pixel must reproject into at least one independently measured neighbour within
 then enter deterministic voxel averaging. The report records per-view input and
 acceptance counts, total fused voxels and mean independent confirmations.
 
-Poisson meshing converts the confirmed points into a measured surface for the
-CAD proposer. It is not treated as ground truth and its watertightness is
-reported honestly. It may contain missing patches or smooth sub-resolution
-features.
+Poisson meshing converts the confirmed points into a stable conditioning
+surface. It is not the CAD measurement, is not treated as ground truth and has
+its watertightness reported honestly. The denser raw fused cloud remains the
+input to measured CAD fitting; Poisson may contain missing patches or smooth
+sub-resolution features.
 
 ## CAD program inference
 
-The packaged direct runner loads a local CADENA-RL checkpoint on one GPU. Each
-model response must parse as exactly one assignment of the form
-`r = operation(...)`. Only the published operation allowlist is accepted;
-arguments must be literals or the current solid. Invalid source is never
-executed.
+The direct runner treats CADENA-RL as one candidate generator, not as the
+sole geometry path. If the local checkpoint is present, each model response
+must parse as exactly one assignment of the form `r = operation(...)`. Only the
+published operation allowlist is accepted; arguments must be literals or the
+current solid. Invalid source is never executed.
 
-Candidate programs execute through CADENA's CadQuery DSL. Selection differs
-from upstream target-mesh evaluation: it does not use IoU to unavailable CAD.
-Each candidate is transformed back to measured coordinates and rendered into
-the calibrated source views.
+Before learned sampling, trusted code fits two direct hypotheses to the raw
+cross-view-confirmed cloud:
 
-For the first operation, the policy sees two branches. One is the original
-measured-surface render. The other is a deterministic revolve proxy admitted
-only when measured 3D points support its axis, angular coverage and surface
-residual. The proxy is a denoising conditioner, not a reconstruction: it is
-never eligible for export, and both branches are scored against the original
-RGB, masks and measured depths. Unsupported connected-residual extrusions are
-not part of the direct runner because they can paint several projections with
-incorrect 3D volume.
+- a solid 360-degree revolve with an arbitrary measured axial profile;
+- an arbitrary line/circle sketch extruded along its best measured axis.
+
+These are grammar hypotheses, not named part classes. They are eligible for
+selection only after producing exactly one kernel-valid B-Rep and being rendered
+back into every admitted source view. CADENA proposals enter the same pool and
+use the same gates. This competition matters: measured roots win four of five
+current real-RGB controls, while the learned root remains stronger on o25.
+
+The raw fused cloud is the measurement input for both direct roots. The Poisson
+mesh is retained as a stable conditioning render for CADENA and for residual
+visualization; its lower density or non-watertight boundary cannot replace the
+raw evidence. Rendering always receives a copy because CADENA's plotter
+recenters mesh inputs in place.
+
+Pooled proxy points do not preserve per-view identity. Therefore direct revolve
+roots set `shell_enabled=False`: radial quantiles may support an exterior but
+cannot prove an inner wall. Shell or through-cavity topology requires
+view-preserving mask/depth evidence in a later measured operation. This rule
+removed a false o04 cavity without weakening any acceptance threshold.
 
 Every operation must first produce exactly one positive-volume, kernel-valid
 B-Rep. A prefix is retained when its silhouette/depth score improves by at
@@ -122,22 +134,38 @@ must continue to explain the source evidence.
 
 ## Iterative measured feature grammar
 
-After profile simplification, trusted code computes signed distances from the
-measured target surface to the current kernel-valid CAD. An outside, end-local,
-angularly supported residual can propose `axial_revolved_add`; an inside
-residual can propose `axial_revolved_cut`. The learned CADENA policy cannot call
-either operation.
+After root selection and profile simplification, trusted code computes signed
+distances from the measured target surface to the current watertight B-Rep.
+Positive and negative residuals are handled separately:
 
-Full and conservative profiles are executed by OpenCascade and re-rendered in
+- `axial_revolved_add` and `axial_revolved_cut` recover
+  circumferentially supported axisymmetric features;
+- `planar_profile_add` and `planar_profile_cut` recover an arbitrary
+  closed 2D polyline with a constant extrusion section.
+
+The planar fitter searches the three canonical axes. It rasterizes the
+transverse residual, keeps the largest connected component, fills supported
+holes, traces its external contour and simplifies it to at most 32 vertices.
+A hypothesis requires at least 75% occupied axial bins, normalized
+constant-section residual at most 0.15 and raster occupancy IoU at least 0.78.
+An addition is extended 2% into the nearest root face so the exact union stays
+attached; a cut crosses the measured near face. Non-constant frusta are rejected
+rather than mislabeled as an extrusion.
+
+Full and conservative variants are executed by OpenCascade and re-rendered in
 all source views. A candidate is retained only when it remains one valid solid
 and does not regress the parent source-view score or smooth-face topology. The
-residual is then recomputed from the new solid for at most one additional round.
-This is a bounded construction grammar, not a dictionary of part classes.
+signed residual is then recomputed from the new solid for at most one
+additional round.
 
-The audit graph records three distinct relations: the learned proposal, an exact
-profile rewrite, and measured boolean operations applied after that rewrite.
-Every accepted node stores its actual per-prefix solid, face, edge and volume
-validation; rejected learned branches remain visible in the ledger.
+These operations are trusted measurement code, not part of the learned CADENA
+allowlist. The policy may propose only a restricted root. The audit graph
+records three distinct relations: learned proposal, exact profile rewrite and
+measured boolean operation. Every accepted node stores its actual per-prefix
+solid, face, edge and volume validation; rejected learned branches remain
+visible in the ledger. This is a construction grammar, not a dictionary of
+part classes.
+
 ## Acceptance
 
 The final candidate must pass independent source and kernel boundaries.
@@ -202,7 +230,8 @@ model.step               authoritative B-Rep
 model.stl                tessellated preview
 cadena_report.json       trajectory, scores, thresholds and kernel audit
 target.png               measured-surface render used by the proposer
-proposal_proxy.png       optional non-exportable primitive conditioning render
+proposal_proxy.png       measured revolve preview / optional conditioner
+sketch_extrusion_proxy.png measured sketch-extrusion preview
 step_*_input.png         iterative proposer diagnostics
 ```
 

@@ -8,13 +8,15 @@ from pathlib import Path
 
 def test_current_public_evidence_and_documents_are_consistent() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
+    history = Path("docs/RESEARCH_HISTORY.md").read_text(encoding="utf-8")
+    assert "(docs/RESEARCH_HISTORY.md)" in readme
     assert (
         "![DA3-CAD: calibrated RGB views to measured geometry to verified B-Rep]"
-        "(docs/assets/release/teaser.png)\n\n"
+        "(../docs/assets/release/teaser.png)\n\n"
         "![Offline CPU smoke: four bundled PNG views to a validated STEP solid]"
-        "(docs/assets/release/cpu_smoke.gif)"
-    ) in readme
-    assert "da3-cad cpu-smoke --output outputs/cpu-demo" in readme
+        "(../docs/assets/release/cpu_smoke.gif)"
+    ) in history
+    assert "da3-cad cpu-smoke --output outputs/cpu-demo" in history
     benchmark_doc = Path("docs/BENCHMARK.md").read_text(encoding="utf-8")
     public_benchmark_doc = Path("docs/PUBLIC_BENCHMARK.md").read_text(encoding="utf-8")
     architecture = Path("docs/ARCHITECTURE.md").read_text(encoding="utf-8")
@@ -241,7 +243,9 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     assert report_cases["block"]["mesh_topology"]["through_holes"] == 0
     assert report_cases["l_bracket"]["mesh_topology"]["through_holes"] == 0
 
-    combined = "\n".join((readme, benchmark_doc, public_benchmark_doc, architecture, paper))
+    combined = "\n".join(
+        (readme, history, benchmark_doc, public_benchmark_doc, architecture, paper)
+    )
     for claim in ("87.99", "91.82", "89.24", "0.3303"):
         assert claim in combined
     assert "object class" in combined
@@ -263,6 +267,39 @@ def test_current_public_evidence_and_documents_are_consistent() -> None:
     assert "Objectron integration example" not in awesome
     commit = historical["tested_code"]["commit"]
     assert commit == "pending-clean-release-run" or re.fullmatch(r"[0-9a-f]{40}", commit)
+
+
+def test_real_photo_e2e_v1_is_honest_and_reproducible() -> None:
+    ledger = json.loads(Path("docs/results/real-photo-e2e-v1.json").read_text(encoding="utf-8"))
+    assert ledger["schema_version"] == "da3-cad-real-photo-e2e-v1"
+    assert ledger["pipeline"]["reference_geometry_access_during_generation"] is False
+    assert ledger["pipeline"]["da3_role_in_this_benchmark"] == "not used"
+    assert ledger["aggregate"] == {
+        "abstain": 5,
+        "accept": 0,
+        "cases": 5,
+        "kernel_valid_single_solid": 5,
+        "mean_chamfer_squared_x1000_delta": -4.68078059323333,
+        "mean_direct_iou_delta": 0.05005346382803731,
+        "v8_mean_chamfer_squared_x1000": 21.99386228916107,
+        "v8_mean_direct_iou": 0.32627168068946466,
+        "v9_mean_chamfer_squared_x1000": 17.313081695927735,
+        "v9_mean_direct_iou": 0.376325144517502,
+    }
+    cases = ledger["cases"]
+    assert [case["case_id"] for case in cases] == [
+        "o02-fixed",
+        "o04-fixed",
+        "o10",
+        "o20-fixed",
+        "o25",
+    ]
+    assert all(case["input"]["selected_views"] == 32 for case in cases)
+    assert all(case["input"]["registered_views"] == 32 for case in cases)
+    assert all(case["product_decision"]["decision"] == "ABSTAIN" for case in cases)
+    assert all(case["step"]["kernel_valid"] is True for case in cases)
+    assert all(case["step"]["solids"] == 1 for case in cases)
+    assert all(case["posthoc_reference_only"]["alignment"] == "none" for case in cases)
 
 
 def test_active_public_surface_has_no_removed_backend_references() -> None:

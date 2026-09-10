@@ -1096,6 +1096,8 @@ def align_multiview_depths(
                 "reference_view": REFERENCE_VIEW_INDEX,
                 "parameters": [parameter.as_dict()],
                 "parameter_sha256": _parameter_digest((parameter,)),
+                "input_depth_sha256": _array_sha256(prediction.depth),
+                "output_depth_sha256": _array_sha256(prediction.depth),
                 "depth_changed": False,
             },
         )

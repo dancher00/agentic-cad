@@ -5,7 +5,35 @@ while it remains an alpha research system.
 
 ## [Unreleased]
 
+### RaySection research preview (2026-09-10)
+
+- Add CPU/CUDA calibrated-ray-to-CAD compilation with adaptive interval profiles,
+  budget enumeration, bounded CAD-kernel execution and editable STEP/program output.
+- Add `ray-sections` and `pack-rays` commands, a redistributable simulated-depth
+  demo, per-instance ablations and a seven-page technical report.
+- Audit historical shape evaluation: independently normalized reference metrics
+  leave relative rotation unresolved and must not support aligned accuracy claims.
+- Controlled 30-instance result: mean shared-frame IoU 0.8366, 30 valid outputs,
+  mean 1.50 extrusions. Five real cases yield valid candidates but all remain
+  source-view ABSTAIN; simulated-depth and real-RGB evidence are reported separately.
+
 ### Added
+
+- Five-object real-RGB v9 audit with 32 registered views per object, a portable
+  no-leakage ledger and a reproducible seven-page local visual report. All five
+  single-solid STEP candidates remain honestly `ABSTAIN` under frozen
+  source-view gates.
+- Exact source-mask undistortion in `prepare-photos-sfm` and direct measured
+  revolve/sketch roots competing with the restricted CADENA proposal.
+
+- Trusted arbitrary constant-section planar-profile additions and cuts recovered
+  from signed measured-surface residuals, with three-axis search, attachment,
+  exact one-solid validation and bounded two-round composition.
+- Deterministic L/T/U/hex grammar capability ledger and visual benchmark:
+  4/4 valid STEP solids, 0.9805 mean exact-volume IoU, plus rejection of a
+  non-constant frustum negative control.
+- Controlled real-RGB v6 ledger and four-page visual audit preserving object 2
+  `ACCEPT` and object 4 `ABSTAIN` without reference access during fitting.
 
 - One-command `da3-cad cpu-smoke` path from four tracked PNGs to a validated
   single-solid `model.step`, with a 60-second CPU contract and reproducible README GIF.
@@ -38,6 +66,15 @@ while it remains an alpha research system.
   ledger, poster, teaser and PDF.
 
 ### Fixed
+
+- Use the cross-view-confirmed raw fused cloud for CAD measurements while
+  retaining Poisson only as a conditioning render.
+- Stop CADENA rendering from mutating/recentering its input proxy in place and
+  forbid pooled-point revolve roots from inventing unsupported inner shells.
+
+- Canonicalize full-resolution CADENA proxy renders with deterministic seeding,
+  64-level quantization and a 3×3 isolated-spur filter, preventing a single VTK
+  boundary pixel from changing the accepted object-2 program.
 - Iterative signed-residual CAD grammar with trusted axial revolved additions
   and subtractions, conservative variants, two bounded rounds, and exact
   learned-root → profile-rewrite → measured-operation provenance with full

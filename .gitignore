@@ -38,3 +38,9 @@ paper/*.fls
 paper/*.log
 paper/*.out
 paper/*.pdf
+paper/revival/*.aux
+paper/revival/*.bbl
+paper/revival/*.blg
+paper/revival/*.log
+paper/revival/*.out
+paper/revival/main.pdf

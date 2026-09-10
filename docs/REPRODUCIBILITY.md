@@ -79,10 +79,33 @@ da3-cad fit-cad outputs/dense/surface.ply \
   --cadena-checkpoint data/checkpoints/cadena/rl \
   --verification-workspace outputs/dense/mvs \
   --cameras cameras.npz \
+  --measurements outputs/dense/fused_cloud.ply \
   --max-steps 8 \
   --expansions 4 \
   --seed 20260815
 ```
+
+### Current five-object v9 audit
+
+The current controlled workspace uses the same `fit-cad` command with
+`--measurements dense/fused_cloud.ply` for all five cases. Each case has 32
+real RGB images, one fixed physical instance, RGB-only exhaustive COLMAP
+cameras and a masked PatchMatch workspace. DA3 is not used.
+
+After the five ignored run directories exist, regenerate the portable ledger,
+seven-page PDF and overview:
+
+```bash
+python scripts/build_real_photo_e2e_report.py
+```
+
+Expected aggregate: 5/5 kernel-valid single-solid STEP candidates, 0 ACCEPT,
+5 ABSTAIN, mean direct IoU 0.376325 and mean CD2 x1000 17.3131. The script
+reads T-LESS CAD only for post-hoc metrics/visuals; reconstruction reports
+declare `reference_geometry_access: false`. Exact case inputs, selected
+instance indices, source scores and v8/v9 metrics are frozen in
+[real-photo-e2e-v1.json](results/real-photo-e2e-v1.json). T-LESS media and the
+generated visual report remain ignored.
 
 The historical controlled 32-view object-4 run records:
 
@@ -101,15 +124,31 @@ Reference T-LESS geometry was opened only after the candidate and report
 existed. Its alignment is the dataset's registered object coordinate system;
 no ICP or evaluator alignment optimization was used.
 
-The current v5 decoder keeps raw/proxy root proposals but fits bounded axial
-additions and subtractions only in trusted code from signed measured-surface
-evidence. The learned policy cannot call those operations. Reproduce the
-frozen CAD stage after preparing the ignored T-LESS workspaces:
+The v6 decoder keeps raw/proxy root proposals but fits axial revolved and
+arbitrary constant-section planar additions/subtractions only in trusted code
+from signed measured-surface evidence. The learned policy cannot call those
+operations.
+
+First reproduce the deterministic CPU grammar capability and false-positive
+control:
+
+```bash
+python scripts/run_measured_planar_grammar_benchmark.py
+```
+
+This writes local STEP artifacts and the montage under
+`outputs/measured-planar-grammar-v6/` and refreshes the portable
+[`results/measured-planar-grammar-v6.json`](results/measured-planar-grammar-v6.json).
+It must produce 4/4 valid one-solid STEP files, correct axes, mean exact-volume
+IoU 0.98053 and zero candidates for the non-constant frustum.
+
+Reproduce the frozen real-RGB CAD stage after preparing the ignored T-LESS
+workspaces:
 
 ```bash
 da3-cad fit-cad \
   outputs/controlled-tless-v1/s20-o2/mvs-calibrated-v4/surface-poisson.ply \
-  --output outputs/controlled-tless-v1/s20-o2/cadena-iterative-v27 \
+  --output outputs/controlled-tless-v1/s20-o2/cadena-planar-spur-v36a \
   --cadena-checkout data/upstream/cadena \
   --cadena-checkpoint data/checkpoints/cadena/rl \
   --verification-workspace outputs/controlled-tless-v1/s20-o2/mvs-calibrated-v4 \
@@ -118,7 +157,7 @@ da3-cad fit-cad \
 
 da3-cad fit-cad \
   outputs/controlled-tless-v1/s20-o4/dense-cli-v3/surface.ply \
-  --output outputs/controlled-tless-v1/s20-o4/cadena-iterative-add-v26 \
+  --output outputs/controlled-tless-v1/s20-o4/cadena-planar-spur-v37a \
   --cadena-checkout data/upstream/cadena \
   --cadena-checkpoint data/checkpoints/cadena/rl \
   --verification-workspace outputs/controlled-tless-v1/s20-o4/dense-cli-v3/mvs \
@@ -128,12 +167,13 @@ da3-cad fit-cad \
 
 Object 2 returns exit code 0 with `model.step`; object 4 returns exit code 3
 with the auditable `candidate.step`. Independent final-code runs produced
-byte-identical program and STEP artifacts for both objects. Generate the
-ignored local visual audit with `python scripts/build_real_rgb_cadena_report.py`.
-Exact metrics and hashes are in
-[`results/real-rgb-mvs-cadena-v5.json`](results/real-rgb-mvs-cadena-v5.json).
-Evaluator v3 removes exact zero-area OCC seam triangles at analytic seams but
-performs no mesh repair.
+identical program and STEP artifacts for both objects. Object 4 may retain
+two pixel-channel differences in a rejected proposal trace; its final program,
+STEP and decision are unchanged. Generate the ignored four-page audit with
+`python scripts/build_real_rgb_cadena_report.py`. Exact metrics and hashes are
+in [`results/real-rgb-mvs-cadena-v6.json`](results/real-rgb-mvs-cadena-v6.json).
+Evaluator v3 removes exact zero-area OCC seam triangles but performs no mesh
+repair.
 
 ## CPU and release checks
 

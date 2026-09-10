@@ -9,26 +9,31 @@
 ## Suggested PR body
 
 ```markdown
-DA3-CAD explores how Depth Anything 3 can contribute to editable CAD rather
-than only point clouds or novel-view rendering. DA3 is used conservatively as
-an optional confidence-aware depth prior for sparse or textureless views; the
-verified dense path uses calibrated multi-view stereo for metric consistency.
+DA3-CAD explores where Depth Anything 3 can help editable CAD rather than only
+point clouds or novel-view rendering. The verified dense path now uses RGB-only
+COLMAP cameras and masked multi-view stereo; DA3 is retained as an optional
+confidence-aware prior for sparse or textureless 2DGS, not as a metric camera
+or geometry oracle.
 
-The project separates measurement from CAD proposal and acceptance. A local
-CADENA-RL policy proposes restricted CadQuery operations. Every construction
-prefix must be one kernel-valid solid, is rendered into the calibrated source
-views, and is checked against silhouette, measured depth and internal RGB
-boundaries; otherwise the system returns ABSTAIN with an auditable candidate.
+The pipeline separates measurement, proposal and acceptance. Raw
+cross-view-confirmed points fit solid-revolve and arbitrary sketch-extrusion
+roots. Restricted CADENA-RL proposals compete with them under the same
+OpenCascade and calibrated source-view gates. Trusted residual code may add
+bounded axial or arbitrary constant-section planar features. Pooled points are
+not allowed to invent shell topology without view-preserving inner evidence.
 
-On two controlled 32-view real-RGB T-LESS cases, the RTX 5080 path emits two
-kernel-valid single-solid STEP candidates. V5 keeps CADENA as a restricted root
-proposal policy, then iteratively fits bounded axial additions or subtractions
-from signed measured-surface residuals in trusted code. Object 2 retains the
-observed cavity and provisional ACCEPT. Object 4 recovers a missing lower axial
-extension and improves post-hoc IoU from 0.558 to 0.740, but remains ABSTAIN
-because other visible edges are unexplained. Object-2 IoU is 0.492. Fine threads
-and terminals remain smoothed or absent. This is one controlled success and one
-honest rejection, not category-level generalization or a SOTA claim.
+The current controlled audit uses five physical T-LESS objects and 32 real RGB
+views each. Every run emits one kernel-valid single-solid STEP candidate; all
+five remain ABSTAIN because at least one frozen silhouette, depth or edge gate
+fails. Mean post-hoc no-alignment IoU improved from 0.3263 to 0.3763 and mean
+CD2 x1000 from 21.99 to 17.31. This is an engineering audit, not a SOTA claim.
+T-LESS masks/instance indices are disclosed target-selection oracles and the
+reference CAD is read only after the product decision.
+
+A separate deterministic grammar capability test recovers L/T additions and
+U/hex cuts as one-solid STEP files at 0.9805 mean exact-volume IoU, while
+rejecting a non-constant frustum. It starts from measured surface points and a
+known root B-Rep, so it is not presented as end-to-end photo accuracy.
 
 Code is Apache-2.0. DA3, CADENA and dataset weights/data retain their upstream
 licenses and are not redistributed.
@@ -36,15 +41,17 @@ licenses and are not redistributed.
 
 ## Readiness checklist
 
-- [x] Short end-to-end RGB → measured surface → CAD instructions.
-- [x] RTX 5080 full-path run with exact timing and stage reports.
-- [x] Silhouette, depth, internal-edge and per-prefix OpenCascade gates.
-- [x] Honest non-SOTA and scale boundaries.
+- [x] Short RGB -> cameras -> measured geometry -> CAD instructions.
+- [x] RTX 5080 five-object real-RGB audit with 160 total input views.
+- [x] Competing measured/learned roots and source-view/OpenCascade gates.
+- [x] Valid-but-wrong STEP retained as ABSTAIN, never counted as success.
+- [x] Signed-residual planar add/cut capability and frustum rejection gate.
+- [x] Honest non-SOTA, oracle-mask, license and scale boundaries.
 - [x] CPU smoke and 10-case synthetic regression benchmark.
-- [x] No redistributed model weights or real benchmark data.
-- [x] Pinned CADENA source commit and isolated PyCOLMAP runtime.
-- [ ] Clean commit pushed and public CI green.
-- [ ] Replace the legacy teaser with a primary-path diagram if desired.
+- [x] No redistributed model weights or real benchmark media.
+- [x] Pinned CADENA source and isolated CUDA PyCOLMAP runtime.
+- [x] Portable five-object JSON ledger and local seven-page visual audit.
+- [ ] Clean commits pushed and public CI green.
 
 The Awesome entry should describe DA3 as an optional prior, not as a trusted
 camera or metric-depth source. That is the result supported by the current

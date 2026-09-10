@@ -15,7 +15,7 @@ capture is distributed in this repository.
 | [CadQuery](https://github.com/CadQuery/cadquery) / OpenCascade bindings | installed package dependencies | upstream package licenses | no vendored code |
 | [COLMAP](https://github.com/colmap/colmap) / pycolmap | optional camera recovery dependency | upstream package licenses | no vendored code |
 | [CADENA](https://github.com/zhemdi/cadena) | source commit `b636649d1c59e4a4b52f5b683af18d6b136b082b`; external `kulibinai/cadena` RL checkpoint | source is MIT; checkpoint retains its model-card terms | no; source and weights stay under ignored `data/` |
-| [T-LESS](https://www.t-less.org/) | controlled object 2 and object 4 real-RGB evaluation | upstream dataset terms | no; all images and reference meshes remain ignored |
+| [T-LESS](https://www.t-less.org/) | controlled objects 2, 4, 10, 20 and 25 real-RGB evaluation | upstream dataset terms | no; all images and reference meshes remain ignored |
 | [manifold3d](https://github.com/elalish/manifold) | `3.5.2`, reference mesh Boolean evaluator | Apache-2.0 | package dependency only |
 
 The full hashes are intentionally kept in source and
