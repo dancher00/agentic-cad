@@ -1,0 +1,1 @@
+Reconstruct the aluminum cola can in this photo. Ignore the label, condensation, table and background. Use a target height of 120 mm and a wall thickness of 0.2 mm for modeling; infer the other proportions from the photo. Preserve the cylindrical body, tapered shoulder, rolled top rim and recessed base. Make a hollow can with a closed lid. Keep unseen lid details simple.

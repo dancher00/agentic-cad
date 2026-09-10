@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Real photographs, exact prompts and the CAD they produced. Explore Agentic CAD demos and download editable STEP models.">
+  <meta name="theme-color" content="#f7f7f7">
+  <meta property="og:title" content="Agentic CAD — Photos into CAD">
+  <meta property="og:description" content="Explore real photo-to-CAD examples. Read the prompt, rotate the result and download the model.">
+  <meta property="og:image" content="https://dancher00.github.io/agentic-cad/assets/demo/cola/photo.jpg">
+  <title>Agentic CAD — Photos into CAD</title>
+  <link rel="icon" type="image/svg+xml" href="assets/brand/agentic-cad-mark.svg">
+  <link rel="stylesheet" href="site/style.css">
+  <script src="site/demo.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Agentic CAD home"><img src="assets/brand/agentic-cad-mark.svg" width="30" height="30" alt=""><span>agentic <strong>CAD</strong></span></a>
+    <a class="repo" href="https://github.com/dancher00/agentic-cad">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main>
+    <div class="intro">
+      <div><h1>Photos into CAD.</h1><p>Real photographs. Exact prompts. Downloadable results.</p></div>
+      <div class="examples" role="group" aria-label="Choose an example">
+        <button type="button" data-example="cola" aria-pressed="true">Cola can</button>
+        <button type="button" data-example="mug" aria-pressed="false">Ceramic mug</button>
+      </div>
+    </div>
+    <section aria-label="Photo and generated CAD comparison">
+      <div class="comparison">
+        <figure>
+          <figcaption><span>Input photograph</span><span class="quiet">1 photo</span></figcaption>
+          <a class="photo-frame" id="photo-link" href="assets/demo/cola/photo.jpg" target="_blank" rel="noopener" aria-label="Open the full input photograph">
+            <img id="photo" src="assets/demo/cola/photo.jpg" alt="A red Coca-Cola can standing on a table" fetchpriority="high">
+          </a>
+        </figure>
+        <figure>
+          <figcaption><span>Generated CAD</span><button id="reset" type="button" class="text-button">Reset view</button></figcaption>
+          <div class="model-frame" id="model-frame" aria-busy="true">
+            <img class="poster" id="poster" src="assets/demo/cola/preview.png" alt="Generated CAD model of the cola can">
+            <canvas id="model" tabindex="0" aria-label="Interactive CAD model. Drag or use arrow keys to rotate. Scroll or press plus and minus to zoom. Press zero to reset."></canvas>
+            <p id="model-status" role="status">Loading model…</p>
+            <span class="orbit-hint" aria-hidden="true">Drag to rotate · scroll to zoom</span>
+            <span class="dimensions" id="dimensions"></span>
+          </div>
+        </figure>
+      </div>
+      <div class="below-views">
+        <p class="credit" id="credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Coca-cola.jpg">些細な日常 / Nagahitoyuki</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> · resized</p>
+        <div class="downloads" aria-label="Download the generated CAD">
+          <a class="download-primary" id="step" href="assets/demo/cola/model.step" download>Download STEP <span aria-hidden="true">↓</span></a>
+          <a id="stl" href="assets/demo/cola/model.stl" download>STL</a>
+          <a id="python" href="assets/demo/cola/model.py" download>Python</a>
+        </div>
+      </div>
+    </section>
+    <section class="prompt-section" aria-labelledby="prompt-title">
+      <div class="prompt-label"><h2 id="prompt-title">Prompt</h2><button type="button" id="copy" class="text-button">Copy</button></div>
+      <div><p id="prompt">Reconstruct the aluminum cola can in this photo. Ignore the label, condensation, table and background. Use a target height of 120 mm and a wall thickness of 0.2 mm for modeling; infer the other proportions from the photo. Preserve the cylindrical body, tapered shoulder, rolled top rim and recessed base. Make a hollow can with a closed lid. Keep unseen lid details simple.</p><p class="prompt-note">Dimensions are supplied in the prompt.</p></div>
+    </section>
+    <noscript><p>These are saved reconstruction examples. Enable JavaScript to rotate models and switch examples. CAD downloads work without it.</p></noscript>
+    <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
+  </main>
+  <footer><span class="model-credit"><img src="assets/brands/openai.svg" width="17" height="17" alt="OpenAI">GPT-5.6 Sol <span class="quiet">· saved examples</span></span><a href="https://github.com/dancher00/agentic-cad#quick-start">Run it yourself <span aria-hidden="true">↗</span></a></footer>
+</body>
+</html>

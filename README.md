@@ -1,5 +1,7 @@
 # Agentic CAD
 
+**[Live demo ↗](https://dancher00.github.io/agentic-cad/)** — real photos, prompts and downloadable CAD.
+
 **Text and photos → editable CAD.** Describe a part, add up to 16 reference photos, and get STEP, STL and a parameterized CadQuery program.
 
 ![Agentic CAD workspace: reference views, editable dimensions and CAD downloads](docs/assets/quickstart/viewer.png)
