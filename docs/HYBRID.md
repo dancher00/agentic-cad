@@ -47,6 +47,22 @@ ignored `data/` directory. Inference uses cached files and runs the GPU models
 sequentially, releasing each model before loading the next. `--device cpu` is
 available; CUDA is recommended.
 
+## Mask refinement
+
+SAM2 also tests boxes expanded by 8% and 16% per side to recover appendages missed
+by a tight localization. An expansion must improve predicted IoU by more than 0.01,
+retain at least 98% of the original connected foreground, add at most 35% area, and
+preserve at least 95% of resolved enclosed-hole support. Eroded hole components
+smaller than 16 source pixels are treated as segmentation speckles for this gate.
+Only connected SAM predictions are selected; holes are not filled by postprocessing.
+CAD is never used to choose or paint these masks. Candidate scores and the selected
+box are recorded in `masks/segmentation.json`.
+
+When reusing evidence with the previous mask protocol, the new run regenerates
+masks from cached RGB and boxes. It applies the saved COLMAP undistortion where
+needed and updates mask/depth panels. Cameras, depth predictions and the original
+cache remain unchanged.
+
 ## Camera recovery
 
 With three or more photos, `--cameras auto` first tries COLMAP using all-pairs
@@ -68,7 +84,7 @@ camera option is rejected.
 | Stage | Result |
 |---|---|
 | GPT locates the requested object in every photo | Bounding boxes and a feature contract |
-| SAM2 segments each box | Object masks, including visible handle openings |
+| SAM2 segments each box and tests modest box expansions | Connected object masks with existing aperture support preserved |
 | COLMAP matches features across photos and adjusts the cameras | One camera per input photo and undistorted RGB/masks |
 | DA3 processes all views together, conditioned on recovered cameras when available | Relative depth and cross-view reprojection diagnostics |
 | GPT receives photos, masked RGB, depth panels and observations | Parametric CadQuery program with declared cavity clearances |
@@ -128,7 +144,10 @@ For meshes with at least 5,000 faces, pose search uses a deterministic vertex-cl
 proxy at the 96-pixel object resolution. Depth surface samples still come from the
 full export. The 192-pixel verification objective and every review render use the
 full exported mesh; STEP, STL and the generated program are never simplified.
-Search and export face counts are recorded in each objective result.
+Search and export face counts are recorded in each objective result. A bounded
+120-evaluation refinement then adjusts the one shared pose using the full mesh at
+verification resolution, before parameter fitting. It retains the best evaluated
+pose and cannot independently align individual views.
 Each accepted update must improve silhouette agreement at both 96- and 192-pixel
 resolution without degrading another view beyond 0.002 IoU or the depth residual
 by more than 0.01. These are conservative fit controls, not physical tolerances.

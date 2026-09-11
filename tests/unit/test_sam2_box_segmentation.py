@@ -109,3 +109,24 @@ def test_box_refinement_points_have_explicit_labels_and_inset() -> None:
         np.asarray(((60, 120), (18, 36), (102, 36), (18, 204), (102, 204))),
     )
     np.testing.assert_array_equal(labels, np.asarray((1, 0, 0, 0, 0)))
+
+
+def test_mask_expansion_distinguishes_real_apertures_from_pixel_speckles() -> None:
+    from da3_cad.segmentation.sam2_box import _mask_expansion_quality
+
+    initial = np.zeros((100, 100), dtype=bool)
+    initial[20:80, 20:70] = True
+    initial[40:55, 40:55] = False  # Resolved aperture.
+    initial[25:28, 25:28] = False  # Tiny segmentation speckle.
+    expanded = initial.copy()
+    expanded[30:70, 70:80] = True  # Connected missing appendage.
+    expanded[25:28, 25:28] = True
+    quality = _mask_expansion_quality(initial, expanded)
+    assert quality["retained_fraction"] == 1
+    assert 1.01 < quality["area_ratio"] < 1.35
+    assert quality["preserved_hole_fraction"] == 1
+    expanded[40:55, 40:55] = True
+    assert _mask_expansion_quality(initial, expanded)["preserved_hole_fraction"] == 0
+    assert _mask_expansion_quality(initial, np.ones_like(initial))["area_ratio"] > 1.35
+    expanded[:, :40] = False
+    assert _mask_expansion_quality(initial, expanded)["retained_fraction"] < 0.98

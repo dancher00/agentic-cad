@@ -298,6 +298,29 @@ def _import_sam2(source_dir: Path) -> tuple[Any, type[Any]]:
     return build_module.build_sam2, predictor_module.SAM2ImagePredictor
 
 
+def _mask_expansion_quality(initial: Any, candidate: Any) -> dict[str, float]:
+    """Check added instance support without sacrificing existing material or apertures."""
+    from scipy.ndimage import binary_erosion, binary_fill_holes, label
+
+    initial = np.asarray(initial, dtype=bool)
+    candidate = np.asarray(candidate, dtype=bool)
+    if initial.shape != candidate.shape or not initial.any():
+        raise ValueError("Mask expansion requires aligned nonempty source support")
+    holes = binary_erosion(binary_fill_holes(initial) & ~initial)
+    components, _ = label(holes)
+    sizes = np.bincount(components.ravel())
+    significant = sizes >= 16
+    significant[0] = False
+    holes = significant[components]
+    return {
+        "retained_fraction": float((candidate & initial).sum() / initial.sum()),
+        "area_ratio": float(candidate.sum() / initial.sum()),
+        "preserved_hole_fraction": float((holes & ~candidate).sum() / holes.sum())
+        if holes.any()
+        else 1.0,
+    }
+
+
 def segment_box_prompts_sam2(
     input_dir: Path,
     boxes_path: Path,
@@ -306,6 +329,7 @@ def segment_box_prompts_sam2(
     source_dir: Path = Path("data/upstream/SAM2"),
     checkpoint_path: Path = Path("data/checkpoints/sam2.1_hiera_small.pt"),
     device: str = "auto",
+    refine_boxes: bool = False,
 ) -> Sam2SegmentationResult:
     """Convert explicit boxes into full-resolution binary instance masks."""
 
@@ -373,6 +397,48 @@ def segment_box_prompts_sam2(
                 raw_mask = np.asarray(predicted[0], dtype=np.bool_)
                 if not np.any(raw_mask):
                     raise RuntimeError(f"SAM2 returned an empty mask: {observation.relative_path}")
+                selected_box = prompt.xyxy_pixels
+                anchor, _ = _select_prompt_instance(raw_mask, prompt.xyxy_pixels)
+                expansion_candidates: list[dict[str, object]] = []
+                selected_score = float(np.asarray(scores).reshape(-1)[0])
+                bx0, by0, bx1, by1 = prompt.xyxy_pixels
+                for margin in ((0.08, 0.16) if refine_boxes else ()):
+                    dx, dy = (bx1 - bx0) * margin, (by1 - by0) * margin
+                    expanded_box = (
+                        max(0.0, bx0 - dx),
+                        max(0.0, by0 - dy),
+                        min(float(observation.width), bx1 + dx),
+                        min(float(observation.height), by1 + dy),
+                    )
+                    expanded, expanded_scores, _ = predictor.predict(
+                        box=np.asarray(expanded_box, dtype=np.float32),
+                        multimask_output=False,
+                    )
+                    if not np.asarray(expanded[0]).any():
+                        continue
+                    expanded_mask, _ = _select_prompt_instance(expanded[0], expanded_box)
+                    quality = _mask_expansion_quality(anchor, expanded_mask)
+                    expanded_score = float(np.asarray(expanded_scores).reshape(-1)[0])
+                    accepted = (
+                        expanded_score > selected_score + 0.01
+                        and quality["retained_fraction"] >= 0.98
+                        and 1.01 <= quality["area_ratio"] <= 1.35
+                        and quality["preserved_hole_fraction"] >= 0.95
+                    )
+                    expansion_candidates.append(
+                        {
+                            "margin_per_side": margin,
+                            "predicted_iou": expanded_score,
+                            **quality,
+                            "accepted": accepted,
+                        }
+                    )
+                    if accepted:
+                        raw_mask = np.asarray(expanded[0], dtype=np.bool_)
+                        scores = expanded_scores
+                        selected_score = expanded_score
+                        selected_box = expanded_box
+                        selected_strategy = "expanded-box-preserving-instance-and-apertures"
                 x0, y0, x1, y1 = (int(round(value)) for value in prompt.xyxy_pixels)
                 inside = np.zeros_like(raw_mask)
                 inside[
@@ -382,7 +448,7 @@ def segment_box_prompts_sam2(
                 inside_fraction = float(np.logical_and(raw_mask, inside).sum() / raw_mask.sum())
                 mask, postprocessing = _select_prompt_instance(
                     raw_mask,
-                    prompt.xyxy_pixels,
+                    selected_box,
                 )
                 warnings: list[str] = []
                 if inside_fraction < 0.85:
@@ -411,6 +477,8 @@ def segment_box_prompts_sam2(
                         "initial_box_predicted_iou": initial_iou,
                         "refinement_candidate_ious": refinement_scores,
                         "selected_prompt_strategy": selected_strategy,
+                        "selected_box_xyxy_pixels": list(selected_box),
+                        "box_expansion_candidates": expansion_candidates,
                         "raw_mask_inside_box_fraction": inside_fraction,
                         "postprocessing": postprocessing,
                         "mask_area_pixels": int(mask.sum()),
@@ -426,7 +494,7 @@ def segment_box_prompts_sam2(
         output_path = output_dir / f"{Path(observation.relative_path).stem}.png"
         Image.fromarray(np.where(mask, 255, 0).astype(np.uint8), mode="L").save(output_path)
     report: dict[str, object] = {
-        "schema_version": "da3-cad-sam2-box-segmentation-v2",
+        "schema_version": "da3-cad-sam2-box-segmentation-v3",
         "input_digest": observations.digest,
         "boxes": {
             "path": str(boxes_path.resolve()),
@@ -449,9 +517,19 @@ def segment_box_prompts_sam2(
         },
         "postprocessing_contract": {
             "instance": "component containing prompt centre, otherwise largest component",
-            "support": "box prompt expanded by 2% per side",
+            "support": "selected box expanded by 2% per side",
             "holes": "preserved",
             "purpose": "prevent background leakage from changing crop and CAD evidence",
+        },
+        "box_expansion_contract": {
+            "enabled": refine_boxes,
+            "margins_per_side": [0.08, 0.16],
+            "minimum_score_improvement": 0.01,
+            "minimum_retained_fraction": 0.98,
+            "area_ratio_range": [1.01, 1.35],
+            "minimum_preserved_hole_fraction": 0.95,
+            "minimum_eroded_hole_area_pixels": 16,
+            "cad_used_for_mask_selection": False,
         },
         "lifecycle": lifecycle.as_dict(),
         "views": view_reports,

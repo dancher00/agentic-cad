@@ -147,6 +147,11 @@ entry must match a literal numeric assignment in code; its source is `specified`
 if supplied by the user, otherwise `estimated`. Use robust small fillets where the
 photo shows rounded manufactured edges, including ceramic handle edges. Omit purely
 decorative fillets, but do not leave a visibly rounded handle as a sharp extruded plate.
+For visibly smooth integral attachments, create a continuous loft/sweep transition or
+round the actual intersection with the body. Unioning a larger pad or sphere is not
+a tangent blend: avoid exposed pad end caps and separate boss outlines unless the
+photos show them. When a review rejects a construction, replace that construction;
+preserving accepted features does not mean retaining a rejected pad or plate.
 Filleting a chain of nontangent arcs can fail even at a small radius. If a handle
 fillet fails, rebuild its contour with tangent joins or sweep a rounded section
 along a smooth path; do not repeatedly shrink the same failing fillet. Workplane

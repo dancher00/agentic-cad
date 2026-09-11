@@ -214,6 +214,28 @@ class GeometryObjective:
                         return {**best, "registration_method": "warm-start"}
         return {**self._register_global(), "registration_method": "global"}
 
+    def polish_pose(self, seed: Any) -> dict[str, Any]:
+        """Resolve coarse rasterization drift with one shared, bounded camera-frame pose."""
+        origin = np.asarray(seed, dtype=float)
+        best = self.evaluate(origin)
+
+        def loss(pose: Any) -> float:
+            nonlocal best
+            score = self.evaluate(pose)
+            if score["loss"] < best["loss"]:
+                best = score
+            return float(score["loss"])
+
+        delta = np.asarray([0.08, 0.08, 0.08, 0.06, 0.08, 0.08, 0.08])
+        minimize(
+            loss,
+            origin,
+            method="Powell",
+            bounds=list(zip(origin - delta, origin + delta, strict=True)),
+            options={"maxfev": 120, "xtol": 0.001, "ftol": 0.0001},
+        )
+        return {**best, "pose_polished": True}
+
     def _register_global(self) -> dict[str, Any]:
         _, _, basis = np.linalg.svd(self.cloud - self.center, full_matrices=False)
         rotations = []
@@ -317,7 +339,8 @@ def fit_candidate(
     )
     verification = GeometryObjective(evidence, resolution=192)
     verification.load_mesh(attempt_dir / "model.stl", normalization)
-    verified_initial = verification.evaluate(initial["pose"])
+    verified_initial = verification.polish_pose(initial["pose"])
+    initial = {**initial, **objective.evaluate(verified_initial["pose"])}
     best = candidate
     best_score = initial
     best_verified = verified_initial

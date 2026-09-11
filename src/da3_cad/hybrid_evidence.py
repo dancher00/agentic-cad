@@ -44,6 +44,12 @@ class SceneContract(BaseModel):
 
 def align_mask_to_da3(mask: Image.Image, shape: tuple[int, int], resolution: int = 336) -> Any:
     """Mirror pinned DA3 upper-bound resize, patch rounding and batch center crop."""
+    return np.asarray(_align_image_to_da3(mask, shape, resolution, Image.Resampling.NEAREST)) > 0
+
+
+def _align_image_to_da3(
+    mask: Image.Image, shape: tuple[int, int], resolution: int, resampling: Image.Resampling
+) -> Image.Image:
     width, height = mask.size
     scale = resolution / max(width, height)
     intermediate = (max(1, round(width * scale)), max(1, round(height * scale)))
@@ -51,15 +57,85 @@ def align_mask_to_da3(mask: Image.Image, shape: tuple[int, int], resolution: int
         max(1, ((intermediate[0] + 7) // 14) * 14),
         max(1, ((intermediate[1] + 7) // 14) * 14),
     )
-    resized = mask.resize(intermediate, Image.Resampling.NEAREST).resize(
-        patch_size, Image.Resampling.NEAREST
-    )
+    resized = mask.resize(intermediate, resampling).resize(patch_size, resampling)
     out_h, out_w = shape
     if out_w > patch_size[0] or out_h > patch_size[1]:
         raise ValueError("DA3 output is incompatible with its pinned image preprocessing")
     left = (patch_size[0] - out_w) // 2
     top = (patch_size[1] - out_h) // 2
-    return np.asarray(resized.crop((left, top, left + out_w, top + out_h))) > 0
+    return resized.crop((left, top, left + out_w, top + out_h))
+
+
+def refresh_cached_masks(output: Path, report: dict[str, Any], config: HybridConfig) -> None:
+    """Upgrade copied evidence masks from photos, retaining the existing cameras/depth."""
+    from da3_cad.segmentation.sam2_box import segment_box_prompts_sam2
+
+    refreshed = output / "masks-refreshed"
+    segment_box_prompts_sam2(
+        output / "images",
+        output / "boxes.json",
+        refreshed,
+        source_dir=config.sam2_source,
+        checkpoint_path=config.sam2_checkpoint,
+        device=config.device,
+        refine_boxes=True,
+    )
+    # Operate only on the new run's copied evidence, keeping the original cache immutable.
+    shutil.rmtree(output / "masks")
+    refreshed.rename(output / "masks")
+    inputs, masks_dir = output / "images", output / "masks"
+    if report.get("cameras", {}).get("source") == "colmap":
+        import pycolmap
+
+        from da3_cad.geometry.cameras import _undistort_registered_mask
+
+        reconstruction = pycolmap.Reconstruction(str(output / "sfm" / "selected_model"))
+        inputs, masks_dir = (
+            output / "sfm" / "registered_frames",
+            output / "sfm" / "registered_masks",
+        )
+        for view in reconstruction.images.values():
+            _undistort_registered_mask(
+                pycolmap,
+                options=pycolmap.UndistortCameraOptions(),
+                source=output / "masks" / str(view.name),
+                destination=masks_dir / str(view.name),
+                camera=reconstruction.cameras[view.camera_id],
+            )
+    with np.load(output / "geometry.npz", allow_pickle=False) as archive:
+        geometry = {key: archive[key].copy() for key in archive.files}
+    prepared = sorted(inputs.glob("*.png"))
+    if len(prepared) != len(geometry["depth"]):
+        raise ValueError("Cached RGB and geometry view counts differ")
+    for index, path in enumerate(prepared):
+        depth = geometry["depth"][index]
+        with Image.open(masks_dir / path.name) as mask_image:
+            mask = align_mask_to_da3(mask_image, depth.shape)
+        good = mask & np.isfinite(depth) & (depth > 0)
+        if good.sum() < 32:
+            raise RuntimeError("Refreshed mask lacks finite object depth")
+        geometry["masks"][index] = mask
+        low, high = np.percentile(depth[good], [5, 95])
+        with Image.open(path) as frame:
+            rgb = np.asarray(
+                _align_image_to_da3(
+                    frame.convert("RGB"), depth.shape, 336, Image.Resampling.BICUBIC
+                )
+            ).copy()
+        rgb[~mask] = 240
+        gray = (255 * np.clip((depth - low) / max(high - low, 1e-8), 0, 1)).astype(np.uint8)
+        relative = np.repeat(gray[..., None], 3, axis=2)
+        relative[~good] = 240
+        Image.fromarray(np.concatenate([rgb, relative], axis=1)).save(
+            output / report["panels"][index]
+        )
+        ys, xs = np.where(mask)
+        report["views"][index].update(
+            mask_width_height_ratio=float(np.ptp(xs)) / max(float(np.ptp(ys)), 1),
+            depth_p05_p95=[float(low), float(high)],
+        )
+    np.savez_compressed(output / "geometry.npz", **geometry)
+    report["mask_refresh"] = {"source": "photos-and-box-ensemble", "cad_used": False}
 
 
 def prepare_evidence(
@@ -97,10 +173,17 @@ def prepare_evidence(
         with np.load(cache / "geometry.npz", allow_pickle=False) as data:
             if data["depth"].shape[0] != len(paths):
                 raise ValueError("Cached geometry view count differs from input photos")
+        shutil.copytree(cache, output)
+        segmentation = json.loads((output / cached["segmentation"]).read_text())
+        if (
+            segmentation.get("schema_version") != "da3-cad-sam2-box-segmentation-v3"
+            or not segmentation.get("box_expansion_contract", {}).get("enabled", False)
+        ):
+            refresh_cached_masks(output, cached, config)
+        with np.load(output / "geometry.npz", allow_pickle=False) as data:
             cached["camera_consistency"] = camera_consistency(
                 data["depth"], data["masks"], data["intrinsics"], data["extrinsics"]
             )
-        shutil.copytree(cache, output)
         cached.update(input_identity=input_identity, reused_from=str(cache))
         (output / "evidence.json").write_text(json.dumps(cached, indent=2, allow_nan=False))
         return cached
@@ -184,6 +267,7 @@ def prepare_evidence(
         source_dir=config.sam2_source,
         checkpoint_path=config.sam2_checkpoint,
         device=config.device,
+        refine_boxes=True,
     )
     from da3_cad.multiview_evidence import recover_photo_cameras
 

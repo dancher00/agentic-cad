@@ -307,3 +307,61 @@ def test_search_proxy_preserves_visible_aperture_and_verification_uses_export(tm
     assert len(search.faces) < len(verification.faces)
     assert len(verification.faces) == verification.export_face_count == len(mesh.faces)
     assert hashlib.sha256(path.read_bytes()).hexdigest() == before
+
+
+def test_cached_mask_upgrade_keeps_cameras_depth_and_original_cache(tmp_path, monkeypatch):
+    import hashlib
+
+    from da3_cad.hybrid_evidence import HybridConfig, prepare_evidence
+    from da3_cad.segmentation import sam2_box
+
+    cache = tmp_path / "cache"
+    (cache / "images").mkdir(parents=True)
+    (cache / "masks").mkdir()
+    paths = []
+    for i in range(2):
+        photo = cache / "images" / f"{i:02d}.png"
+        Image.new("RGB", (32, 32), (i * 100, 10, 10)).save(photo)
+        paths.append(photo)
+    report = {
+        "input_identity": {
+            "prompt": "part",
+            "sha256": [hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],
+        },
+        "segmentation": "masks/segmentation.json",
+        "panels": ["evidence-00.png", "evidence-01.png"],
+        "views": [{}, {}],
+    }
+    (cache / "evidence.json").write_text(json.dumps(report))
+    (cache / "boxes.json").write_text("{}")
+    (cache / "masks/segmentation.json").write_text(json.dumps({"schema_version": "v2"}))
+    arrays = dict(
+        depth=np.ones((2, 336, 336)),
+        masks=np.ones((2, 336, 336), dtype=bool),
+        intrinsics=np.repeat(np.eye(3)[None], 2, axis=0),
+        extrinsics=np.repeat(np.eye(4)[None, :3], 2, axis=0),
+    )
+    np.savez(cache / "geometry.npz", **arrays)
+    before = (cache / "geometry.npz").read_bytes()
+
+    def segment(images, boxes, output, **kwargs):
+        output.mkdir()
+        for i in range(2):
+            mask = np.zeros((32, 32), dtype=np.uint8)
+            mask[8:24, 8:24] = 255
+            Image.fromarray(mask).save(output / f"{i:02d}.png")
+        (output / "segmentation.json").write_text(
+            json.dumps({"schema_version": "da3-cad-sam2-box-segmentation-v3"})
+        )
+
+    monkeypatch.setattr(sam2_box, "segment_box_prompts_sam2", segment)
+    result = prepare_evidence(
+        paths, "part", tmp_path / "new", None, None, HybridConfig(evidence_cache=cache)
+    )
+    assert result["mask_refresh"]["cad_used"] is False
+    assert (cache / "geometry.npz").read_bytes() == before
+    with np.load(tmp_path / "new/geometry.npz") as updated:
+        for key in ("depth", "intrinsics", "extrinsics"):
+            np.testing.assert_array_equal(updated[key], arrays[key])
+        assert not np.array_equal(updated["masks"], arrays["masks"])
+    assert (tmp_path / "new/evidence-01.png").is_file()
