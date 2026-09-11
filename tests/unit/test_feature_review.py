@@ -32,7 +32,17 @@ def test_invalid_feature_edit_returns_to_the_valid_baseline(tmp_path, monkeypatc
         lambda candidate, *args: (
             candidate,
             None,
-            {"after": {"loss": 0.01, "mean_silhouette_iou": 0.99}},
+            {
+                "after": {"loss": 0.01, "mean_silhouette_iou": 0.99},
+                "trials": [
+                    {
+                        "parameter": "body_width",
+                        "value": 18.4,
+                        "valid": False,
+                        "reason": "Dependent rim radius crosses the cavity",
+                    }
+                ],
+            },
         ),
     )
     severities = iter([2, 0])
@@ -82,6 +92,7 @@ def test_invalid_feature_edit_returns_to_the_valid_baseline(tmp_path, monkeypatc
     )
     repair = str(calls[2]["input"])
     assert "body_width=20" in repair and "round the base" in repair
+    assert "Dependent rim radius crosses the cavity" in repair
     assert "unrelated_rewrite=99" not in repair
     assert result["attempts"][1]["repair_strategy"] == "return_to_valid_baseline"
     assert result["feature_review_passed"]

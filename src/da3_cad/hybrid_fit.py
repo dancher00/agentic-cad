@@ -377,6 +377,8 @@ def fit_candidate(
                 "valid": validation.valid,
                 "accepted": False,
             }
+            if not validation.valid:
+                row["reason"] = validation.error
             if validation.valid:
                 from da3_cad.hybrid_checks import check_overall_height
 

@@ -551,6 +551,9 @@ def run_gpt_cad(
                 "influence on the currently mismatching visible features, before already "
                 "matching dimensions. Expose independent dimensions for the features being "
                 "corrected so the fitter can refine them against the photo masks. "
+                "Derive dependent profile stations, rim radii and cavity dimensions from "
+                "those controls using offsets or ratios; avoid redundant unrelated constants "
+                "that make an 8% control change break the same feature's geometry. "
                 "Specified dimensions stay fixed.\n"
             )
             panels, _ = prepare_images(
@@ -803,6 +806,16 @@ def run_gpt_cad(
                         + candidate.code
                         + "\nMeasured observation consistency:\n"
                         + json.dumps(geometry["after"])
+                        + "\nParameter changes that broke the CAD or its constraints; "
+                        "repair these parameter dependencies while retaining "
+                        "specified dimensions:\n"
+                        + json.dumps(
+                            [
+                                {key: trial.get(key) for key in ("parameter", "value", "reason")}
+                                for trial in geometry.get("trials", [])
+                                if not trial.get("valid", True)
+                            ]
+                        )
                         + feature_feedback
                     )
                     repair_anchor_text = repair_text
