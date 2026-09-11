@@ -478,3 +478,45 @@ def test_photo_mask_profiles_use_object_bounds_and_preserve_view_order(tmp_path)
     assert profiles[0]["bands"][0]["band_iou"] == 0.5
     assert profiles[1]["bands"][0]["source_width_px"] == 80
     assert profiles[1]["bands"][0]["band_iou"] == 1.0
+
+
+def test_review_uses_camera_matched_photos_and_rejects_wrong_input_order(tmp_path):
+    import hashlib
+
+    import pytest
+
+    from da3_cad.feature_review import review_reference_photos
+
+    folder = tmp_path / "attempts" / "01"
+    folder.mkdir(parents=True)
+    photos = []
+    for index in range(2):
+        path = tmp_path / f"original-{index}.png"
+        Image.new("RGB", (32, 32), (index * 100, 10, 10)).save(path)
+        photos.append(path)
+    assert review_reference_photos(photos, folder) == (photos, "original")
+    evidence = tmp_path / "evidence"
+    rectified = evidence / "sfm" / "registered_frames"
+    rectified.mkdir(parents=True)
+    matches = []
+    for index in range(2):
+        path = rectified / f"{index:02d}.png"
+        Image.new("RGB", (30, 30)).save(path)
+        matches.append(path)
+    (evidence / "evidence.json").write_text(
+        json.dumps(
+            {
+                "cameras": {"source": "colmap"},
+                "input_identity": {
+                    "sha256": [hashlib.sha256(p.read_bytes()).hexdigest() for p in photos]
+                },
+                "views": [{"view": p.name} for p in matches],
+            }
+        )
+    )
+    assert review_reference_photos(photos, folder) == (matches, "colmap-undistorted")
+    with pytest.raises(ValueError, match="input order"):
+        review_reference_photos(photos[::-1], folder)
+    matches[1].unlink()
+    with pytest.raises(ValueError, match="Every camera"):
+        review_reference_photos(photos, folder)

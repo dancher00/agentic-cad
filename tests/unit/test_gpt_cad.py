@@ -181,3 +181,21 @@ def test_product_cli_dry_run_has_no_api_or_files(tmp_path: Path) -> None:
         assert result.exit_code == 0, result.output
         assert "gpt-5.6-sol" in result.output and "width=20mm" in result.output
         assert not output.exists()
+
+
+def test_native_loft_and_geometric_selectors_are_supported(tmp_path: Path) -> None:
+    from da3_cad.cad.sandbox import validate_and_export
+    from da3_cad.config import SandboxConfig
+
+    source = """import cadquery as cq
+length=20
+lower=cq.Workplane('XY').circle(5)
+upper=cq.Workplane('XY',origin=(0,0,length)).circle(3)
+solid=cq.Solid.makeLoft([lower.val(),upper.val()],ruled=False)
+r=cq.Workplane('XY').newObject([solid])
+rim=r.edges(cq.selectors.BoxSelector((-6,-6,length-1),(6,6,length+1)))
+"""
+    validate_generated_program(candidate(source))
+    result = validate_and_export(source, tmp_path, SandboxConfig())
+    assert result.valid, result.error
+    assert (tmp_path / "model.step").is_file()

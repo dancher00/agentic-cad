@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -11,7 +12,7 @@ import trimesh
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, ConfigDict, Field
 
-REVIEW_PROTOCOL_VERSION = 6
+REVIEW_PROTOCOL_VERSION = 7
 
 
 class FeatureFinding(BaseModel):
@@ -32,6 +33,24 @@ class FeatureReview(BaseModel):
 def feature_rank(review: dict[str, Any]) -> tuple[int, int]:
     severities = [f["severity"] for f in review["findings"]]
     return max(severities), sum(severities)
+
+
+def review_reference_photos(photos: list[Path], folder: Path) -> tuple[list[Path], str]:
+    """Match the reference image domain to the cameras used for the CAD renders."""
+    evidence = folder.parent.parent / "evidence"
+    metadata = evidence / "evidence.json"
+    if not metadata.is_file():
+        return photos, "original"
+    report = json.loads(metadata.read_text())
+    if report.get("cameras", {}).get("source") != "colmap":
+        return photos, "original"
+    identity = [hashlib.sha256(path.read_bytes()).hexdigest() for path in photos]
+    if identity != report.get("input_identity", {}).get("sha256"):
+        raise ValueError("Review photos do not match the registered camera input order")
+    rectified = [evidence / "sfm" / "registered_frames" / v["view"] for v in report["views"]]
+    if len(rectified) != len(photos) or not all(path.is_file() for path in rectified):
+        raise ValueError("Every camera must have an undistorted reference photo")
+    return rectified, "colmap-undistorted"
 
 
 def photo_mask_profiles(folder: Path) -> list[dict[str, Any]]:
@@ -147,6 +166,7 @@ def review_features(
 ) -> dict[str, Any]:
     from da3_cad.gpt_cad import prepare_images
 
+    photos, reference_frame = review_reference_photos(photos, folder)
     rendered = render_views(folder / "model.stl", folder)
     mesh = trimesh.load(folder / "model.stl", force="mesh", process=False)
     if not isinstance(mesh, trimesh.Trimesh):
@@ -178,6 +198,12 @@ def review_features(
     if registered and len(registered) != len(photos):
         raise ValueError("Every source view must have a registered CAD render")
     images, _ = prepare_images([*photos, *overlays, *registered, rendered])
+    if reference_frame == "colmap-undistorted":
+        for index, _ in enumerate(photos):
+            images[2 * index]["text"] = (
+                f"Source view {index + 1}, lens distortion corrected by the recovered camera; "
+                "same image domain as the corresponding CAD render and silhouette overlay"
+            )
     for index, _ in enumerate(overlays):
         images[2 * (len(photos) + index)]["text"] = (
             f"Registered CAD/SAM silhouette overlay for source view {index + 1}"
@@ -262,6 +288,7 @@ def review_features(
         cad_measurements=measurements,
         photo_mask_profiles=mask_profiles,
         registered_views=[path.name for path in registered],
+        reference_frame=reference_frame,
         usage=response.usage.model_dump() if response.usage else None,
     )
     (folder / "feature-review.json").write_text(json.dumps(result, indent=2) + "\n")

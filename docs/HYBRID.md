@@ -124,7 +124,10 @@ the kernel checks, regeneration returns to that baseline and its photo feedback,
 instead of carrying unrelated changes from the rejected program into the next try.
 The hybrid kernel budget defaults to 90 CPU seconds and 120 wall seconds per build;
 an explicitly supplied `SandboxConfig` takes precedence. Resource-limit failures
-are reported separately from geometry failures. STL export requests 0.05 mm absolute
+are reported separately from geometry failures. Native `Solid.makeLoft`, `Workplane.newObject` and geometric box selectors are
+available for smooth transitions through differently oriented sections. These run
+inside the same CAD validation path as workplane operations.
+STL export requests 0.05 mm absolute
 deflection and 0.2 radians angular deflection; the STEP export retains analytic surfaces.
 
 Registration uses one shared similarity transform across the DA3 cameras, rather
@@ -173,6 +176,9 @@ section spans as well as depth-buffered renders, so CAD dimensions need not be
 guessed from pixels. The review also receives the measured lowest contact footprint,
 near-base sections, paired source/CAD silhouette bands, registered overlays and
 perspective CAD renders with depth-tested occlusion in every estimated camera.
+For COLMAP cameras, the reviewer receives the corresponding undistorted photos.
+Original-photo hashes and ordering must match the camera evidence before these
+references can be used.
 These renders use the same shared transform as the masks, without per-view fitting.
 Both masks are measured at the same image rows; projected bands are never treated
 as axial CAD cross-sections. Reviews carry a
