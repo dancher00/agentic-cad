@@ -370,6 +370,17 @@ def test_reviewer_receives_measured_sections_and_rejects_incomplete_response(tmp
         for s in result["cad_measurements"]["horizontal_sections"]
     )
     assert "Measured CAD geometry" in str(calls[0]["input"])
+    for index in range(2):
+        Image.new("RGB", (32, 32)).save(tmp_path / f"registered-cad-{index:02d}.png")
+    with pytest.raises(ValueError, match="Every source view"):
+        review_features(client, GPTConfig(), [photo], tmp_path, "box", ["body"])
+    paired = review_features(client, GPTConfig(), [photo, photo], tmp_path, "box", ["body"])
+    assert paired["registered_views"] == ["registered-cad-00.png", "registered-cad-01.png"]
+    labels = [c.get("text", "") for c in calls[-1]["input"][0]["content"]]
+    assert any("estimated camera of source view 1" in label for label in labels)
+    assert any("estimated camera of source view 2" in label for label in labels)
+    for path in tmp_path.glob("registered-cad-*.png"):
+        path.unlink()
     tapered = trimesh.creation.revolve([[0, 0], [1, 0], [2, 1], [2, 4], [0, 4]])
     tapered.export(tmp_path / "model.stl")
     measured = review_features(client, GPTConfig(), [photo], tmp_path, "foot", ["base"])

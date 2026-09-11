@@ -770,14 +770,22 @@ def run_gpt_cad(
                     feature_failed
                     or not observation_target_met(geometry["after"], hybrid.min_silhouette_iou)
                 ) and index < settings.max_repairs:
-                    feedback, _ = prepare_images(
+                    feedback_paths = (
                         sorted(attempt_dir.glob("comparison-*.png"))
+                        + sorted(attempt_dir.glob("registered-cad-*.png"))
                         + (
                             [attempt_dir / "sections.png"]
                             if (attempt_dir / "sections.png").exists()
                             else []
                         )
                     )
+                    feedback, _ = prepare_images(feedback_paths)
+                    for feedback_index, feedback_path in enumerate(feedback_paths):
+                        feedback[2 * feedback_index]["text"] = (
+                            f"CAD feedback artifact: {feedback_path.name}; not a source photo. "
+                            "Numbered comparison and registered-cad files use the same "
+                            "zero-based source view index."
+                        )
                     # Keep original photos/evidence; replace only the last candidate overlays.
                     content = [c for c in content if not c.get("hybrid_feedback")]
                     for item in feedback:
@@ -817,6 +825,7 @@ def run_gpt_cad(
             for file in [
                 attempt_dir / "geometry-review.json",
                 *attempt_dir.glob("comparison-*.png"),
+                *attempt_dir.glob("registered-cad-*.png"),
                 *attempt_dir.glob("sections.png"),
                 *attempt_dir.glob("material-chords.json"),
                 *attempt_dir.glob("silhouettes.npz"),

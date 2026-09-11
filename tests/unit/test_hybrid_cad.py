@@ -245,6 +245,7 @@ def test_multiview_parameter_fit_improves_width_without_changing_known_height(
     assert fitted.parameters[0].value > 20
     assert fitted.parameters[1].value == 20
     assert len(review["after"]["view_ious"]) == 2
+    assert len(list(folder.glob("registered-cad-*.png"))) == 2
     assert all(row["parameter"] == "width" for row in review["trials"])
 
 

@@ -50,9 +50,19 @@ class GeometryObjective:
             depth, masks = data["depth"], data["masks"]
             clouds = []
             targets = []
+            self.view_crops = []
             for i, mask in enumerate(masks):
                 h, w = mask.shape
-                ratio = resolution / max(h, w)
+                ys_mask, xs_mask = np.where(mask)
+                if not len(xs_mask):
+                    raise ValueError("Empty object silhouette")
+                margin = max(2, round(max(np.ptp(xs_mask), np.ptp(ys_mask)) * 0.15))
+                x0, y0 = max(0, int(xs_mask.min()) - margin), max(0, int(ys_mask.min()) - margin)
+                x1 = min(w, int(xs_mask.max()) + margin + 1)
+                y1 = min(h, int(ys_mask.max()) + margin + 1)
+                self.view_crops.append([x0, y0, x1, y1])
+                cropped = mask[y0:y1, x0:x1]
+                ratio = min(resolution / max(cropped.shape), 1024 / max(h, w))
                 size = (max(1, round(w * ratio)), max(1, round(h * ratio)))
                 targets.append(
                     cv2.resize(mask.astype(np.uint8), size, interpolation=cv2.INTER_NEAREST).astype(
@@ -71,6 +81,8 @@ class GeometryObjective:
                 points = rays * depth[i, ys, xs, None]
                 ext = self.extrinsics[i]
                 clouds.append((points - ext[:3, 3]) @ ext[:3, :3])
+                # Resolve the object rather than the background, retaining the full
+                # frame so material outside the object ROI is still penalized.
                 self.intrinsics[i, 0] *= size[0] / w
                 self.intrinsics[i, 1] *= size[1] / h
         self.targets = targets
@@ -112,6 +124,12 @@ class GeometryObjective:
             predicted = rasterize(world, self.faces, intrinsics, extrinsics, target.shape)
             ious.append(silhouette_iou(predicted, target))
             if panels is not None:
+                from da3_cad.camera_render import render_camera
+
+                rendered = render_camera(world, self.faces, intrinsics, extrinsics, target.shape)
+                rendered.resize((target.shape[1] * 4, target.shape[0] * 4)).save(
+                    panels / f"registered-cad-{i:02d}.png"
+                )
                 silhouettes[f"target_{i:02d}"] = target
                 silhouettes[f"cad_{i:02d}"] = predicted
                 # Gray overlap, blue missing material, red excess material.
@@ -130,11 +148,13 @@ class GeometryObjective:
         residual = float(np.mean(np.minimum(distances, 0.5)))
         mean_iou = float(np.mean(ious))
         return {
-            "loss": 1 - mean_iou + 0.1 * residual,
+            "loss": 1 - 0.5 * (mean_iou + min(ious)) + 0.1 * residual,
+            "worst_silhouette_iou": float(min(ious)),
             "mean_silhouette_iou": mean_iou,
             "view_ious": ious,
             "relative_depth_surface_residual": residual,
             "pose": list(map(float, pose)),
+            "view_crops_xyxy": self.view_crops,
             "contract": "shared similarity in DA3 camera frame; relative scale; depth prior",
         }
 

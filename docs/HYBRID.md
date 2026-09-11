@@ -2,8 +2,10 @@
 
 `hybrid` combines GPT-5.6 Sol, SAM2.1 Small, DA3 Base and local CAD fitting.
 It accepts 1–16 photos of the same stationary object. Original photos and derived
-mask/depth panels are sent to the selected provider. The existing `gpt` mode
-remains the default and also accepts text-only requests.
+mask/depth panels and CAD review renders are sent to the selected provider. The CLI
+default is `--reconstruction auto`: two or more photos select hybrid; text and one
+photo select GPT. Explicit `--reconstruction gpt` skips the geometric stages.
+The Python function requires `hybrid=HybridConfig(...)` to enable them.
 
 ```bash
 agentic-cad reconstruct photos/ --prompt "Reconstruct this mug with its open bowl and handle" \
@@ -14,6 +16,16 @@ agentic-cad reconstruct photos/ --prompt "Reconstruct this mug with its open bow
 
 Open `work/mug/viewer.html`. STEP, STL, Python and parameter files have the same
 names as in the standard workflow.
+
+## Capture the object
+
+Use 6–16 sharp photos with overlap: move the camera around one stationary, rigid
+object, including elevated and lower views. Keep the object large in the frame,
+with the handle, rim and base visible in several views. Keep zoom fixed.
+Avoid mixing different object deformations or rotating the object against a
+stationary background; joint camera estimation assumes one static scene.
+Supply at least one measured dimension to set metric scale. Hidden surfaces and
+wall thickness still need additional views or measurements.
 
 ## Setup
 
@@ -40,11 +52,11 @@ available; CUDA is recommended.
 |---|---|
 | GPT locates the requested object in every photo | Bounding boxes and a feature contract |
 | SAM2 segments each box | Object masks, including visible handle openings |
-| DA3 processes the original views together | Relative depth, intrinsics and camera poses |
+| DA3 processes the original views together | Relative depth, intrinsics and camera poses; cross-view reprojection diagnostics |
 | GPT receives photos, masked RGB, depth panels and observations | Parametric CadQuery program with declared cavity clearances |
 | CAD kernel builds the solid | STEP/STL, connectivity and clearance intersection checks |
 | Numerical fitting compares projected CAD to masks and depth | Estimated dimensions adjusted within ±8% of their initial values |
-| A separate GPT review compares source photos with four renders of the exported STL | Feature-specific corrections for proportions, base, rim, handles and openings |
+| A separate GPT review compares every source photo with its camera-matched CAD render, plus four fixed STL views | Feature-specific corrections for proportions, base, rim, handles and openings |
 | Geometric feedback, if needed | Another CAD candidate, retaining the best valid candidate by the observation objective |
 
 Closed thin-wall containers use an inward offset of a complete exterior solid,
@@ -98,7 +110,11 @@ Each accepted update must improve silhouette agreement at both 96- and 192-pixel
 resolution without degrading another view beyond 0.002 IoU or the depth residual
 by more than 0.01. These are conservative fit controls, not physical tolerances.
 
-The objective is `1 − mean silhouette IoU + 0.1 × relative depth surface residual`.
+The objective is `1 − 0.5 × (mean IoU + worst-view IoU) + 0.1 × relative depth surface residual`.
+The search and verification resolutions target the object bounding box plus a 15%
+margin, not the whole background. Full image frames are retained (capped at 1024 px
+on the longest side), so geometry outside that bounding box is still penalized.
+Upsampling does not recover detail missing from the original SAM/DA3 evidence.
 The depth term is a one-sided, clipped distance from observed DA3 points to the
 CAD surface. It does not penalize unobserved back surfaces. The default silhouette
 IoU target is 0.85 in every view at verification resolution; it is a feedback
@@ -113,7 +129,9 @@ has no clear local errors according to that review; it is a model judgment, not
 ground-truth validation. The reviewer receives measured STL extents and horizontal
 section spans as well as depth-buffered renders, so CAD dimensions need not be
 guessed from pixels. The review also receives the measured lowest contact footprint,
-near-base sections, paired source/CAD silhouette bands and registered overlays.
+near-base sections, paired source/CAD silhouette bands, registered overlays and
+perspective CAD renders with depth-tested occlusion in every estimated camera.
+These renders use the same shared transform as the masks, without per-view fitting.
 Both masks are measured at the same image rows; projected bands are never treated
 as axial CAD cross-sections. Reviews carry a
 protocol version; resume reassesses older
@@ -163,6 +181,11 @@ resume sends that saved program and critique directly to the next generation.
   `geometry.npz` with depth, confidence and cameras.
 - `geometry-review.json`: before/after objective values and every parameter trial.
 - `comparison-*.png`: gray overlap, blue missing silhouette, red excess silhouette.
+- `registered-cad-*.png`: the same CAD rendered in each estimated reference camera.
+- `evidence/evidence.json` → `camera_consistency`: estimated angular separation and
+  cross-view mask containment of visible reprojected depth samples. Pairs with fewer
+  than 32 visible samples are unscored. These are prediction diagnostics, not a
+  calibrated-pose or completeness certificate; occluded samples are excluded.
 - `silhouettes.npz`: source and projected CAD masks in the same verification image frames.
 - `sections.png` and `material-chords.json`: central CAD sections and sampled
   inward surface distances, including thick features; not certified wall thickness.

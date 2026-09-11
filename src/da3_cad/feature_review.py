@@ -11,7 +11,7 @@ import trimesh
 from PIL import Image, ImageDraw
 from pydantic import BaseModel, ConfigDict, Field
 
-REVIEW_PROTOCOL_VERSION = 5
+REVIEW_PROTOCOL_VERSION = 6
 
 
 class FeatureFinding(BaseModel):
@@ -174,10 +174,18 @@ def review_features(
                 }
             )
     overlays = sorted(folder.glob("comparison-*.png"))
-    images, _ = prepare_images([*photos, *overlays, rendered])
+    registered = sorted(folder.glob("registered-cad-*.png"))
+    if registered and len(registered) != len(photos):
+        raise ValueError("Every source view must have a registered CAD render")
+    images, _ = prepare_images([*photos, *overlays, *registered, rendered])
     for index, _ in enumerate(overlays):
         images[2 * (len(photos) + index)]["text"] = (
             f"Registered CAD/SAM silhouette overlay for source view {index + 1}"
+        )
+    for index, _ in enumerate(registered):
+        images[2 * (len(photos) + len(overlays) + index)]["text"] = (
+            f"Perspective CAD render in the estimated camera of source view {index + 1}; "
+            "same shared shape, scale and registration as its silhouette overlay"
         )
     images[-2]["text"] = "Four views of the actual exported CAD; not a source photograph"
     mask_profiles = photo_mask_profiles(folder)
@@ -189,7 +197,12 @@ def review_features(
             "Any intermediate images labeled silhouette overlays compare registered CAD "
             "and SAM masks: gray=overlap, blue=missing CAD silhouette, red=excess CAD silhouette. "
             "Registration is estimated; use overlays alongside the original photos, not as "
-            "ground truth. Inspect "
+            "ground truth. Compare each source photo against its matching numbered perspective "
+            "CAD render when present. Inspect ALL source views, not just the clearest front view. "
+            "Cite source view numbers in photo_evidence. Reconcile each feature across views: "
+            "a handle hidden behind the body is occluded, not absent. Do not force every view "
+            "to show a visible aperture. Distinguish a coherent shape error from camera "
+            "misregistration; record camera discrepancies in camera_caveats. Inspect "
             "body proportions, lower body transition, base/foot profile, rim, and any handles "
             "and apertures separately, plus other observed features. Compare base width to "
             "body/rim width and base height to total axial height, slope, curvature, steps "
@@ -248,6 +261,7 @@ def review_features(
         reasoning_effort="high",
         cad_measurements=measurements,
         photo_mask_profiles=mask_profiles,
+        registered_views=[path.name for path in registered],
         usage=response.usage.model_dump() if response.usage else None,
     )
     (folder / "feature-review.json").write_text(json.dumps(result, indent=2) + "\n")

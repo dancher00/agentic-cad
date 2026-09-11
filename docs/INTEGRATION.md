@@ -8,15 +8,22 @@ CAD locally. It does not currently serve an HTTP endpoint or implement MCP.
 ```python
 from pathlib import Path
 from da3_cad.gpt_cad import GPTConfig, run_gpt_cad
+from da3_cad.hybrid_evidence import HybridConfig
 
 report = run_gpt_cad(
     "Reconstruct this bracket. Overall height is 60 mm.",
     Path("work/bracket"),
     images=[Path("photos/front.jpg"), Path("photos/side.jpg")],
-    config=GPTConfig(model="gpt-5.6-sol", provider="llm-proxy"),
+    config=GPTConfig(model="gpt-5.6-sol", provider="llm-proxy",
+                     timeout_seconds=900, max_output_tokens=32768),
+    hybrid=HybridConfig(device="auto"),
 )
 print(report["step"])  # model.step, relative to work/bracket
 ```
+
+Install the [hybrid dependencies and weights](HYBRID.md#setup) for this multi-view
+example. Omit `hybrid` for text-only or explicit GPT-only generation. Unlike the CLI,
+the Python function does not automatically choose hybrid from the photo count.
 
 The call is synchronous. The output directory must not exist. No images are
 required for text-only generation. The Python module remains `da3_cad` for

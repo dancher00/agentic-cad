@@ -4,7 +4,9 @@ Agentic CAD uses GPT-5.6 Sol to generate a parameterized CadQuery program from a
 
 ## Installation
 
-Linux and Python 3.12 are required. A GPU is not needed.
+Linux and Python 3.12 are required. Text and GPT-only generation need no GPU.
+Multiple photos select the [hybrid pipeline](HYBRID.md) by default; install its
+additional dependencies and local weights. CUDA is recommended for that path.
 
 ```bash
 python3.12 -m venv .venv
@@ -36,7 +38,7 @@ agentic-cad generate --image front.jpg --image side.jpg \
   --dimension "wall thickness=0.15mm" --output work/container
 ```
 
-`generate`, `reconstruct` and the compatibility alias `photo-cad` run the same GPT pipeline.
+`generate`, `reconstruct` and the compatibility alias `photo-cad` run the same product pipeline.
 `--object` is an alias for `--prompt`. Text-only generation needs no image argument.
 A directory or individual JPEG/PNG/WebP files are accepted, up to 16 unique photos
 and 20 MiB per file. Images are EXIF-oriented, resized to a maximum side of 1536 px,
@@ -48,18 +50,19 @@ Use a new output directory. Agentic CAD refuses to overwrite an existing run.
 
 | Option | Default | Purpose |
 |---|---|---|
+| `--reconstruction` | `auto` | Hybrid for multiple photos; GPT for text or one photo. |
 | `--model` | `gpt-5.6-sol` | Provider model identifier. |
 | `--provider` | `llm-proxy` | `llm-proxy` or `openai`. |
 | `--reasoning` | `xhigh` | Model reasoning effort. |
-| `--max-output-tokens` | `16384` | Output budget, including reasoning tokens. |
+| `--max-output-tokens` | `16384` / `32768` hybrid | Output budget, including reasoning tokens. |
 | `--max-repairs` | `1` | Extra calls to correct invalid CAD code, from 0 to 3. |
-| `--timeout` | `180` | Timeout in seconds for each API request. |
+| `--timeout` | `180` / `900` hybrid | Timeout in seconds for each API request. |
 | `--no-viewer` | off | Skip HTML preview generation. |
 | `--dry-run` | off | Check inputs without an API call or output files. |
 
 API transport retries are disabled. CAD repairs retain the original text and
 images, and add the previous code and local validation error. They repair
-execution failures; they do not perform image-based shape optimization.
+execution failures. Hybrid mode also uses multi-view geometry and feature feedback.
 
 ## Outputs and editing
 

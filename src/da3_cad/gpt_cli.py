@@ -58,8 +58,9 @@ def generate_command(
         typer.Option(min=1, max=1800, help="Seconds per API request: 180 for gpt, 900 for hybrid."),
     ] = None,
     reconstruction: Annotated[
-        Literal["gpt", "hybrid"], typer.Option(help="GPT alone, or SAM2 + DA3 + geometric fitting.")
-    ] = "gpt",
+        Literal["auto", "gpt", "hybrid"],
+        typer.Option(help="Auto: hybrid for multiple photos; GPT for text or one photo."),
+    ] = "auto",
     device: Annotated[str, typer.Option(help="Hybrid model device: auto, cpu or cuda.")] = "auto",
     fit_parameters: Annotated[int, typer.Option(min=0, max=12)] = 4,
     feature_review: Annotated[
@@ -99,6 +100,8 @@ def generate_command(
         if len(prompt) > 20000:
             raise ValueError("Description exceeds 20000 characters.")
         paths = collect_images(images, image)
+        if reconstruction == "auto":
+            reconstruction = "hybrid" if len(paths) > 1 else "gpt"
         settings = GPTConfig(
             model=model,
             provider=provider,
@@ -128,6 +131,7 @@ def generate_command(
             console.print_json(
                 data={
                     "prompt": prompt,
+                    "reconstruction": reconstruction,
                     "images": manifest,
                     "config": settings.model_dump(),
                     "hybrid": hybrid.model_dump(mode="json") if hybrid else None,

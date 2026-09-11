@@ -73,6 +73,8 @@ def prepare_evidence(
         "prompt": prompt,
         "sha256": [hashlib.sha256(path.read_bytes()).hexdigest() for path in paths],
     }
+    from da3_cad.multiview_evidence import camera_consistency
+
     if config.evidence_cache is not None:
         cache = config.evidence_cache.resolve()
         cached: dict[str, Any] = json.loads((cache / "evidence.json").read_text())
@@ -89,6 +91,9 @@ def prepare_evidence(
         with np.load(cache / "geometry.npz", allow_pickle=False) as data:
             if data["depth"].shape[0] != len(paths):
                 raise ValueError("Cached geometry view count differs from input photos")
+            cached["camera_consistency"] = camera_consistency(
+                data["depth"], data["masks"], data["intrinsics"], data["extrinsics"]
+            )
         shutil.copytree(cache, output)
         cached.update(input_identity=input_identity, reused_from=str(cache))
         (output / "evidence.json").write_text(json.dumps(cached, indent=2, allow_nan=False))
@@ -238,6 +243,9 @@ def prepare_evidence(
         "segmentation": str(segmentation.report_path.relative_to(output)),
         "geometry": backend.last_runtime_report,
         "geometry_file": "geometry.npz",
+        "camera_consistency": camera_consistency(
+            depth, np.asarray(masks), prediction.intrinsics, prediction.extrinsics
+        ),
         "panels": [p.name for p in panels],
         "scale": "Relative geometry; CAD dimensions remain user-specified or estimated",
     }
@@ -256,7 +264,12 @@ def evidence_instructions(report: dict[str, Any]) -> str:
         "\nHybrid reconstruction contract: build upright CAD with Z as height. "
         "Auxiliary panels show masked RGB (left) and relative DA3 depth (right). "
         "Depth is a noisy geometric prior, not a dimensional measurement. Preserve the "
-        "original photos as the appearance reference. Expose dimensions for visible features. "
+        "original photos as the appearance reference. All views describe ONE stationary object "
+        "and must share one shape and one metric scale. Reconcile dimensions across views; "
+        "do not independently reconstruct or average view-specific shapes. A feature hidden "
+        "by the body in another view is occluded, not missing. Use views where each feature "
+        "is visible to constrain it. Never add material to match an occluder or background. "
+        "Expose dimensions for visible features. "
         "Use smooth profiles for visibly smooth formed surfaces. For hollow parts, model "
         "the internal void explicitly and subtract it AFTER all external unions, including "
         "handles and attachments. Do not fill a thin rolled seam with a massive solid ring. "

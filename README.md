@@ -8,7 +8,7 @@
 
 ## Quick start
 
-Linux · Python 3.12 · no GPU required.
+Linux · Python 3.12 · GPU recommended for multi-view reconstruction.
 
 ```bash
 git clone https://github.com/dancher00/agentic-cad.git
@@ -30,7 +30,7 @@ Put reference photos of one object in `photos/`, or start with text only.
 agentic-cad generate --prompt "Plate 60 × 40 × 5 mm, centered 10 mm hole" \
   --output work/plate
 
-# From several views of the same object.
+# From several views, after the hybrid setup linked below.
 agentic-cad reconstruct photos/ --prompt "Reconstruct this bracket" \
   --dimension "height=60mm" --output work/bracket
 ```
@@ -45,11 +45,14 @@ Open `work/bracket/viewer.html` in your browser. Download the STEP, or open `mod
 
 All selected photos go into the same model request. The model writes a CAD program; local checks build one solid and export it. Invalid code gets up to one repair request by default. Material assignment, FEM and grasp planning run downstream.
 
-For local segmentation, depth and geometric feedback, add `--reconstruction hybrid`.
+Multiple photos automatically use segmentation, joint camera/depth estimation and geometric feedback.
+Text and single-photo requests use GPT by default; `--reconstruction gpt` explicitly selects that path.
 The [hybrid setup](docs/HYBRID.md) uses SAM2 + DA3 on your GPU, fits estimated CAD
 parameters and checks declared cavities against the final solid.
 It also compares CAD renders and measured sections with the photos, then
-automatically revises features that its review flags as incorrect.
+automatically revises features that its review flags as incorrect. One shared CAD is
+projected into every estimated camera; the weakest view also contributes to fitting.
+See [how to capture multiple views](docs/HYBRID.md#capture-the-object).
 
 ## Use it from your software
 
