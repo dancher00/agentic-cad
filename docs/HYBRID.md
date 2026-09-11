@@ -115,7 +115,7 @@ Registration uses one shared similarity transform across the DA3 cameras, rather
 than independently moving the CAD in each image. Fitting freezes that transform
 after registration. A later candidate or resumed run can reuse a previous pose
 only when it scores at least 0.95 silhouette IoU in every view, then refine it
-locally on the full exported mesh. Otherwise the full pose search runs again.
+locally in the search objective. Otherwise the global pose search runs again.
 The global search retains front/back camera hypotheses even when their initial
 alignment scores poorly, so hiding a handle cannot discard its visible orientation.
 The registration method is recorded in `geometry-review.json`. Numerical fitting
@@ -124,6 +124,11 @@ parameters and parameters named as wall thickness, clearance or tolerance are
 excluded from numerical fitting. Use `--fit-parameters 0` for evaluation without
 parameter updates. Local fitting preserves the ordering of named body-profile radii
 and diameters, so a small dimension update cannot silently reverse the original taper.
+For meshes with at least 5,000 faces, pose search uses a deterministic vertex-clustered
+proxy at the 96-pixel object resolution. Depth surface samples still come from the
+full export. The 192-pixel verification objective and every review render use the
+full exported mesh; STEP, STL and the generated program are never simplified.
+Search and export face counts are recorded in each objective result.
 Each accepted update must improve silhouette agreement at both 96- and 192-pixel
 resolution without degrading another view beyond 0.002 IoU or the depth residual
 by more than 0.01. These are conservative fit controls, not physical tolerances.

@@ -272,3 +272,38 @@ def test_explicit_camera_source_cannot_reuse_incompatible_evidence(tmp_path):
             HybridConfig(evidence_cache=cache, cameras="colmap"),
         )
     assert not (tmp_path / "output").exists()
+
+
+def test_search_proxy_preserves_visible_aperture_and_verification_uses_export(tmp_path):
+    import hashlib
+
+    import trimesh
+
+    from da3_cad.hybrid_fit import GeometryObjective, rasterize, search_mesh, silhouette_iou
+
+    mesh = trimesh.creation.annulus(r_min=0.6, r_max=1, height=0.5, sections=1024)
+    vertices, faces = search_mesh(mesh.vertices, mesh.faces, 96)
+    assert len(faces) < len(mesh.faces) / 2
+    k = np.array([[100.0, 0, 60], [0, 100, 60], [0, 0, 1]])
+    camera = np.eye(4)
+    camera[2, 3] = 3
+    coarse = rasterize(vertices, faces, k, camera, (120, 120))
+    exact = rasterize(mesh.vertices, mesh.faces, k, camera, (120, 120))
+    assert not coarse[60, 60] and not exact[60, 60]
+    assert silhouette_iou(coarse, exact) > 0.95
+    path = tmp_path / "model.stl"
+    mesh.export(path)
+    before = hashlib.sha256(path.read_bytes()).hexdigest()
+    np.savez(
+        tmp_path / "geometry.npz",
+        depth=np.ones((1, 120, 120)),
+        masks=exact[None],
+        intrinsics=k[None],
+        extrinsics=camera[None],
+    )
+    search, verification = GeometryObjective(tmp_path, 96), GeometryObjective(tmp_path, 192)
+    search.load_mesh(path)
+    verification.load_mesh(path)
+    assert len(search.faces) < len(verification.faces)
+    assert len(verification.faces) == verification.export_face_count == len(mesh.faces)
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == before

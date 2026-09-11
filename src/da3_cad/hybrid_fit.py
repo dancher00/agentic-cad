@@ -24,6 +24,28 @@ def silhouette_iou(left: Any, right: Any) -> float:
     return float(np.logical_and(left, right).sum() / union) if union else 0.0
 
 
+def search_mesh(vertices: Any, faces: Any, resolution: int) -> tuple[Any, Any]:
+    """Deterministic vertex clustering for pose search; never used for export or verification."""
+    if len(faces) < 5000:
+        return vertices, faces
+    cell = max(float(np.ptp(vertices, axis=0).max()) / resolution, 1e-12)
+    cells = np.rint((vertices - vertices.min(axis=0)) / cell).astype(np.int64)
+    _, inverse = np.unique(cells, axis=0, return_inverse=True)
+    counts = np.bincount(inverse)
+    clustered = np.column_stack(
+        [np.bincount(inverse, weights=vertices[:, axis]) / counts for axis in range(3)]
+    )
+    triangles = inverse[faces]
+    keep = (triangles[:, 0] != triangles[:, 1]) & (triangles[:, 0] != triangles[:, 2])
+    keep &= triangles[:, 1] != triangles[:, 2]
+    triangles = triangles[keep]
+    if len(triangles) < 4:
+        return vertices, faces
+    # Coincident inner/outer triangles need only one silhouette contribution.
+    _, unique = np.unique(np.sort(triangles, axis=1), axis=0, return_index=True)
+    return clustered, triangles[np.sort(unique)]
+
+
 def rasterize(
     vertices: Any, faces: Any, intrinsics: Any, extrinsics: Any, shape: tuple[int, int]
 ) -> Any:
@@ -44,6 +66,7 @@ class GeometryObjective:
     def __init__(self, evidence: Path, resolution: int = 96):
         import cv2
 
+        self.resolution = resolution
         with np.load(evidence / "geometry.npz", allow_pickle=False) as data:
             self.extrinsics = data["extrinsics"].copy()
             self.intrinsics = data["intrinsics"].copy()
@@ -99,6 +122,7 @@ class GeometryObjective:
             raise ValueError("Expected a nonempty triangle mesh")
         self.vertices = np.asarray(mesh.vertices, dtype=float)
         self.faces = np.asarray(mesh.faces)
+        self.export_face_count = len(self.faces)
         self.mesh_center = (mesh.bounds[0] + mesh.bounds[1]) / 2
         self.mesh_radius = max(float(np.max(mesh.extents)) / 2, 1e-8)
         if normalization is not None:
@@ -106,6 +130,8 @@ class GeometryObjective:
         # Deterministic area-weighted samples avoid tessellation-density bias.
         points, _ = trimesh.sample.sample_surface(mesh, 4000, seed=0)
         self.surface_tree = cKDTree((points - self.mesh_center) / self.mesh_radius)
+        if self.resolution <= 96:
+            self.vertices, self.faces = search_mesh(self.vertices, self.faces, self.resolution)
 
     def world_vertices(self, pose: Any) -> Any:
         rotation = Rotation.from_rotvec(pose[:3]).as_matrix()
@@ -155,6 +181,8 @@ class GeometryObjective:
             "relative_depth_surface_residual": residual,
             "pose": list(map(float, pose)),
             "view_crops_xyxy": self.view_crops,
+            "rasterized_faces": len(self.faces),
+            "export_faces": self.export_face_count,
             "contract": "shared similarity in DA3 camera frame; relative scale; depth prior",
         }
 
@@ -171,8 +199,8 @@ class GeometryObjective:
                         best = trial
                     return float(trial["loss"])
 
-                # Reuse an already strong alignment of the same views. All scoring
-                # still uses the full exported mesh; poor seeds fall back to search.
+                # Reuse a strong search alignment of the same views. Final acceptance
+                # is checked separately against the full export; poor seeds use global search.
                 if min(best["view_ious"]) >= 0.95:
                     delta = np.asarray([0.15, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1])
                     minimize(
