@@ -165,3 +165,110 @@ def test_perspective_depth_interpolation_handles_slanted_surfaces() -> None:
     # but would incorrectly disappear behind z=3 with linear camera-Z interpolation.
     assert not np.array_equal(only_slanted[16, 20], only_flat[16, 20])
     np.testing.assert_array_equal(combined[16, 20], only_slanted[16, 20])
+
+
+def test_camera_recovery_keeps_all_photos_and_orders_undistorted_inputs(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from da3_cad.geometry import cameras
+    from da3_cad.multiview_evidence import recover_photo_cameras
+
+    images, masks = tmp_path / "images", tmp_path / "masks"
+    images.mkdir()
+    masks.mkdir()
+    names = ("02.png", "00.png", "01.png")
+    for name in names:
+        Image.new("RGB", (32, 32)).save(images / name)
+    extrinsics = np.repeat(np.eye(4)[None], 3, axis=0)
+    extrinsics[:, 0, 3] = [2, 0, 1]
+    bundle = cameras.CameraBundle(
+        names,
+        np.repeat(np.eye(3)[None], 3, axis=0),
+        extrinsics,
+        "test-sfm",
+        details={"mean_reprojection_error_pixels": 0.5},
+    )
+    calls = []
+
+    def recover(*args, **kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            bundle=bundle,
+            registered_frames_dir=tmp_path / "rectified",
+            registered_masks_dir=tmp_path / "rectified-masks",
+        )
+
+    monkeypatch.setattr(cameras, "recover_colmap_cameras", recover)
+    frames, aligned_masks, selected, report = recover_photo_cameras(
+        images, masks, tmp_path / "sfm", "auto"
+    )
+    assert calls[0]["minimum_registered_fraction"] == 1
+    assert calls[0]["pairing"] == "exhaustive"
+    assert calls[0]["masks_dir"] == masks
+    assert frames.name == "rectified" and aligned_masks.name == "rectified-masks"
+    assert selected.image_names == ("00.png", "01.png", "02.png")
+    np.testing.assert_array_equal(selected.extrinsics[:, 0, 3], [0, 1, 2])
+    assert report["source"] == "colmap"
+    assert report["mean_reprojection_error_pixels"] == 0.5
+    bundle.details["mean_reprojection_error_pixels"] = 3.0
+    _, _, selected, rejected = recover_photo_cameras(images, masks, tmp_path / "sfm", "auto")
+    assert selected is None and "2 pixels" in rejected["reason"]
+    with pytest.raises(RuntimeError, match="2 pixels"):
+        recover_photo_cameras(images, masks, tmp_path / "sfm", "colmap")
+
+
+@pytest.mark.parametrize("reason", ["incomplete registration", "missing pycolmap"])
+def test_camera_fallback_is_reported_and_explicit_colmap_cannot_silently_fallback(
+    tmp_path, monkeypatch, reason
+):
+    from da3_cad.geometry import cameras
+    from da3_cad.multiview_evidence import recover_photo_cameras
+
+    images, masks = tmp_path / "images", tmp_path / "masks"
+    images.mkdir()
+    for i in range(3):
+        Image.new("RGB", (32, 32)).save(images / f"{i:02d}.png")
+
+    def fail(*args, **kwargs):
+        raise RuntimeError(reason)
+
+    monkeypatch.setattr(cameras, "recover_colmap_cameras", fail)
+    frames, aligned_masks, selected, report = recover_photo_cameras(
+        images, masks, tmp_path / "sfm", "auto"
+    )
+    assert frames == images and aligned_masks == masks and selected is None
+    assert report["source"] == "da3" and report["reason"] == reason
+    with pytest.raises(RuntimeError, match="COLMAP camera recovery failed"):
+        recover_photo_cameras(images, masks, tmp_path / "sfm", "colmap")
+
+
+def test_explicit_camera_source_cannot_reuse_incompatible_evidence(tmp_path):
+    import hashlib
+
+    from da3_cad.hybrid_evidence import HybridConfig, prepare_evidence
+
+    photo = tmp_path / "photo.png"
+    Image.new("RGB", (32, 32)).save(photo)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    (cache / "evidence.json").write_text(
+        json.dumps(
+            {
+                "input_identity": {
+                    "prompt": "part",
+                    "sha256": [hashlib.sha256(photo.read_bytes()).hexdigest()],
+                },
+                "cameras": {"source": "da3"},
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="different camera source"):
+        prepare_evidence(
+            [photo],
+            "part",
+            tmp_path / "output",
+            None,
+            None,
+            HybridConfig(evidence_cache=cache, cameras="colmap"),
+        )
+    assert not (tmp_path / "output").exists()

@@ -1,6 +1,6 @@
 # Hybrid reconstruction
 
-`hybrid` combines GPT-5.6 Sol, SAM2.1 Small, DA3 Base and local CAD fitting.
+`hybrid` combines GPT-5.6 Sol, SAM2.1 Small, COLMAP, DA3 Base and local CAD fitting.
 It accepts 1–16 photos of the same stationary object. Original photos and derived
 mask/depth panels and CAD review renders are sent to the selected provider. The CLI
 default is `--reconstruction auto`: two or more photos select hybrid; text and one
@@ -35,6 +35,7 @@ and acquire the pinned model sources and weights. Run from the repository root.
 ```bash
 pip install -r constraints/cu130-py312.txt
 pip install -r constraints/da3-py312.txt -r constraints/target-py312.txt
+pip install "pycolmap>=4.1.1,<4.2"
 python scripts/fetch_sam2_source.py
 python scripts/fetch_sam2_weights.py
 python scripts/fetch_da3_source.py
@@ -46,13 +47,30 @@ ignored `data/` directory. Inference uses cached files and runs the GPU models
 sequentially, releasing each model before loading the next. `--device cpu` is
 available; CUDA is recommended.
 
+## Camera recovery
+
+With three or more photos, `--cameras auto` first tries COLMAP using all-pairs
+feature matching and shared intrinsics. Acceptance requires every input image to
+register, non-collinear camera positions, and mean track reprojection error at most
+2 pixels in the prepared input images. RGB and SAM masks are undistorted together;
+DA3 receives those images and the recovered intrinsics/extrinsics in matching order.
+
+If recovery fails or COLMAP is unavailable, auto uses joint DA3 camera estimation
+and records the fallback reason in `evidence/evidence.json`. No input view is dropped.
+Use `--cameras colmap` to require feature-based cameras and stop on failure, or
+`--cameras da3` to explicitly use predicted cameras. Two photos use DA3 in auto mode.
+A low reprojection error is an internal consistency check, not a physical accuracy
+certificate. Cached evidence retains its camera source; an explicit conflicting
+camera option is rejected.
+
 ## What happens
 
 | Stage | Result |
 |---|---|
 | GPT locates the requested object in every photo | Bounding boxes and a feature contract |
 | SAM2 segments each box | Object masks, including visible handle openings |
-| DA3 processes the original views together | Relative depth, intrinsics and camera poses; cross-view reprojection diagnostics |
+| COLMAP matches features across photos and adjusts the cameras | One camera per input photo and undistorted RGB/masks |
+| DA3 processes all views together, conditioned on recovered cameras when available | Relative depth and cross-view reprojection diagnostics |
 | GPT receives photos, masked RGB, depth panels and observations | Parametric CadQuery program with declared cavity clearances |
 | CAD kernel builds the solid | STEP/STL, connectivity and clearance intersection checks |
 | Numerical fitting compares projected CAD to masks and depth | Estimated dimensions adjusted within ±8% of their initial values |
@@ -200,7 +218,7 @@ Mask/depth agreement cannot establish hidden geometry, wall thickness, material
 properties or safe grasp forces. Clearances are declared by the generated program:
 intersection checks verify those declarations, not that they describe the entire
 physical cavity. Camera estimation and local fitting can also reach an incorrect
-alignment. No metric scale is inferred from DA3 Base. Supply dimensions separately;
+alignment. Neither COLMAP nor DA3 Base supplies a measured metric scale. Supply dimensions separately;
 FEM and grasp planning remain downstream.
 
 Compare existing meshes against exactly the same masks and depth, without API calls:

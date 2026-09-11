@@ -50,6 +50,7 @@ Use a new output directory. Agentic CAD refuses to overwrite an existing run.
 
 | Option | Default | Purpose |
 |---|---|---|
+| `--cameras` | `auto` | Try COLMAP for 3+ photos, then DA3; `colmap` requires complete camera recovery. |
 | `--reconstruction` | `auto` | Hybrid for multiple photos; GPT for text or one photo. |
 | `--model` | `gpt-5.6-sol` | Provider model identifier. |
 | `--provider` | `llm-proxy` | `llm-proxy` or `openai`. |

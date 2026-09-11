@@ -2,9 +2,62 @@
 
 from __future__ import annotations
 
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 import numpy as np
+
+
+def recover_photo_cameras(
+    images: Path, masks: Path, output: Path, method: Literal["auto", "da3", "colmap"]
+) -> tuple[Path, Path, Any, dict[str, Any]]:
+    """Prefer complete feature-track camera recovery; never mix partial camera frames."""
+    from da3_cad.geometry.cameras import recover_colmap_cameras
+
+    names = sorted(path.name for path in images.glob("*.png"))
+    fallback: dict[str, Any] = {"requested": method, "source": "da3"}
+    if method == "da3":
+        return images, masks, None, fallback
+    if len(names) < 3:
+        if method == "colmap":
+            raise ValueError("COLMAP camera recovery requires at least three photos")
+        return images, masks, None, {**fallback, "reason": "fewer than three photos"}
+    try:
+        result = recover_colmap_cameras(
+            images,
+            output,
+            masks_dir=masks,
+            pairing="exhaustive",
+            minimum_registered_fraction=1.0,
+        )
+        bundle = result.bundle
+        if sorted(bundle.image_names) != names or result.registered_masks_dir is None:
+            raise RuntimeError("Camera recovery must retain every input photo and mask")
+        details = bundle.details or {}
+        raw_error = details.get("mean_reprojection_error_pixels")
+        reprojection_error = (
+            float(raw_error) if isinstance(raw_error, (int, float)) else float("inf")
+        )
+        if not np.isfinite(reprojection_error) or reprojection_error > 2:
+            raise RuntimeError("Camera reprojection error exceeds 2 pixels")
+        bundle = bundle.reordered(tuple(names))
+    except (ImportError, OSError, RuntimeError, ValueError) as error:
+        if method == "colmap":
+            raise RuntimeError(f"COLMAP camera recovery failed: {error}") from error
+        return images, masks, None, {**fallback, "reason": str(error)}
+    return (
+        result.registered_frames_dir,
+        result.registered_masks_dir,
+        bundle,
+        {
+            "requested": method,
+            "source": "colmap",
+            "view_count": len(names),
+            "mean_reprojection_error_pixels": reprojection_error,
+            "undistorted": True,
+            "scale": "arbitrary; user dimension required for millimeters",
+        },
+    )
 
 
 def camera_consistency(depth: Any, masks: Any, intrinsics: Any, extrinsics: Any) -> dict[str, Any]:

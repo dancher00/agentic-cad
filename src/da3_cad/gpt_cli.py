@@ -62,6 +62,10 @@ def generate_command(
         typer.Option(help="Auto: hybrid for multiple photos; GPT for text or one photo."),
     ] = "auto",
     device: Annotated[str, typer.Option(help="Hybrid model device: auto, cpu or cuda.")] = "auto",
+    cameras: Annotated[
+        Literal["auto", "da3", "colmap"],
+        typer.Option(help="Hybrid cameras: auto tries COLMAP for 3+ photos, then DA3."),
+    ] = "auto",
     fit_parameters: Annotated[int, typer.Option(min=0, max=12)] = 4,
     feature_review: Annotated[
         bool,
@@ -113,6 +117,7 @@ def generate_command(
         hybrid = (
             HybridConfig(
                 device=device,
+                cameras=cameras,
                 fit_parameters=fit_parameters,
                 evidence_cache=evidence_cache,
                 feature_review=feature_review,

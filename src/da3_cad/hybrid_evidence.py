@@ -6,7 +6,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from PIL import Image, ImageOps
@@ -22,6 +22,7 @@ class HybridConfig(BaseModel):
     da3_source: Path = Path("data/upstream/Depth-Anything-3")
     offline: bool = True
     evidence_cache: Path | None = None
+    cameras: Literal["auto", "da3", "colmap"] = "auto"
     fit_parameters: int = Field(default=4, ge=0, le=12)
     feature_review: bool = True
     min_silhouette_iou: float = Field(default=0.85, gt=0, le=1)
@@ -88,6 +89,11 @@ def prepare_evidence(
             }
         if identity != input_identity:
             raise ValueError("Cached evidence must match the exact prompt and ordered photo hashes")
+        if (
+            config.cameras != "auto"
+            and cached.get("cameras", {}).get("source", "da3") != config.cameras
+        ):
+            raise ValueError("Cached evidence uses a different camera source")
         with np.load(cache / "geometry.npz", allow_pickle=False) as data:
             if data["depth"].shape[0] != len(paths):
                 raise ValueError("Cached geometry view count differs from input photos")
@@ -179,6 +185,12 @@ def prepare_evidence(
         checkpoint_path=config.sam2_checkpoint,
         device=config.device,
     )
+    from da3_cad.multiview_evidence import recover_photo_cameras
+
+    inputs, mask_inputs, cameras, camera_report = recover_photo_cameras(
+        inputs, output / "masks", output / "sfm", config.cameras
+    )
+    prepared = sorted(inputs.glob("*.png"))
     backend = Da3Backend(
         checkpoint="base",
         source_dir=config.da3_source,
@@ -188,14 +200,23 @@ def prepare_evidence(
         process_resolution=336,
         process_resolution_method="upper_bound_resize",
     )
-    prediction = backend.predict(load_observations(inputs), device=config.device, seed=0)
+    prediction = backend.predict(
+        load_observations(inputs),
+        device=config.device,
+        seed=0,
+        **(
+            {"extrinsics": cameras.extrinsics, "intrinsics": cameras.intrinsics}
+            if cameras is not None
+            else {}
+        ),
+    )
     depth = prediction.depth
     masks = []
     panels = []
     statistics = []
     for i, path in enumerate(prepared):
         h, w = depth[i].shape
-        with Image.open(output / "masks" / path.name) as image:
+        with Image.open(mask_inputs / path.name) as image:
             mask = align_mask_to_da3(image, (h, w))
         good = mask & np.isfinite(depth[i]) & (depth[i] > 0)
         if int(good.sum()) < 32:
@@ -242,6 +263,7 @@ def prepare_evidence(
         },
         "segmentation": str(segmentation.report_path.relative_to(output)),
         "geometry": backend.last_runtime_report,
+        "cameras": camera_report,
         "geometry_file": "geometry.npz",
         "camera_consistency": camera_consistency(
             depth, np.asarray(masks), prediction.intrinsics, prediction.extrinsics

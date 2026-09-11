@@ -47,7 +47,8 @@ All selected photos go into the same model request. The model writes a CAD progr
 
 Multiple photos automatically use segmentation, joint camera/depth estimation and geometric feedback.
 Text and single-photo requests use GPT by default; `--reconstruction gpt` explicitly selects that path.
-The [hybrid setup](docs/HYBRID.md) uses SAM2 + DA3 on your GPU, fits estimated CAD
+The [hybrid setup](docs/HYBRID.md) uses COLMAP for camera recovery and SAM2 + DA3
+on your GPU, fits estimated CAD
 parameters and checks declared cavities against the final solid.
 It also compares CAD renders and measured sections with the photos, then
 automatically revises features that its review flags as incorrect. One shared CAD is
